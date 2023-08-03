@@ -4,6 +4,9 @@ pyglet.options['debug_gl'] = False
 from mc.net.minecraft.Timer import Timer
 from mc.net.minecraft.Player import Player
 from mc.net.minecraft.HitResult import HitResult
+from mc.net.minecraft.character.Vec3 import Vec3
+from mc.net.minecraft.character.Cube import Cube
+from mc.net.minecraft.character.Zombie import Zombie
 from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.Level import Level
 from mc.net.minecraft.level.LevelRenderer import LevelRenderer
@@ -12,18 +15,12 @@ from pyglet import window, canvas, clock, gl, compat_platform
 
 import math
 
-class Vec3:
-
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-
 class Minecraft(window.Window):
     FULLSCREEN_MODE = False
     col = 920330
     fogColor = ((col >> 16 & 0xFF) / 255.0, (col >> 8 & 0xFF) / 255.0, (col & 0xFF) / 255.0, (col & 0xFF) / 255.0, 1.0)
     timer = Timer(60.0)
+    zombies = set()
     hitResult = None
     running = True
 
@@ -48,6 +45,9 @@ class Minecraft(window.Window):
         self.level = Level(256, 256, 64)
         self.levelRenderer = LevelRenderer(self.level)
         self.player = Player(self.level)
+
+        for i in range(100):
+            self.zombies.add(Zombie(self.level, 128.0, 0.0, 128.0))
 
         self.set_exclusive_mouse(True)
 
@@ -74,11 +74,6 @@ class Minecraft(window.Window):
 
     def on_mouse_motion(self, x, y, dx, dy):
         self.player.turn(dx, dy)
-
-    def on_activate(self):
-        # Remove this hack when the window boundary issue is fixed upstream:
-        if compat_platform == 'win32':
-            self._update_clipped_cursor()
 
     def on_key_press(self, symbol, modifiers):
         if symbol == window.key.R:
@@ -109,6 +104,11 @@ class Minecraft(window.Window):
             self.player.rightPressed = False
         elif symbol in (window.key.SPACE, window.key.LWINDOWS, window.key.LMETA):
             self.player.spacePressed = False
+
+    def on_activate(self):
+        # Remove this hack when the window boundary issue is fixed upstream:
+        if compat_platform == 'win32':
+            self._update_clipped_cursor()
 
     def on_draw(self):
         self.clear()
@@ -145,6 +145,9 @@ class Minecraft(window.Window):
         self.destroy()
 
     def tick(self):
+        for zombie in self.zombies:
+            zombie.tick()
+
         self.player.tick()
 
     def moveCameraToPlayer(self, a):
@@ -198,6 +201,10 @@ class Minecraft(window.Window):
 
         gl.glDisable(gl.GL_FOG)
         self.levelRenderer.render(self.player, 0)
+
+        for zombie in self.zombies:
+            zombie.render(a)
+
         gl.glEnable(gl.GL_FOG)
         self.levelRenderer.render(self.player, 1)
         gl.glDisable(gl.GL_TEXTURE_2D)

@@ -11,12 +11,14 @@ class Textures:
         if resourceName in cls.idMap:
             return cls.idMap[resourceName]
 
-        ib = BufferUtils.createUintBuffer(1).clear()
-
+        ib = BufferUtils.createUintBuffer(1)
+        ib.clear()
         gl.glGenTextures(1, ib)
         id_ = ib.get(0)
+        cls.idMap[resourceName] = id_
+        print(resourceName + ' -> ' + str(id_))
 
-        cls.bind(id_)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
 
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, mode)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, mode)
@@ -31,9 +33,3 @@ class Textures:
         gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, pixels)
 
         return id_
-
-    @classmethod
-    def bind(cls, id_):
-        if id_ != cls.lastId:
-            gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
-            cls.lastId = id_

@@ -43,14 +43,14 @@ class AABB:
             return xa
 
         if xa > 0.0 and c.x1 <= self.x0:
-          maximum = self.x0 - c.x1 - self.epsilon
-          if maximum < xa:
-              xa = maximum
+            maximum = self.x0 - c.x1 - self.epsilon
+            if maximum < xa:
+                xa = maximum
 
         if xa < 0.0 and c.x0 >= self.x1:
-          maximum = self.x1 - c.x0 + self.epsilon
-          if maximum > xa:
-              xa = maximum
+            maximum = self.x1 - c.x0 + self.epsilon
+            if maximum > xa:
+                xa = maximum
 
         return xa
 
@@ -61,14 +61,14 @@ class AABB:
             return ya
 
         if ya > 0.0 and c.y1 <= self.y0:
-          maximum = self.y0 - c.y1 - self.epsilon
-          if maximum < ya:
-              ya = maximum
+            maximum = self.y0 - c.y1 - self.epsilon
+            if maximum < ya:
+                ya = maximum
 
         if ya < 0.0 and c.y0 >= self.y1:
-          maximum = self.y1 - c.y0 + self.epsilon
-          if maximum > ya:
-              ya = maximum
+            maximum = self.y1 - c.y0 + self.epsilon
+            if maximum > ya:
+                ya = maximum
 
         return ya
 
@@ -79,14 +79,14 @@ class AABB:
             return za
 
         if za > 0.0 and c.z1 <= self.z0:
-          maximum = self.z0 - c.z1 - self.epsilon
-          if maximum < za:
-              za = maximum
+            maximum = self.z0 - c.z1 - self.epsilon
+            if maximum < za:
+                za = maximum
 
         if za < 0.0 and c.z0 >= self.z1:
-          maximum = self.z1 - c.z0 + self.epsilon
-          if maximum > za:
-              za = maximum
+            maximum = self.z1 - c.z0 + self.epsilon
+            if maximum > za:
+                za = maximum
 
         return za
 

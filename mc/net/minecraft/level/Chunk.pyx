@@ -10,7 +10,6 @@ cdef int Chunk_updates = 0
 cdef int Chunk_rebuiltThisFrame = 0
 
 cdef class Chunk:
-    texture = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
 
     cdef:
         public Level level
@@ -87,7 +86,7 @@ cdef class Chunk:
 
         gl.glNewList(self.lists + layer, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, Textures.loadTexture('terrain.png', gl.GL_NEAREST))
 
         t = <Tesselator>self.t
         t.init()
