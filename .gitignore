@@ -1,0 +1,10 @@
+build
+*.pyc
+*.pyd
+*.dat
+*.bat
+*.log
+*.html
+*.prof
+*.c
+*.h

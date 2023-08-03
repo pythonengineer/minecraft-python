@@ -1,0 +1,15 @@
+include MANIFEST.in
+include pyproject.toml
+include setup.py
+include Makefile
+include requirements.txt
+include screenshot.png
+include LICENSE
+include README.md
+
+recursive-include mc *.pyx *.pxd
+recursive-include resources *
+recursive-exclude * *.pyc
+recursive-exclude * *.pyd
+recursive-exclude * *.html
+recursive-exclude * *.c
