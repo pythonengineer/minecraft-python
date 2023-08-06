@@ -11,8 +11,8 @@ class Cube:
     xRot = 0.0
     yRot = 0.0
     zRot = 0.0
-    __compiled = False
-    __list = 0
+    compiled = False
+    list = 0
 
     def __init__(self, xTexOffs, yTexOffs):
         self.setTexOffs(xTexOffs, yTexOffs)
@@ -63,15 +63,8 @@ class Cube:
         self.z = z
 
     def render(self):
-        if not self.__compiled:
-            self.__list = gl.glGenLists(1)
-            gl.glNewList(self.__list, gl.GL_COMPILE)
-            gl.glBegin(gl.GL_QUADS)
-            for polygon in self.polygons:
-                polygon.render()
-            gl.glEnd()
-            gl.glEndList()
-            self.__compiled = True
+        if not self.compiled:
+            self.compile()
 
         c = 57.29578
         gl.glPushMatrix()
@@ -80,5 +73,15 @@ class Cube:
         gl.glRotatef(self.yRot * c, 0.0, 1.0, 0.0)
         gl.glRotatef(self.xRot * c, 1.0, 0.0, 0.0)
 
-        gl.glCallList(self.__list)
+        gl.glCallList(self.list)
         gl.glPopMatrix()
+
+    def compile(self):
+        self.list = gl.glGenLists(1)
+        gl.glNewList(self.list, gl.GL_COMPILE)
+        gl.glBegin(gl.GL_QUADS)
+        for polygon in self.polygons:
+            polygon.render()
+        gl.glEnd()
+        gl.glEndList()
+        self.compiled = True

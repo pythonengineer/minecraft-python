@@ -12,15 +12,15 @@ extensions = [
               sources=['mc/net/minecraft/level/Tesselator.pyx']),
     Extension(name='mc.net.minecraft.level.Level',
               sources=['mc/net/minecraft/level/Level.pyx']),
-    Extension(name='mc.net.minecraft.level.Tile',
-              sources=['mc/net/minecraft/level/Tile.pyx']),
-    Extension(name='mc.net.minecraft.level.Tiles',
-              sources=['mc/net/minecraft/level/Tiles.pyx']),
+    Extension(name='mc.net.minecraft.level.tile.Tile',
+              sources=['mc/net/minecraft/level/tile/Tile.pyx']),
+    Extension(name='mc.net.minecraft.level.tile.Tiles',
+              sources=['mc/net/minecraft/level/tile/Tiles.pyx']),
 ]
 
 setup(
     name='minecraft-python',
-    version='132328',
+    version='160052-1',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

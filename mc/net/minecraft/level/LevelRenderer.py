@@ -1,16 +1,19 @@
+from mc.net.minecraft.level.DirtyChunkSorter import DirtyChunkSorter
 from mc.net.minecraft.level.LevelListener import LevelListener
-from mc.net.minecraft.level.Tesselator import Tesselator
+from mc.net.minecraft.level.Tesselator import tesselator
 from mc.net.minecraft.level.Frustum import Frustum
 from mc.net.minecraft.level.Chunk import Chunk
-from mc.net.minecraft.level.Tiles import tiles
+from mc.net.minecraft.level.tile.Tiles import tiles
+from mc.net.minecraft.Textures import Textures
 from mc.CompatibilityShims import getMillis
 from pyglet import gl
+from functools import cmp_to_key
 
 import math
 
 class LevelRenderer(LevelListener):
+    MAX_REBUILDS_PER_FRAME = 8
     CHUNK_SIZE = 16
-    t = Tesselator()
 
     def __init__(self, level):
         self.level = level
@@ -38,22 +41,50 @@ class LevelRenderer(LevelListener):
                     if z1 > level.height: z1 = level.height
                     self.chunks[(x + y * self.xChunks) * self.zChunks + z] = Chunk(level, x0, y0, z0, x1, y1, z1)
 
+    def getAllDirtyChunks(self):
+        dirty = None
+        for chunk in self.chunks:
+            if chunk.isDirty():
+                if not dirty:
+                    dirty = set()
+
+                dirty.add(chunk)
+
+        return dirty
+
     def render(self, player, layer):
-        self.chunks[-1].rebuiltThisFrame = 0
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        id_ = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         #self.frustum.calculateFrustum()
         for chunk in self.chunks:
             chunk.render(layer)
             #if self.frustum.isVisible(chunk.aabb):
             #    chunk.render(layer)
+        gl.glDisable(gl.GL_TEXTURE_2D)
+
+    def updateDirtyChunks(self, player):
+        dirty = self.getAllDirtyChunks()
+        if not dirty:
+            return
+
+        self.frustum.calculateFrustum()
+        dirty = sorted(dirty, key=cmp_to_key(DirtyChunkSorter(player, self.frustum).compare))
+        for i in range(self.MAX_REBUILDS_PER_FRAME):
+            if i >= len(dirty):
+                break
+
+            dirty[i].rebuild()
 
     def renderHit(self, h):
+        t = tesselator
         gl.glEnable(gl.GL_BLEND)
 
         gl.glBlendFunc(gl.GL_SRC_ALPHA, 1)
-        gl.glColor4f(1.0, 1.0, 1.0, math.sin(getMillis() / 100.0) * 0.2 + 0.4)
-        self.t.init()
-        tiles.rock.renderFace(self.t, h.x, h.y, h.z, h.f)
-        self.t.flush()
+        gl.glColor4f(1.0, 1.0, 1.0, (math.sin(getMillis() / 100.0) * 0.2 + 0.4) * 0.5)
+        t.init()
+        tiles.rock.renderFaceNoTexture(t, h.x, h.y, h.z, h.f)
+        t.flush()
         gl.glDisable(gl.GL_BLEND)
 
     def setDirty(self, x0, y0, z0, x1, y1, z1):
@@ -74,7 +105,7 @@ class LevelRenderer(LevelListener):
         for x in range(x0, x1 + 1):
             for y in range(y0, y1 + 1):
                 for z in range(z0, z1 + 1):
-                    self.chunks[((x + y * self.xChunks) * self.zChunks + z)].setDirty()
+                    self.chunks[(x + y * self.xChunks) * self.zChunks + z].setDirty()
 
     def tileChanged(self, x, y, z):
         self.setDirty(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1)

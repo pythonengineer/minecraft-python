@@ -3,13 +3,18 @@ pyglet.options['debug_gl'] = False
 
 from mc.net.minecraft.Timer import Timer
 from mc.net.minecraft.Player import Player
+from mc.net.minecraft.Textures import Textures
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.character.Vec3 import Vec3
-from mc.net.minecraft.character.Cube import Cube
 from mc.net.minecraft.character.Zombie import Zombie
+from mc.net.minecraft.level.tile.Tile import Tile
+from mc.net.minecraft.level.tile.Tiles import tiles
+from mc.net.minecraft.level.Tesselator import tesselator
+from mc.net.minecraft.level.Frustum import Frustum
 from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.Level import Level
 from mc.net.minecraft.level.LevelRenderer import LevelRenderer
+from mc.net.minecraft.particle.ParticleEngine import ParticleEngine
 from mc.CompatibilityShims import BufferUtils, gluPerspective, getMillis
 from pyglet import window, canvas, clock, gl, compat_platform
 
@@ -17,19 +22,38 @@ import math
 
 class Minecraft(window.Window):
     FULLSCREEN_MODE = False
-    col = 920330
-    fogColor = ((col >> 16 & 0xFF) / 255.0, (col >> 8 & 0xFF) / 255.0, (col & 0xFF) / 255.0, (col & 0xFF) / 255.0, 1.0)
-    timer = Timer(60.0)
-    zombies = set()
-    hitResult = None
+    timer = Timer(20.0)
     running = True
+    paintTexture = 1
+
+    zombies = set()
+
+    hitResult = None
+
+    lb = BufferUtils.createFloatBuffer(16)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        col0 = 16710650
+        col1 = 920330
+
+        self.fogColor0 = ((col0 >> 16 & 0xFF) / 255.0, (col0 >> 8 & 0xFF) / 255.0, (col0 & 0xFF) / 255.0, (col0 & 0xFF) / 255.0, 1.0)
+        self.fogColor1 = ((col1 >> 16 & 0xFF) / 255.0, (col1 >> 8 & 0xFF) / 255.0, (col1 & 0xFF) / 255.0, (col1 & 0xFF) / 255.0, 1.0)
+
         fr = 0.5
         fg = 0.8
         fb = 1.0
+
+        self.set_fullscreen(self.FULLSCREEN_MODE)
+        self.set_exclusive_mouse(True)
+
+        display = canvas.Display()
+        screen = display.get_default_screen()
+        locationX = screen.width // 2 - self.width // 2
+        locationY = screen.height // 2 - self.height // 2
+        self.set_location(locationX, locationY)
+        self.set_visible(True)
 
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glShadeModel(gl.GL_SMOOTH)
@@ -42,14 +66,18 @@ class Minecraft(window.Window):
         gl.glLoadIdentity()
         gl.glMatrixMode(gl.GL_MODELVIEW)
 
+        self.__chunk = Chunk(None, 0, 0, 0, 0, 0, 0, True)
+
+        self.frustum = Frustum()
         self.level = Level(256, 256, 64)
         self.levelRenderer = LevelRenderer(self.level)
         self.player = Player(self.level)
+        self.particleEngine = ParticleEngine(self.level)
 
-        for i in range(100):
-            self.zombies.add(Zombie(self.level, 128.0, 0.0, 128.0))
-
-        self.set_exclusive_mouse(True)
+        for i in range(10):
+            zombie = Zombie(self.level, 128.0, 0.0, 128.0)
+            zombie.resetPos()
+            self.zombies.add(zombie)
 
     def destroy(self):
         self.level.save()
@@ -57,7 +85,11 @@ class Minecraft(window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         if button == window.mouse.RIGHT:
             if self.hitResult:
-                self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
+                oldTile = tiles.tiles[self.level.getTile(self.hitResult.x, self.hitResult.y, self.hitResult.z)]
+                changed = self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
+                if oldTile and changed:
+                    oldTile.destroy(self.level, self.hitResult.x, self.hitResult.y, self.hitResult.z, self.particleEngine)
+                    self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
         elif button == window.mouse.LEFT:
             if self.hitResult:
                 x = self.hitResult.x
@@ -70,7 +102,7 @@ class Minecraft(window.Window):
                 if self.hitResult.f == 3: z += 1
                 if self.hitResult.f == 4: x -= 1
                 if self.hitResult.f == 5: x += 1
-                self.level.setTile(x, y, z, 1)
+                self.level.setTile(x, y, z, self.paintTexture)
 
     def on_mouse_motion(self, x, y, dx, dy):
         self.player.turn(dx, dy)
@@ -78,6 +110,16 @@ class Minecraft(window.Window):
     def on_key_press(self, symbol, modifiers):
         if symbol == window.key.R:
             self.player.resetPos()
+        elif symbol == window.key.G:
+            self.zombies.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
+        elif symbol == window.key._1:
+            self.paintTexture = 1
+        elif symbol == window.key._2:
+            self.paintTexture = 3
+        elif symbol == window.key._3:
+            self.paintTexture = 4
+        elif symbol == window.key._4:
+            self.paintTexture = 5
         elif symbol in (window.key.UP, window.key.W):
             self.player.upPressed = True
         elif symbol in (window.key.DOWN, window.key.S):
@@ -118,15 +160,6 @@ class Minecraft(window.Window):
         self.render(self.timer.a)
 
     def run(self):
-        self.__chunk = Chunk(None, 0, 0, 0, 0, 0, 0, True)
-
-        display = canvas.Display()
-        screen = display.get_default_screen()
-        locationX = screen.width // 2 - self.width // 2
-        locationY = screen.height // 2 - self.height // 2
-        self.set_location(locationX, locationY)
-        self.set_visible(True)
-
         lastTime = getMillis()
         frames = 0
         while self.running:
@@ -145,8 +178,13 @@ class Minecraft(window.Window):
         self.destroy()
 
     def tick(self):
-        for zombie in self.zombies:
+        self.level.tick()
+        self.particleEngine.tick()
+
+        for zombie in self.zombies.copy():
             zombie.tick()
+            if zombie.removed:
+                self.zombies.remove(zombie)
 
         self.player.tick()
 
@@ -167,6 +205,14 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
         self.moveCameraToPlayer(a)
+
+    def setupOrthoCamera(self):
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.glOrtho(0.0, self.width, self.height, 0.0, 100.0, 300.0)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+        gl.glTranslatef(0.0, 0.0, -200.0)
 
     def pick(self, a):
         xRot = self.player.xRotO + (self.player.xRot - self.player.xRotO) * a
@@ -191,28 +237,93 @@ class Minecraft(window.Window):
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         self.setupCamera(a)
-
         gl.glEnable(gl.GL_CULL_FACE)
-        gl.glEnable(gl.GL_FOG)
-        gl.glFogi(gl.GL_FOG_MODE, gl.GL_VIEWPORT_BIT)
-        gl.glFogf(gl.GL_FOG_DENSITY, 0.2)
-        gl.glFogfv(gl.GL_FOG_COLOR, (gl.GLfloat * 4)(self.fogColor[0], self.fogColor[1],
-                                                     self.fogColor[2], self.fogColor[3]))
 
-        gl.glDisable(gl.GL_FOG)
+        self.frustum.calculateFrustum()
+        self.levelRenderer.updateDirtyChunks(self.player)
+
+        self.setupFog(0)
+        gl.glEnable(gl.GL_FOG)
         self.levelRenderer.render(self.player, 0)
-
         for zombie in self.zombies:
-            zombie.render(a)
+            if zombie.isLit() and self.frustum.isVisible(zombie.bb):
+                zombie.render(a)
 
-        gl.glEnable(gl.GL_FOG)
+        self.particleEngine.render(self.player, a, 0)
+        self.setupFog(1)
         self.levelRenderer.render(self.player, 1)
-        gl.glDisable(gl.GL_TEXTURE_2D)
+        for zombie in self.zombies:
+            if not zombie.isLit() and self.frustum.isVisible(zombie.bb):
+                zombie.render(a)
 
+        self.particleEngine.render(self.player, a, 1)
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glDisable(gl.GL_TEXTURE_2D)
+        gl.glDisable(gl.GL_FOG)
         if self.hitResult:
             self.levelRenderer.renderHit(self.hitResult)
 
-        gl.glDisable(gl.GL_FOG)
+        self.drawGui(a)
+
+    def drawGui(self, a):
+        gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+        self.setupOrthoCamera()
+
+        gl.glPushMatrix()
+        gl.glTranslatef(self.width - 48, 48.0, 0.0)
+        t = tesselator
+        gl.glScalef(48.0, 48.0, 48.0)
+        gl.glRotatef(30.0, 1.0, 0.0, 0.0)
+        gl.glRotatef(45.0, 0.0, 1.0, 0.0)
+        gl.glTranslatef(1.5, -0.5, -0.5)
+
+        id_ = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        t.init()
+        tiles.tiles[self.paintTexture].render(t, self.level, 0, -2, 0, 0)
+        t.flush()
+        gl.glDisable(gl.GL_TEXTURE_2D)
+        gl.glPopMatrix()
+
+        wc = self.width // 2
+        hc = self.height // 2
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        t.init()
+        t.vertex(wc + 1, hc - 8, 0.0)
+        t.vertex(wc - 0, hc - 8, 0.0)
+        t.vertex(wc - 0, hc + 9, 0.0)
+        t.vertex(wc + 1, hc + 9, 0.0)
+
+        t.vertex(wc + 9, hc - 0, 0.0)
+        t.vertex(wc - 8, hc - 0, 0.0)
+        t.vertex(wc - 8, hc + 1, 0.0)
+        t.vertex(wc + 9, hc + 1, 0.0)
+        t.flush()
+
+    def setupFog(self, i):
+        if i == 0:
+            gl.glFogi(gl.GL_FOG_MODE, gl.GL_VIEWPORT_BIT)
+            gl.glFogf(gl.GL_FOG_DENSITY, 0.001)
+            gl.glFogfv(gl.GL_FOG_COLOR, (gl.GLfloat * 4)(self.fogColor0[0], self.fogColor0[1],
+                                                         self.fogColor0[2], self.fogColor0[3]))
+            gl.glDisable(gl.GL_LIGHTING)
+        elif i == 1:
+            gl.glFogi(gl.GL_FOG_MODE, gl.GL_VIEWPORT_BIT)
+            gl.glFogf(gl.GL_FOG_DENSITY, 0.06)
+            gl.glFogfv(gl.GL_FOG_COLOR, (gl.GLfloat * 4)(self.fogColor1[0], self.fogColor1[1],
+                                                         self.fogColor1[2], self.fogColor1[3]))
+            gl.glEnable(gl.GL_LIGHTING)
+            gl.glEnable(gl.GL_COLOR_MATERIAL)
+
+            br = 0.6
+            gl.glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT, self.getBuffer(br, br, br, 1.0))
+
+    def getBuffer(self, a, b, c, d):
+        self.lb.clear()
+        self.lb.put(a).put(b).put(c).put(d)
+        self.lb.flip()
+        return self.lb
 
 if __name__ == '__main__':
     Minecraft(width=1024, height=768, caption='Game', vsync=False, visible=False).run()

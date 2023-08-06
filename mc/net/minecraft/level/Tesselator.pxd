@@ -6,13 +6,12 @@ cimport cython
 cdef class Tesselator:
 
     cdef:
-        int max_vertices
+        int max_floats
+
+        object __buffer
+        float[524288] __array
 
         public int vertices
-
-        public object vertexBuffer
-        public object texCoordBuffer
-        public object colorBuffer
 
         public float u
         public float v
@@ -23,9 +22,13 @@ cdef class Tesselator:
         public bint hasColor
         public bint hasTexture
 
+        public int len
+        public int p
+
     cpdef flush(self)
     cdef clear(self)
     cpdef init(self)
     cpdef tex(self, float u, float v)
     cpdef color(self, float r, float g, float b)
+    cpdef vertexUV(self, float x, float y, float z, float u, float v)
     cpdef vertex(self, float x, float y, float z)

@@ -1,18 +1,22 @@
+# cython: language_level=3
+
 from mc.net.minecraft.level.Tesselator cimport Tesselator
+from mc.net.minecraft.level.Tesselator import tesselator
 from mc.net.minecraft.level.Level cimport Level
-from mc.net.minecraft.level.Tiles import tiles
+from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.phys.AABB import AABB
-from mc.net.minecraft.Textures import Textures
+from mc.CompatibilityShims import getMillis, getNs
 from pyglet import gl
 
-cdef object Chunk_t = Tesselator()
 cdef int Chunk_updates = 0
-cdef int Chunk_rebuiltThisFrame = 0
+cdef object Chunk_totalTime = 0
+cdef int Chunk_totalUpdates = 0
 
 cdef class Chunk:
 
     cdef:
         public Level level
+        Tesselator __t
 
         public int x0
         public int y0
@@ -21,18 +25,14 @@ cdef class Chunk:
         public int y1
         public int z1
 
+        public float x
+        public float y
+        public float z
+
         public object aabb
         public int lists
         public bint dirty
-
-    property t:
-
-        def __get__(self):
-            return Chunk_t
-
-        def __set__(self, x):
-            global Chunk_t
-            Chunk_t = x
+        public object dirtiedTime
 
     property updates:
 
@@ -43,17 +43,28 @@ cdef class Chunk:
             global Chunk_updates
             Chunk_updates = x
 
-    property rebuiltThisFrame:
+    property totalTime:
 
         def __get__(self):
-            return Chunk_rebuiltThisFrame
+            return Chunk_totalTime
 
         def __set__(self, x):
-            global Chunk_rebuiltThisFrame
-            Chunk_rebuiltThisFrame = x
+            global Chunk_totalTime
+            Chunk_totalTime = x
+
+    property totalUpdates:
+
+        def __get__(self):
+            return Chunk_totalUpdates
+
+        def __set__(self, x):
+            global Chunk_totalUpdates
+            Chunk_totalUpdates = x
 
     def __cinit__(self):
+        self.__t = tesselator
         self.dirty = True
+        self.dirtiedTime = 0
         self.lists = -1
 
     def __init__(self, Level level, int x0, int y0, int z0,
@@ -69,48 +80,61 @@ cdef class Chunk:
         self.y1 = y1
         self.z1 = z1
 
+        self.x = (x0 + x1) / 2.0
+        self.y = (y0 + y1) / 2.0
+        self.z = (z0 + z1) / 2.0
+
         self.aabb = AABB(x0, y0, z0, x1, y1, z1)
         self.lists = gl.glGenLists(2)
 
-    cpdef rebuild(self, int layer):
-        cdef int count, x, y, z, tex
+    cpdef rebuild(self, layer=None):
+        cdef int n, count, x, y, z, tileId
         cdef Tesselator t
+        cdef Level l
 
-        if self.rebuiltThisFrame == 2:
-            return
+        n = 1 if layer is not None else 2
+        for i in range(n):
+            if layer is None or i:
+                layer = i
 
-        self.dirty = False
+            self.dirty = False
+            self.updates += 1
 
-        self.updates += 1
-        self.rebuiltThisFrame += 1
+            t = self.__t
+            l = self.level
 
-        gl.glNewList(self.lists + layer, gl.GL_COMPILE)
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, Textures.loadTexture('terrain.png', gl.GL_NEAREST))
-
-        t = <Tesselator>self.t
-        t.init()
-        count = 0
-        for x in range(self.x0, self.x1):
-            for y in range(self.y0, self.y1):
-                for z in range(self.z0, self.z1):
-                    if self.level.isTile(x, y, z):
-                        tex = 0 if y == self.level.depth * 2 // 3 else 1
-                        count += 1
-                        if tex == 0:
-                            tiles.rock.render(t, self.level, layer, x, y, z)
-                        else:
-                            tiles.grass.render(t, self.level, layer, x, y, z)
-        t.flush()
-        gl.glDisable(gl.GL_TEXTURE_2D)
-        gl.glEndList()
+            before = getNs()
+            gl.glNewList(self.lists + layer, gl.GL_COMPILE)
+            t.init()
+            count = 0
+            for x in range(self.x0, self.x1):
+                for y in range(self.y0, self.y1):
+                    for z in range(self.z0, self.z1):
+                        tileId = self.level.getTile(x, y, z)
+                        if tileId > 0:
+                            tiles.tiles[tileId].render(t, l, layer, x, y, z)
+                            count += 1
+            t.flush()
+            gl.glEndList()
+            after = getNs()
+            if count > 0:
+                self.totalTime += after - before
+                self.totalUpdates += 1
 
     cpdef render(self, int layer):
-        if self.dirty:
-            self.rebuild(0)
-            self.rebuild(1)
-
         gl.glCallList(self.lists + layer)
 
     def setDirty(self):
+        if not self.dirty:
+            self.dirtiedTime = getMillis()
+
         self.dirty = True
+
+    cpdef bint isDirty(self):
+        return self.dirty
+
+    cpdef float distanceToSqr(self, player):
+        cdef float xd = player.x - self.x
+        cdef float yd = player.y - self.y
+        cdef float zd = player.z - self.z
+        return xd * xd + yd * yd + zd * zd

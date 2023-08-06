@@ -20,17 +20,17 @@ class Timer:
         self.lastTime = now
 
         if passedNs < 0:
-            passedNs = 0
-        if passedNs > 1000000000:
-            passedNs = 1000000000
-        if passedNs == 0:
-            passedNs = 1000000000
-        self.fps = 1000000000 / passedNs
+            passedNs = 1
+        elif passedNs > self.MAX_NS_PER_UPDATE:
+            passedNs = self.MAX_NS_PER_UPDATE
+        elif passedNs == 0:
+            passedNs = 1
+        self.fps = self.NS_PER_SECOND / passedNs
 
-        self.passedTime += passedNs * self.timeScale * self.ticksPerSecond / 1.0E+009
+        self.passedTime += passedNs * self.timeScale * self.ticksPerSecond / float(self.NS_PER_SECOND)
 
         self.ticks = int(self.passedTime)
-        if self.ticks > 100:
-            self.ticks = 100
+        if self.ticks > self.MAX_TICKS_PER_UPDATE:
+            self.ticks = self.MAX_TICKS_PER_UPDATE
         self.passedTime -= self.ticks
         self.a = self.passedTime

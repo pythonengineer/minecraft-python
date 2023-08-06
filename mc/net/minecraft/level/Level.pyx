@@ -6,15 +6,24 @@ from libc.stdlib cimport malloc, free
 from libc.math cimport floor, isnan
 
 from mc.net.minecraft.HitResult import HitResult
+from mc.net.minecraft.level.tile.Tile cimport Tile
+from mc.net.minecraft.level.tile.Tiles import tiles
+from mc.net.minecraft.level.PerlinNoiseFilter import PerlinNoiseFilter
 from mc.net.minecraft.phys.AABB import AABB
 
+import random
 import gzip
 
 @cython.final
 cdef class Level:
+    TILE_UPDATE_INTERVAL = 400
 
     def __cinit__(self):
+        self.update_interval = self.TILE_UPDATE_INTERVAL
+
         self.levelListeners = set()
+
+        self.unprocessed = 0
 
     def __init__(self, int w, int h, int d):
         self.width = w
@@ -26,19 +35,60 @@ cdef class Level:
             self.__lightDepths[i] = 0
 
         self.__blocks = <char*>malloc(sizeof(char) * (w * h * d))
-        for x in range(w):
-            for y in range(d):
-                for z in range(h):
-                    i = (y * self.height + z) * self.width + x
-                    self.__blocks[i] = 1 if y <= d * 2 // 3 else 0
+        for i in range(w * h * d):
+            self.__blocks[i] = 0
+
+        if not self.load():
+            self.generateMap()
 
         self.calcLightDepths(0, 0, w, h)
-
-        self.load()
 
     def __dealloc__(self):
         free(self.__blocks)
         free(self.__lightDepths)
+
+    cdef generateMap(self):
+        cdef int w, h, d, x, y, z, dh1, dh2, cfh, dh, rh, i, id_
+
+        w = self.width
+        h = self.height
+        d = self.depth
+        heightmap1 = PerlinNoiseFilter(0).read(w, h)
+        heightmap2 = PerlinNoiseFilter(0).read(w, h)
+        cf = PerlinNoiseFilter(1).read(w, h)
+        rockMap = PerlinNoiseFilter(1).read(w, h)
+        for x in range(w):
+            for y in range(d):
+                for z in range(h):
+                    dh1 = heightmap1[x + z * self.width]
+                    dh2 = heightmap2[x + z * self.width]
+                    cfh = cf[x + z * self.width]
+
+                    if cfh < 128:
+                        dh2 = dh1
+
+                    dh = dh1
+                    if dh2 > dh:
+                        dh = dh2
+                    else:
+                        dh2 = dh1
+
+                    dh = dh // 8 + d // 3
+
+                    rh = rockMap[x + z * self.width] // 8 + d // 3
+                    if rh > dh - 2:
+                        rh = dh - 2
+
+                    i = (y * self.height + z) * self.width + x
+                    id_ = 0
+                    if y == dh:
+                        id_ = tiles.grass.id
+                    elif y < dh:
+                        id_ = tiles.dirt.id
+                    if y <= rh:
+                        id_ = tiles.rock.id
+
+                    self.__blocks[i] = id_
 
     def load(self):
         cdef char* b
@@ -56,8 +106,12 @@ cdef class Level:
             self.calcLightDepths(0, 0, self.width, self.height)
             for levelListener in self.levelListeners:
                 levelListener.allChanged()
+
+            return True
         except Exception as e:
             print(e)
+
+        return False
 
     def save(self):
         try:
@@ -94,20 +148,13 @@ cdef class Level:
     def removeListener(self, levelListener):
         self.levelListeners.remove(levelListener)
 
-    cdef bint isTile(self, int x, int y, int z):
-        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
-            return False
-
-        return self.__blocks[(y * self.height + z) * self.width + x] == 1
-
-    cdef bint isSolidTile(self, int x, int y, int z):
-        return self.isTile(x, y, z)
-
-    cdef bint isLightBlocker(self, int x, int y, int z):
-        return self.isSolidTile(x, y, z)
+    cdef inline bint isLightBlocker(self, int x, int y, int z):
+        cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
+        return tile.blocksLight() if tile else False
 
     cpdef getCubes(self, aABB):
         cdef int x0, x1, y0, y1, z0, z1, x, y, z
+        cdef Tile tile
 
         aABBs = set()
         x0 = <int>aABB.x0
@@ -126,31 +173,61 @@ cdef class Level:
         for x in range(x0, x1):
             for y in range(y0, y1):
                 for z in range(z0, z1):
-                    if self.isSolidTile(x, y, z):
-                        aABBs.add(AABB(x, y, z, x + 1, y + 1, z + 1))
+                    tile = tiles.tiles[self.getTile(x, y, z)]
+                    if tile:
+                        aABBs.add(tile.getAABB(x, y, z))
 
         return aABBs
 
-    cdef float getBrightness(self, int x, int y, int z):
-        cdef float dark, light
-
-        dark = 0.8
-        light = 1.0
+    cpdef bint setTile(self, int x, int y, int z, int type_):
         if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
-            return light
-        if y < self.__lightDepths[x + z * self.width]:
-            return dark
-
-        return light
-
-    def setTile(self, int x, int y, int z, int type_):
-        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
-            return
+            return False
+        if type_ == self.__blocks[(y * self.height + z) * self.width + x]:
+            return False
 
         self.__blocks[(y * self.height + z) * self.width + x] = type_
         self.calcLightDepths(x, z, 1, 1)
         for levelListener in self.levelListeners:
             levelListener.tileChanged(x, y, z)
+
+        return True
+
+    cpdef inline bint isLit(self, int x, int y, int z):
+        x = int(x)
+        y = int(y)
+        z = int(z)
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
+            return True
+
+        return y >= self.__lightDepths[x + z * self.width]
+
+    cpdef inline int getTile(self, int x, int y, int z):
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
+            return 0
+
+        return self.__blocks[(y * self.height + z) * self.width + x]
+
+    cpdef inline bint isSolidTile(self, int x, int y, int z):
+        cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
+        if not tile:
+            return False
+
+        return tile.isSolid()
+
+    cpdef tick(self):
+        cdef int ticks, i, x, y, z
+        cdef Tile tile
+
+        self.unprocessed += self.width * self.height * self.depth
+        ticks = self.unprocessed // self.update_interval
+        self.unprocessed -= ticks * self.update_interval
+        for i in range(ticks):
+            x = <int>floor(self.width * random.random())
+            y = <int>floor(self.depth * random.random())
+            z = <int>floor(self.height * random.random())
+            tile = tiles.tiles[self.getTile(x, y, z)]
+            if tile:
+                tile.tick(self, x, y, z, random)
 
     cpdef clip(self, vec1, vec2):
         cdef int x0, y0, z0, x1, y1, z1
@@ -243,5 +320,5 @@ cdef class Level:
                     if sideHit == 3:
                         z1 -= 1
 
-                    if self.isTile(x1, y1, z1):
+                    if self.getTile(x1, y1, z1):
                         return HitResult(0, x1, y1, z1, sideHit)

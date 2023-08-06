@@ -1,13 +1,14 @@
 # cython: language_level=3
 
-from mc.CompatibilityShims import BufferUtils
 from pyglet import gl
 
 cdef class Tesselator:
-    MAX_VERTICES = 100000
+    MAX_FLOATS = 524288
 
     def __cinit__(self):
-        self.max_vertices = self.MAX_VERTICES
+        self.max_floats = self.MAX_FLOATS
+        self.__buffer = (gl.GLfloat * self.MAX_FLOATS)()
+        self.len = 3
 
         self.u = 0.0
         self.v = 0.0
@@ -18,20 +19,31 @@ cdef class Tesselator:
         self.hasColor = False
         self.hasTexture = False
 
-        self.vertexBuffer = BufferUtils.createFloatBuffer(300000)
-        self.texCoordBuffer = BufferUtils.createFloatBuffer(200000)
-        self.colorBuffer = BufferUtils.createFloatBuffer(300000)
-
     cpdef flush(self):
-        self.vertexBuffer.flip()
-        self.texCoordBuffer.flip()
-        self.colorBuffer.flip()
+        cdef int rem, i, n
 
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, self.vertexBuffer)
-        if self.hasTexture:
-            gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, self.texCoordBuffer)
-        if self.hasColor:
-            gl.glColorPointer(3, gl.GL_FLOAT, 0, self.colorBuffer)
+        self.__buffer._position = 0
+        self.__buffer._limit = len(self.__buffer)
+
+        rem = self.__buffer._limit - self.__buffer._position if self.__buffer._position <= self.__buffer._limit else 0
+        if self.p > rem:
+            raise Exception
+
+        for i, n in enumerate(range(self.p)):
+            self.__buffer[self.__buffer._position + n] = self.__array[i]
+
+        self.__buffer._position += self.p
+        self.__buffer._limit = self.__buffer._position
+        self.__buffer._position = 0
+
+        if self.hasTexture and self.hasColor:
+            gl.glInterleavedArrays(gl.GL_T2F_C3F_V3F, 0, self.__buffer)
+        elif self.hasTexture:
+            gl.glInterleavedArrays(gl.GL_T2F_V3F, 0, self.__buffer)
+        elif self.hasColor:
+            gl.glInterleavedArrays(gl.GL_C3F_V3F, 0, self.__buffer)
+        else:
+            gl.glInterleavedArrays(gl.GL_V3F, 0, self.__buffer)
 
         gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
         if self.hasTexture:
@@ -51,10 +63,9 @@ cdef class Tesselator:
 
     cdef clear(self):
         self.vertices = 0
-
-        self.vertexBuffer.clear()
-        self.texCoordBuffer.clear()
-        self.colorBuffer.clear()
+        self.__buffer._position = 0
+        self.__buffer._limit = len(self.__buffer)
+        self.p = 0
 
     cpdef init(self):
         self.clear()
@@ -62,23 +73,48 @@ cdef class Tesselator:
         self.hasTexture = False
 
     cpdef tex(self, float u, float v):
+        if not self.hasTexture:
+            self.len += 2
+
         self.hasTexture = True
         self.u = u
         self.v = v
 
     cpdef color(self, float r, float g, float b):
+        if not self.hasColor:
+            self.len += 3
+
         self.hasColor = True
         self.r = r
         self.g = g
         self.b = b
 
+    cpdef vertexUV(self, float x, float y, float z, float u, float v):
+        self.tex(u, v)
+        self.vertex(x, y, z)
+
     cpdef vertex(self, float x, float y, float z):
-        self.vertexBuffer.put(self.vertices * 3 + 0, x).put(self.vertices * 3 + 1, y).put(self.vertices * 3 + 2, z)
         if self.hasTexture:
-            self.texCoordBuffer.put(self.vertices * 2 + 0, self.u).put(self.vertices * 2 + 1, self.v)
+            self.__array[self.p] = self.u
+            self.p += 1
+            self.__array[self.p] = self.v
+            self.p += 1
         if self.hasColor:
-            self.colorBuffer.put(self.vertices * 3 + 0, self.r).put(self.vertices * 3 + 1, self.g).put(self.vertices * 3 + 2, self.b)
+            self.__array[self.p] = self.r
+            self.p += 1
+            self.__array[self.p] = self.g
+            self.p += 1
+            self.__array[self.p] = self.b
+            self.p += 1
+        self.__array[self.p] = x
+        self.p += 1
+        self.__array[self.p] = y
+        self.p += 1
+        self.__array[self.p] = z
+        self.p += 1
 
         self.vertices += 1
-        if self.vertices == self.max_vertices:
+        if self.p >= self.max_floats - self.len:
             self.flush()
+
+tesselator = Tesselator()

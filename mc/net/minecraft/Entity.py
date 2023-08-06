@@ -16,7 +16,11 @@ class Entity:
     xRotO = 0.0
     onGround = False
 
+    removed = False
     heightOffset = 0.0
+
+    bbWidth = 0.6
+    bbHeight = 1.8
 
     def __init__(self, level):
         self.level = level
@@ -28,12 +32,19 @@ class Entity:
         z = random.random() * self.level.height
         self.setPos(x, y, z)
 
+    def remove(self):
+        self.removed = True
+
+    def setSize(self, w, h):
+        self.bbWidth = w
+        self.bbHeight = h
+
     def setPos(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
-        w = 0.3
-        h = 0.9
+        w = self.bbWidth / 2.0
+        h = self.bbHeight / 2.0
         self.bb = AABB(x - w, y - h, z - w, x + w, y + h, z + w)
 
     def turn(self, xo, yo):
@@ -83,6 +94,7 @@ class Entity:
             self.yd = 0.0
         if zaOrg != za:
             self.zd = 0.0
+
         self.x = (self.bb.x0 + self.bb.x1) / 2.0
         self.y = self.bb.y0 + self.heightOffset
         self.z = (self.bb.z0 + self.bb.z1) / 2.0
@@ -101,3 +113,6 @@ class Entity:
 
         self.xd += xa * cos - za * sin
         self.zd += za * cos + xa * sin
+
+    def isLit(self):
+        return self.level.isLit(self.x, self.y, self.z)

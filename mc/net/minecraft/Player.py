@@ -24,16 +24,16 @@ class Player(Entity):
         if self.rightPressed: xa += 1.0
         if self.spacePressed:
             if self.onGround:
-                self.yd = 0.12
+                self.yd = 0.5
 
-        self.moveRelative(xa, ya, 0.02 if self.onGround else 0.005)
+        self.moveRelative(xa, ya, 0.1 if self.onGround else 0.02)
 
-        self.yd -= 0.005
+        self.yd -= 0.08
         self.move(self.xd, self.yd, self.zd)
         self.xd *= 0.91
         self.yd *= 0.98
         self.zd *= 0.91
 
         if self.onGround:
-            self.xd *= 0.8
-            self.zd *= 0.8
+            self.xd *= 0.7
+            self.zd *= 0.7
