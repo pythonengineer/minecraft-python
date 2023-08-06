@@ -61,6 +61,8 @@ class Minecraft(window.Window):
         gl.glClearDepth(1.0)
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glDepthFunc(gl.GL_LEQUAL)
+        gl.glEnable(gl.GL_ALPHA_TEST)
+        gl.glAlphaFunc(gl.GL_GREATER, 0.0)
 
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
@@ -89,7 +91,6 @@ class Minecraft(window.Window):
                 changed = self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
                 if oldTile and changed:
                     oldTile.destroy(self.level, self.hitResult.x, self.hitResult.y, self.hitResult.z, self.particleEngine)
-                    self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
         elif button == window.mouse.LEFT:
             if self.hitResult:
                 x = self.hitResult.x
@@ -120,6 +121,8 @@ class Minecraft(window.Window):
             self.paintTexture = 4
         elif symbol == window.key._4:
             self.paintTexture = 5
+        elif symbol == window.key._6:
+            self.paintTexture = 6
         elif symbol in (window.key.UP, window.key.W):
             self.player.upPressed = True
         elif symbol in (window.key.DOWN, window.key.S):
@@ -206,14 +209,6 @@ class Minecraft(window.Window):
         gl.glLoadIdentity()
         self.moveCameraToPlayer(a)
 
-    def setupOrthoCamera(self):
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
-        gl.glOrtho(0.0, self.width, self.height, 0.0, 100.0, 300.0)
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
-        gl.glTranslatef(0.0, 0.0, -200.0)
-
     def pick(self, a):
         xRot = self.player.xRotO + (self.player.xRot - self.player.xRotO) * a
         yRot = self.player.yRotO + (self.player.yRot - self.player.yRotO) * a
@@ -261,21 +256,32 @@ class Minecraft(window.Window):
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glDisable(gl.GL_FOG)
         if self.hitResult:
+            gl.glDisable(gl.GL_ALPHA_TEST)
             self.levelRenderer.renderHit(self.hitResult)
+            gl.glEnable(gl.GL_ALPHA_TEST)
 
         self.drawGui(a)
 
     def drawGui(self, a):
+        screenWidth = self.width * 240 // self.height
+        screenHeight = self.height * 240 // self.height
+
         gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
-        self.setupOrthoCamera()
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        gl.glOrtho(0.0, screenWidth, screenHeight, 0.0, 100.0, 300.0)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+        gl.glTranslatef(0.0, 0.0, -200.0)
 
         gl.glPushMatrix()
-        gl.glTranslatef(self.width - 48, 48.0, 0.0)
+        gl.glTranslatef(screenWidth - 16, 16.0, 0.0)
         t = tesselator
-        gl.glScalef(48.0, 48.0, 48.0)
+        gl.glScalef(16.0, 16.0, 16.0)
         gl.glRotatef(30.0, 1.0, 0.0, 0.0)
         gl.glRotatef(45.0, 0.0, 1.0, 0.0)
-        gl.glTranslatef(1.5, -0.5, -0.5)
+        gl.glTranslatef(-1.5, 0.5, -0.5)
+        gl.glScalef(-1.0, -1.0, 1.0)
 
         id_ = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
@@ -286,19 +292,19 @@ class Minecraft(window.Window):
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glPopMatrix()
 
-        wc = self.width // 2
-        hc = self.height // 2
+        wc = screenWidth // 2
+        hc = screenHeight // 2
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         t.init()
-        t.vertex(wc + 1, hc - 8, 0.0)
-        t.vertex(wc - 0, hc - 8, 0.0)
-        t.vertex(wc - 0, hc + 9, 0.0)
-        t.vertex(wc + 1, hc + 9, 0.0)
+        t.vertex(wc + 1, hc - 4, 0.0)
+        t.vertex(wc - 0, hc - 4, 0.0)
+        t.vertex(wc - 0, hc + 5, 0.0)
+        t.vertex(wc + 1, hc + 5, 0.0)
 
-        t.vertex(wc + 9, hc - 0, 0.0)
-        t.vertex(wc - 8, hc - 0, 0.0)
-        t.vertex(wc - 8, hc + 1, 0.0)
-        t.vertex(wc + 9, hc + 1, 0.0)
+        t.vertex(wc + 5, hc - 0, 0.0)
+        t.vertex(wc - 4, hc - 0, 0.0)
+        t.vertex(wc - 4, hc + 1, 0.0)
+        t.vertex(wc + 5, hc + 1, 0.0)
         t.flush()
 
     def setupFog(self, i):

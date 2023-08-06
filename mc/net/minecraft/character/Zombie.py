@@ -45,9 +45,6 @@ class Zombie(Entity):
         self.yd *= 0.98
         self.zd *= 0.91
 
-        if self.y > 100.0:
-            self.resetPos()
-
         if self.onGround:
             self.xd *= 0.7
             self.zd *= 0.7

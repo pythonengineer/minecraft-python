@@ -175,7 +175,9 @@ cdef class Level:
                 for z in range(z0, z1):
                     tile = tiles.tiles[self.getTile(x, y, z)]
                     if tile:
-                        aABBs.add(tile.getAABB(x, y, z))
+                        aabb = tile.getAABB(x, y, z)
+                        if aabb:
+                            aABBs.add(aabb)
 
         return aABBs
 

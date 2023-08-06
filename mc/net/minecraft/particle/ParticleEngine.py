@@ -25,13 +25,16 @@ class ParticleEngine:
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         xa = -math.cos(player.yRot * math.pi / 180.0)
         za = -math.sin(player.yRot * math.pi / 180.0)
-        ya = 1.0
+
+        xa2 = -za * math.sin(player.xRot * math.pi / 180.0)
+        za2 = xa * math.sin(player.xRot * math.pi / 180.0)
+        ya = math.cos(player.xRot * math.pi / 180.0)
 
         t = tesselator
         gl.glColor4f(0.8, 0.8, 0.8, 1.0)
         t.init()
         for p in self.particles:
             if p.isLit() ^ layer == 1:
-                p.render(t, a, xa, ya, za)
+                p.render(t, a, xa, ya, za, xa2, za2)
         t.flush()
         gl.glDisable(gl.GL_TEXTURE_2D)

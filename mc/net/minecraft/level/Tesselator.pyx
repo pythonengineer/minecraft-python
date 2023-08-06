@@ -114,7 +114,7 @@ cdef class Tesselator:
         self.p += 1
 
         self.vertices += 1
-        if self.p >= self.max_floats - self.len:
+        if self.vertices % 4 == 0 and (self.p >= self.max_floats - self.len * 4):
             self.flush()
 
 tesselator = Tesselator()

@@ -134,10 +134,13 @@ cdef class Tile:
             t.vertex(x1, y1, z0)
             t.vertex(x1, y1, z1)
 
+    def getTileAABB(self, int x, int y, int z):
+        return AABB(x, y, z, x + 1, y + 1, z + 1)
+
     def getAABB(self, int x, int y, int z):
         return AABB(x, y, z, x + 1, y + 1, z + 1)
 
-    cdef bint blocksLight(self):
+    cpdef bint blocksLight(self):
         return True
 
     cpdef bint isSolid(self):

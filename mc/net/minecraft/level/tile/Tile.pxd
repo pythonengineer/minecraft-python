@@ -14,6 +14,6 @@ cdef class Tile:
     cpdef int getTexture(self, int face)
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face)
     cpdef renderFaceNoTexture(self, Tesselator t, int x, int y, int z, int face)
-    cdef bint blocksLight(self)
+    cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
     cpdef void tick(self, level, int x, int y, int z, random) except *

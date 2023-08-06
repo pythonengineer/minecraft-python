@@ -12,3 +12,4 @@ cdef class Tiles:
         public Tile dirt
         public Tile stoneBrick
         public Tile wood
+        public Tile bush

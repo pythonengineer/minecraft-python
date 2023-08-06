@@ -3,6 +3,7 @@
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.GrassTile import GrassTile
 from mc.net.minecraft.level.tile.DirtTile import DirtTile
+from mc.net.minecraft.level.tile.Bush import Bush
 
 cdef class Tiles:
 
@@ -19,5 +20,7 @@ cdef class Tiles:
         self.tiles[4] = self.stoneBrick
         self.wood = Tile(self, 5, 4)
         self.tiles[5] = self.wood
+        self.bush = Bush(self, 6)
+        self.tiles[6] = self.bush
 
 tiles = Tiles()
