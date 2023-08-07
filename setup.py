@@ -4,14 +4,18 @@ from Cython.Build import cythonize
 from glob import glob
 
 extensions = [
-    Extension(name='mc.net.minecraft.level.Frustum',
-              sources=['mc/net/minecraft/level/Frustum.pyx']),
+    Extension(name='mc.cCompatibilityShims',
+              sources=['mc/cCompatibilityShims.pyx']),
+    Extension(name='mc.net.minecraft.renderer.Frustum',
+              sources=['mc/net/minecraft/renderer/Frustum.pyx']),
+    Extension(name='mc.net.minecraft.renderer.Tesselator',
+              sources=['mc/net/minecraft/renderer/Tesselator.pyx']),
     Extension(name='mc.net.minecraft.level.Chunk',
               sources=['mc/net/minecraft/level/Chunk.pyx']),
-    Extension(name='mc.net.minecraft.level.Tesselator',
-              sources=['mc/net/minecraft/level/Tesselator.pyx']),
     Extension(name='mc.net.minecraft.level.Level',
               sources=['mc/net/minecraft/level/Level.pyx']),
+    Extension(name='mc.net.minecraft.level.LevelGen',
+              sources=['mc/net/minecraft/level/LevelGen.pyx']),
     Extension(name='mc.net.minecraft.level.tile.Tile',
               sources=['mc/net/minecraft/level/tile/Tile.pyx']),
     Extension(name='mc.net.minecraft.level.tile.Tiles',
@@ -20,7 +24,7 @@ extensions = [
 
 setup(
     name='minecraft-python',
-    version='161348',
+    version='0.0.11',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

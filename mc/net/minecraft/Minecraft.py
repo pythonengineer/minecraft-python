@@ -3,50 +3,58 @@ pyglet.options['debug_gl'] = False
 
 from mc.net.minecraft.Timer import Timer
 from mc.net.minecraft.Player import Player
-from mc.net.minecraft.Textures import Textures
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.character.Vec3 import Vec3
 from mc.net.minecraft.character.Zombie import Zombie
 from mc.net.minecraft.level.tile.Tile import Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
-from mc.net.minecraft.level.Tesselator import tesselator
-from mc.net.minecraft.level.Frustum import Frustum
 from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.Level import Level
 from mc.net.minecraft.level.LevelRenderer import LevelRenderer
+from mc.net.minecraft.gui.Font import Font
 from mc.net.minecraft.particle.ParticleEngine import ParticleEngine
+from mc.net.minecraft.renderer.Tesselator import tesselator
+from mc.net.minecraft.renderer.Textures import Textures
+from mc.net.minecraft.renderer.Frustum import Frustum
 from mc.CompatibilityShims import BufferUtils, gluPerspective, getMillis
 from pyglet import window, canvas, clock, gl, compat_platform
 
 import math
+import sys
 
 class Minecraft(window.Window):
-    FULLSCREEN_MODE = False
+    VERSION_STRING = '0.0.11a'
     timer = Timer(20.0)
     running = True
     paintTexture = 1
 
-    zombies = set()
+    entities = set()
+
+    yMouseAxis = 1
+    editMode = 0
+
+    fpsString = ''
+
+    mouseGrabbed = False
 
     hitResult = None
 
     lb = BufferUtils.createFloatBuffer(16)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, fullscreen, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.textures = Textures()
 
         col0 = 16710650
         col1 = 920330
-
-        self.fogColor0 = ((col0 >> 16 & 0xFF) / 255.0, (col0 >> 8 & 0xFF) / 255.0, (col0 & 0xFF) / 255.0, (col0 & 0xFF) / 255.0, 1.0)
-        self.fogColor1 = ((col1 >> 16 & 0xFF) / 255.0, (col1 >> 8 & 0xFF) / 255.0, (col1 & 0xFF) / 255.0, (col1 & 0xFF) / 255.0, 1.0)
-
         fr = 0.5
         fg = 0.8
         fb = 1.0
+        self.fogColor0 = ((col0 >> 16 & 0xFF) / 255.0, (col0 >> 8 & 0xFF) / 255.0, (col0 & 0xFF) / 255.0, (col0 & 0xFF) / 255.0, 1.0)
+        self.fogColor1 = ((col1 >> 16 & 0xFF) / 255.0, (col1 >> 8 & 0xFF) / 255.0, (col1 & 0xFF) / 255.0, (col1 & 0xFF) / 255.0, 1.0)
 
-        self.set_fullscreen(self.FULLSCREEN_MODE)
-        self.set_exclusive_mouse(True)
+        self.set_fullscreen(self.fullscreen)
 
         display = canvas.Display()
         screen = display.get_default_screen()
@@ -54,6 +62,8 @@ class Minecraft(window.Window):
         locationY = screen.height // 2 - self.height // 2
         self.set_location(locationX, locationY)
         self.set_visible(True)
+
+        self.checkGlError('Pre startup')
 
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glShadeModel(gl.GL_SMOOTH)
@@ -67,52 +77,62 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
         gl.glMatrixMode(gl.GL_MODELVIEW)
+        self.checkGlError('Startup')
 
         self.__chunk = Chunk(None, 0, 0, 0, 0, 0, 0, True)
 
         self.frustum = Frustum()
         self.level = Level(256, 256, 64)
-        self.levelRenderer = LevelRenderer(self.level)
+        self.levelRenderer = LevelRenderer(self.level, self.textures)
         self.player = Player(self.level)
-        self.particleEngine = ParticleEngine(self.level)
+        self.particleEngine = ParticleEngine(self.level, self.textures)
+        self.font = Font('default.gif', self.textures)
 
         for i in range(10):
-            zombie = Zombie(self.level, 128.0, 0.0, 128.0)
+            zombie = Zombie(self.level, self.textures, 128.0, 0.0, 128.0)
             zombie.resetPos()
-            self.zombies.add(zombie)
+            self.entities.add(zombie)
+
+        imgData = BufferUtils.createIntBuffer(256)
+        imgData.clear().limit(256)
+
+        self.grabMouse()
+
+        self.checkGlError('Post startup')
+
+    def checkGlError(self, string):
+        errorCode = gl.glGetError()
+        if errorCode != 0:
+            print("########## GL ERROR ##########")
+            print("@ " + string)
+            print(errorCode)
+            sys.exit(1)
 
     def destroy(self):
         self.level.save()
 
-    def on_mouse_press(self, x, y, button, modifiers):
-        if button == window.mouse.RIGHT:
-            if self.hitResult:
-                oldTile = tiles.tiles[self.level.getTile(self.hitResult.x, self.hitResult.y, self.hitResult.z)]
-                changed = self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
-                if oldTile and changed:
-                    oldTile.destroy(self.level, self.hitResult.x, self.hitResult.y, self.hitResult.z, self.particleEngine)
-        elif button == window.mouse.LEFT:
-            if self.hitResult:
-                x = self.hitResult.x
-                y = self.hitResult.y
-                z = self.hitResult.z
+    def on_close(self):
+        self.running = False
 
-                if self.hitResult.f == 0: y -= 1
-                if self.hitResult.f == 1: y += 1
-                if self.hitResult.f == 2: z -= 1
-                if self.hitResult.f == 3: z += 1
-                if self.hitResult.f == 4: x -= 1
-                if self.hitResult.f == 5: x += 1
-                self.level.setTile(x, y, z, self.paintTexture)
+    def on_mouse_press(self, x, y, button, modifiers):
+        if not self.mouseGrabbed:
+            self.grabMouse()
+        elif button == window.mouse.LEFT:
+            self.handleMouseClick()
+        elif button == window.mouse.RIGHT:
+            self.editMode = (self.editMode + 1) % 2
 
     def on_mouse_motion(self, x, y, dx, dy):
-        self.player.turn(dx, dy)
+        if self.mouseGrabbed:
+            self.player.turn(dx, dy * self.yMouseAxis)
 
     def on_key_press(self, symbol, modifiers):
         if symbol == window.key.R:
             self.player.resetPos()
         elif symbol == window.key.G:
-            self.zombies.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
+            self.entities.add(Zombie(self.level, self.textures, self.player.x, self.player.y, self.player.z))
+        elif symbol == window.key.Y:
+            self.yMouseAxis *= -1
         elif symbol == window.key._1:
             self.paintTexture = 1
         elif symbol == window.key._2:
@@ -136,7 +156,8 @@ class Minecraft(window.Window):
         elif symbol == window.key.RETURN:
             self.level.save()
         elif symbol == window.key.ESCAPE:
-            self.running = False
+            if not self.fullscreen:
+                self.releaseMouse()
 
     def on_key_release(self, symbol, modifiers):
         if symbol in (window.key.UP, window.key.W):
@@ -160,7 +181,9 @@ class Minecraft(window.Window):
         self.timer.advanceTime()
         for i in range(self.timer.ticks):
             self.tick()
+        self.checkGlError('Pre render')
         self.render(self.timer.a)
+        self.checkGlError('Post render')
 
     def run(self):
         lastTime = getMillis()
@@ -173,23 +196,73 @@ class Minecraft(window.Window):
 
             frames += 1
             while getMillis() >= lastTime + 1000:
-                print(str(frames) + ' fps, ' + str(self.__chunk.updates) + ' chunk updates')
+                self.fpsString = str(frames) + ' fps, ' + str(self.__chunk.updates) + ' chunk updates'
                 self.__chunk.updates = 0
                 lastTime += 1000
                 frames = 0
 
         self.destroy()
 
+    def stop(self):
+        self.running = False
+
+    def grabMouse(self):
+        if self.mouseGrabbed:
+            return
+
+        self.mouseGrabbed = True
+        self.set_exclusive_mouse(True)
+
+    def releaseMouse(self):
+        if not self.mouseGrabbed:
+            return
+
+        self.mouseGrabbed = False
+        self.set_exclusive_mouse(False)
+        self.set_mouse_position(self.width // 2, self.height // 2)
+
+    def handleMouseClick(self):
+        if self.editMode == 0:
+            if self.hitResult:
+                oldTile = tiles.tiles[self.level.getTile(self.hitResult.x, self.hitResult.y, self.hitResult.z)]
+                changed = self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
+                if oldTile and changed:
+                    oldTile.destroy(self.level, self.hitResult.x, self.hitResult.y, self.hitResult.z, self.particleEngine)
+        elif self.hitResult:
+            x = self.hitResult.x
+            y = self.hitResult.y
+            z = self.hitResult.z
+
+            if self.hitResult.f == 0: y -= 1
+            if self.hitResult.f == 1: y += 1
+            if self.hitResult.f == 2: z -= 1
+            if self.hitResult.f == 3: z += 1
+            if self.hitResult.f == 4: x -= 1
+            if self.hitResult.f == 5: x += 1
+            aabb = tiles.tiles[self.paintTexture].getAABB(x, y, z)
+            if not aabb or self.isFree(aabb):
+                self.level.setTile(x, y, z, self.paintTexture)
+
     def tick(self):
         self.level.tick()
         self.particleEngine.tick()
 
-        for zombie in self.zombies.copy():
-            zombie.tick()
-            if zombie.removed:
-                self.zombies.remove(zombie)
+        for entity in self.entities.copy():
+            entity.tick()
+            if entity.removed:
+                self.entities.remove(entity)
 
         self.player.tick()
+
+    def isFree(self, aabb):
+        if self.player.bb.intersects(aabb):
+            return False
+
+        for entity in self.entities:
+            if entity.bb.intersects(aabb):
+                return False
+
+        return True
 
     def moveCameraToPlayer(self, a):
         gl.glTranslatef(0.0, 0.0, -0.3)
@@ -228,39 +301,51 @@ class Minecraft(window.Window):
         self.hitResult = self.level.clip(vec1, vec2)
 
     def render(self, a):
+        gl.glViewport(0, 0, self.width, self.height)
+        self.checkGlError('Set viewport')
         self.pick(a)
+        self.checkGlError('Picked')
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
         self.setupCamera(a)
+        self.checkGlError('Set up camera')
         gl.glEnable(gl.GL_CULL_FACE)
 
         self.frustum.calculateFrustum()
         self.levelRenderer.updateDirtyChunks(self.player)
+        self.checkGlError('Update chunks')
 
         self.setupFog(0)
         gl.glEnable(gl.GL_FOG)
         self.levelRenderer.render(self.player, 0)
-        for zombie in self.zombies:
-            if zombie.isLit() and self.frustum.isVisible(zombie.bb):
-                zombie.render(a)
+        self.checkGlError('Rendered level')
 
+        for entity in self.entities:
+            if entity.isLit() and self.frustum.isVisible(entity.bb):
+                entity.render(a)
+
+        self.checkGlError('Rendered entities')
         self.particleEngine.render(self.player, a, 0)
         self.setupFog(1)
         self.levelRenderer.render(self.player, 1)
-        for zombie in self.zombies:
-            if not zombie.isLit() and self.frustum.isVisible(zombie.bb):
-                zombie.render(a)
+        for entity in self.entities:
+            if not entity.isLit() and self.frustum.isVisible(entity.bb):
+                entity.render(a)
 
         self.particleEngine.render(self.player, a, 1)
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glDisable(gl.GL_FOG)
+
+        self.checkGlError('Rendered rest')
         if self.hitResult:
             gl.glDisable(gl.GL_ALPHA_TEST)
-            self.levelRenderer.renderHit(self.hitResult)
+            self.levelRenderer.renderHit(self.hitResult, self.editMode, self.paintTexture)
             gl.glEnable(gl.GL_ALPHA_TEST)
+        self.checkGlError('Rendered hit')
 
         self.drawGui(a)
+        self.checkGlError('Rendered gui')
 
     def drawGui(self, a):
         screenWidth = self.width * 240 // self.height
@@ -273,6 +358,8 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
         gl.glTranslatef(0.0, 0.0, -200.0)
+
+        self.checkGlError('GUI: Init')
 
         gl.glPushMatrix()
         gl.glTranslatef(screenWidth - 16, 16.0, 0.0)
@@ -292,6 +379,12 @@ class Minecraft(window.Window):
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glPopMatrix()
 
+        self.checkGlError('GUI: Draw selected')
+
+        self.font.drawShadow(self.VERSION_STRING, 2, 2, 16777215)
+        self.font.drawShadow(self.fpsString, 2, 12, 16777215)
+        self.checkGlError('GUI: Draw text')
+
         wc = screenWidth // 2
         hc = screenHeight // 2
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
@@ -307,6 +400,8 @@ class Minecraft(window.Window):
         t.vertex(wc + 5, hc + 1, 0.0)
         t.flush()
 
+        self.checkGlError('GUI: Draw crosshair')
+
     def setupFog(self, i):
         if i == 0:
             gl.glFogi(gl.GL_FOG_MODE, gl.GL_VIEWPORT_BIT)
@@ -316,7 +411,7 @@ class Minecraft(window.Window):
             gl.glDisable(gl.GL_LIGHTING)
         elif i == 1:
             gl.glFogi(gl.GL_FOG_MODE, gl.GL_VIEWPORT_BIT)
-            gl.glFogf(gl.GL_FOG_DENSITY, 0.06)
+            gl.glFogf(gl.GL_FOG_DENSITY, 0.01)
             gl.glFogfv(gl.GL_FOG_COLOR, (gl.GLfloat * 4)(self.fogColor1[0], self.fogColor1[1],
                                                          self.fogColor1[2], self.fogColor1[3]))
             gl.glEnable(gl.GL_LIGHTING)
@@ -332,4 +427,4 @@ class Minecraft(window.Window):
         return self.lb
 
 if __name__ == '__main__':
-    Minecraft(width=1024, height=768, caption='Game', vsync=False, visible=False).run()
+    Minecraft(False, width=854, height=480, caption='Minecraft 0.0.11a', vsync=False, visible=False).run()

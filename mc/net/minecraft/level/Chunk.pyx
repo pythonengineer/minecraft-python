@@ -1,7 +1,7 @@
 # cython: language_level=3
 
-from mc.net.minecraft.level.Tesselator cimport Tesselator
-from mc.net.minecraft.level.Tesselator import tesselator
+from mc.net.minecraft.renderer.Tesselator cimport Tesselator
+from mc.net.minecraft.renderer.Tesselator import tesselator
 from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.phys.AABB import AABB

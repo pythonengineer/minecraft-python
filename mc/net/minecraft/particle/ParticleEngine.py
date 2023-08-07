@@ -1,5 +1,5 @@
-from mc.net.minecraft.level.Tesselator import tesselator
-from mc.net.minecraft.Textures import Textures
+from mc.net.minecraft.renderer.Tesselator import tesselator
+from mc.net.minecraft.renderer.Textures import Textures
 from pyglet import gl
 
 import math
@@ -7,8 +7,9 @@ import math
 class ParticleEngine:
     particles = set()
 
-    def __init__(self, level):
+    def __init__(self, level, textures):
         self.level = level
+        self.textures = textures
 
     def add(self, p):
         self.particles.add(p)

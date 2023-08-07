@@ -1,10 +1,9 @@
 from mc.net.minecraft.level.DirtyChunkSorter import DirtyChunkSorter
 from mc.net.minecraft.level.LevelListener import LevelListener
-from mc.net.minecraft.level.Tesselator import tesselator
-from mc.net.minecraft.level.Frustum import Frustum
 from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.tile.Tiles import tiles
-from mc.net.minecraft.Textures import Textures
+from mc.net.minecraft.renderer.Tesselator import tesselator
+from mc.net.minecraft.renderer.Frustum import Frustum
 from mc.CompatibilityShims import getMillis
 from pyglet import gl
 from functools import cmp_to_key
@@ -15,8 +14,9 @@ class LevelRenderer(LevelListener):
     MAX_REBUILDS_PER_FRAME = 8
     CHUNK_SIZE = 16
 
-    def __init__(self, level):
+    def __init__(self, level, textures):
         self.level = level
+        self.textures = textures
         level.addListener(self)
 
         self.frustum = Frustum()
@@ -54,7 +54,7 @@ class LevelRenderer(LevelListener):
 
     def render(self, player, layer):
         gl.glEnable(gl.GL_TEXTURE_2D)
-        id_ = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
+        id_ = self.textures.loadTexture('terrain.png', gl.GL_NEAREST)
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         #self.frustum.calculateFrustum()
         for chunk in self.chunks:
@@ -76,15 +76,40 @@ class LevelRenderer(LevelListener):
 
             dirty[i].rebuild()
 
-    def renderHit(self, h):
+    def renderHit(self, h, mode, tileType):
         t = tesselator
         gl.glEnable(gl.GL_BLEND)
 
         gl.glBlendFunc(gl.GL_SRC_ALPHA, 1)
         gl.glColor4f(1.0, 1.0, 1.0, (math.sin(getMillis() / 100.0) * 0.2 + 0.4) * 0.5)
-        t.init()
-        tiles.rock.renderFaceNoTexture(t, h.x, h.y, h.z, h.f)
-        t.flush()
+        if mode == 0:
+            t.init()
+            for i in range(6):
+                tiles.rock.renderFaceNoTexture(t, h.x, h.y, h.z, i)
+            t.flush()
+        else:
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+            br = math.sin(getMillis() / 100.0) * 0.2 + 0.8
+            gl.glColor4f(br, br, br, math.sin(getMillis() / 200.0) * 0.2 + 0.5)
+
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            id_ = self.textures.loadTexture('terrain.png', gl.GL_NEAREST)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
+            x = h.x
+            y = h.y
+            z = h.z
+            if h.f == 0: y -= 1
+            if h.f == 1: y += 1
+            if h.f == 2: z -= 1
+            if h.f == 3: z += 1
+            if h.f == 4: x -= 1
+            if h.f == 5: x += 1
+            t.init()
+            t.disableColor()
+            tiles.tiles[tileType].render(t, self.level, 0, x, y, z)
+            tiles.tiles[tileType].render(t, self.level, 1, x, y, z)
+            t.flush()
+            gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glDisable(gl.GL_BLEND)
 
     def setDirty(self, x0, y0, z0, x1, y1, z1):

@@ -116,3 +116,6 @@ class Entity:
 
     def isLit(self):
         return self.level.isLit(self.x, self.y, self.z)
+
+    def render(self, a):
+        pass

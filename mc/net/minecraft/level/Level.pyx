@@ -8,7 +8,7 @@ from libc.math cimport floor, isnan
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
-from mc.net.minecraft.level.PerlinNoiseFilter import PerlinNoiseFilter
+from mc.net.minecraft.level.LevelGen import LevelGen
 from mc.net.minecraft.phys.AABB import AABB
 
 import random
@@ -34,61 +34,17 @@ cdef class Level:
         for i in range(w * h):
             self.__lightDepths[i] = 0
 
-        self.__blocks = <char*>malloc(sizeof(char) * (w * h * d))
-        for i in range(w * h * d):
-            self.__blocks[i] = 0
-
         if not self.load():
-            self.generateMap()
+            blocks = LevelGen(w, h, d).generateMap()
+            self.__blocks = <char*>malloc(sizeof(char) * (w * h * d))
+            for i in range(len(blocks)):
+                self.__blocks[i] = blocks[i]
 
         self.calcLightDepths(0, 0, w, h)
 
     def __dealloc__(self):
         free(self.__blocks)
         free(self.__lightDepths)
-
-    cdef generateMap(self):
-        cdef int w, h, d, x, y, z, dh1, dh2, cfh, dh, rh, i, id_
-
-        w = self.width
-        h = self.height
-        d = self.depth
-        heightmap1 = PerlinNoiseFilter(0).read(w, h)
-        heightmap2 = PerlinNoiseFilter(0).read(w, h)
-        cf = PerlinNoiseFilter(1).read(w, h)
-        rockMap = PerlinNoiseFilter(1).read(w, h)
-        for x in range(w):
-            for y in range(d):
-                for z in range(h):
-                    dh1 = heightmap1[x + z * self.width]
-                    dh2 = heightmap2[x + z * self.width]
-                    cfh = cf[x + z * self.width]
-
-                    if cfh < 128:
-                        dh2 = dh1
-
-                    dh = dh1
-                    if dh2 > dh:
-                        dh = dh2
-                    else:
-                        dh2 = dh1
-
-                    dh = dh // 8 + d // 3
-
-                    rh = rockMap[x + z * self.width] // 8 + d // 3
-                    if rh > dh - 2:
-                        rh = dh - 2
-
-                    i = (y * self.height + z) * self.width + x
-                    id_ = 0
-                    if y == dh:
-                        id_ = tiles.grass.id
-                    elif y < dh:
-                        id_ = tiles.dirt.id
-                    if y <= rh:
-                        id_ = tiles.rock.id
-
-                    self.__blocks[i] = id_
 
     def load(self):
         cdef char* b

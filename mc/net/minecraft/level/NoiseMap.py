@@ -1,7 +1,7 @@
 import random
 import math
 
-class PerlinNoiseFilter:
+class NoiseMap:
     seed = random.random()
     fuzz = 16
 

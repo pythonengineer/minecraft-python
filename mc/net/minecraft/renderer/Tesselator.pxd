@@ -25,10 +25,13 @@ cdef class Tesselator:
         public int len
         public int p
 
+        public bint noColor
+
     cpdef flush(self)
     cdef clear(self)
     cpdef init(self)
     cpdef tex(self, float u, float v)
-    cpdef color(self, float r, float g, float b)
+    cpdef inline colorRGB(self, float r, float g, float b)
     cpdef vertexUV(self, float x, float y, float z, float u, float v)
     cpdef vertex(self, float x, float y, float z)
+    cpdef inline color(self, int c)

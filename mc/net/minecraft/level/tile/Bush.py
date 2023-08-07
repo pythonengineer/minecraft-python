@@ -24,7 +24,7 @@ class Bush(Tile):
         v1 = v0 + 0.0624375
 
         rots = 2
-        t.color(1.0, 1.0, 1.0)
+        t.colorRGB(1.0, 1.0, 1.0)
         for r in range(rots):
             xa = math.sin(r * math.pi / rots + 0.7854) * 0.5
             za = math.cos(r * math.pi / rots + 0.7854) * 0.5

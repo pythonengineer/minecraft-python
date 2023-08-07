@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-from mc.net.minecraft.level.Tesselator cimport Tesselator
+from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 
 cdef class Tile:
 

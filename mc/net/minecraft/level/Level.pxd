@@ -19,7 +19,6 @@ cdef class Level:
         char* __blocks
         int* __lightDepths
 
-    cdef generateMap(self)
     cdef calcLightDepths(self, int x0, int y0, int x1, int y1)
     cdef inline bint isLightBlocker(self, int x, int y, int z)
     cpdef getCubes(self, aABB)

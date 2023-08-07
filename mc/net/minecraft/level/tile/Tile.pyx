@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-from mc.net.minecraft.level.Tesselator cimport Tesselator
+from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 from mc.net.minecraft.particle.Particle import Particle
 from mc.net.minecraft.phys.AABB import AABB
 
@@ -18,22 +18,22 @@ cdef class Tile:
         cdef float c3 = 0.6
 
         if self.shouldRenderFace(level, x, y - 1, z, layer):
-            t.color(c1, c1, c1)
+            t.colorRGB(c1, c1, c1)
             self.renderFace(t, x, y, z, 0)
         if self.shouldRenderFace(level, x, y + 1, z, layer):
-            t.color(c1, c1, c1)
+            t.colorRGB(c1, c1, c1)
             self.renderFace(t, x, y, z, 1)
         if self.shouldRenderFace(level, x, y, z - 1, layer):
-            t.color(c2, c2, c2)
+            t.colorRGB(c2, c2, c2)
             self.renderFace(t, x, y, z, 2)
         if self.shouldRenderFace(level, x, y, z + 1, layer):
-            t.color(c2, c2, c2)
+            t.colorRGB(c2, c2, c2)
             self.renderFace(t, x, y, z, 3)
         if self.shouldRenderFace(level, x - 1, y, z, layer):
-            t.color(c3, c3, c3)
+            t.colorRGB(c3, c3, c3)
             self.renderFace(t, x, y, z, 4)
         if self.shouldRenderFace(level, x + 1, y, z, layer):
-            t.color(c3, c3, c3)
+            t.colorRGB(c3, c3, c3)
             self.renderFace(t, x, y, z, 5)
 
     cdef bint shouldRenderFace(self, level, int x, int y, int z, int layer):

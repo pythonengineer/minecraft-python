@@ -1,5 +1,4 @@
 from mc.net.minecraft.character.ZombieModel import ZombieModel
-from mc.net.minecraft.Textures import Textures
 from mc.net.minecraft.Entity import Entity
 from mc.CompatibilityShims import getNs
 from pyglet import gl
@@ -10,8 +9,9 @@ import math
 class Zombie(Entity):
     zombieModel = ZombieModel()
 
-    def __init__(self, level, x, y, z):
+    def __init__(self, level, textures, x, y, z):
         super().__init__(level)
+        self.textures = textures
         self.rotA = (random.random() + 1.0) * 0.01
         self.setPos(x, y, z)
         self.timeOffs = random.random() * 1239813.0
@@ -51,7 +51,7 @@ class Zombie(Entity):
 
     def render(self, a):
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, Textures.loadTexture('char.png', gl.GL_NEAREST))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('char.png', gl.GL_NEAREST))
 
         gl.glPushMatrix()
         t = getNs() / 1000000000.0 * 10.0 * self.speed + self.timeOffs
