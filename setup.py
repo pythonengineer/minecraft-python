@@ -14,17 +14,19 @@ extensions = [
               sources=['mc/net/minecraft/level/Chunk.pyx']),
     Extension(name='mc.net.minecraft.level.Level',
               sources=['mc/net/minecraft/level/Level.pyx']),
-    Extension(name='mc.net.minecraft.level.LevelGen',
-              sources=['mc/net/minecraft/level/LevelGen.pyx']),
+    Extension(name='mc.net.minecraft.level.levelgen.LevelGen',
+              sources=['mc/net/minecraft/level/levelgen/LevelGen.pyx']),
     Extension(name='mc.net.minecraft.level.tile.Tile',
               sources=['mc/net/minecraft/level/tile/Tile.pyx']),
+    Extension(name='mc.net.minecraft.level.tile.LiquidTile',
+              sources=['mc/net/minecraft/level/tile/LiquidTile.pyx']),
     Extension(name='mc.net.minecraft.level.tile.Tiles',
               sources=['mc/net/minecraft/level/tile/Tiles.pyx']),
 ]
 
 setup(
     name='minecraft-python',
-    version='0.0.11',
+    version='0.0.13',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

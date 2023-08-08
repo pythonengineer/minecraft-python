@@ -9,52 +9,52 @@ class Particle(Entity):
         super().__init__(level)
         self.tex = tex
         self.setSize(0.2, 0.2)
-        self.heightOffset = self.bbHeight / 2.0
+        self.heightOffset = self._bbHeight / 2.0
         self.setPos(x, y, z)
 
-        self.xd = xa + (random.random() * 2.0 - 1.0) * 0.4
-        self.yd = ya + (random.random() * 2.0 - 1.0) * 0.4
-        self.zd = za + (random.random() * 2.0 - 1.0) * 0.4
+        self.__xd = xa + (random.random() * 2.0 - 1.0) * 0.4
+        self.__yd = ya + (random.random() * 2.0 - 1.0) * 0.4
+        self.__zd = za + (random.random() * 2.0 - 1.0) * 0.4
         speed = (random.random() + random.random() + 1.0) * 0.15
 
-        dd = math.sqrt(self.xd * self.xd + self.yd * self.yd + self.zd * self.zd)
-        self.xd = self.xd / dd * speed * 0.4
-        self.yd = self.yd / dd * speed * 0.4 + 0.1
-        self.zd = self.zd / dd * speed * 0.4
+        dd = math.sqrt(self.__xd * self.__xd + self.__yd * self.__yd + self.__zd * self.__zd)
+        self.__xd = self.__xd / dd * speed * 0.4
+        self.__yd = self.__yd / dd * speed * 0.4 + 0.1
+        self.__zd = self.__zd / dd * speed * 0.4
 
-        self.uo = random.random() * 3.0
-        self.vo = random.random() * 3.0
+        self.__uo = random.random() * 3.0
+        self.__vo = random.random() * 3.0
 
-        self.size = random.random() * 0.5 + 0.5
+        self.__size = random.random() * 0.5 + 0.5
 
-        self.lifetime = 4.0 // (random.random() * 0.9 + 0.1)
-        self.age = 0
+        self.__lifetime = 4.0 // (random.random() * 0.9 + 0.1)
+        self.__age = 0
 
     def tick(self):
         self.xo = self.x
         self.yo = self.y
         self.zo = self.z
 
-        if self.age >= self.lifetime:
+        if self.__age >= self.__lifetime:
             self.remove()
-        self.age += 1
+        self.__age += 1
 
-        self.yd -= 0.04
-        self.move(self.xd, self.yd, self.zd)
-        self.xd *= 0.98
-        self.yd *= 0.98
-        self.zd *= 0.98
+        self.__yd -= 0.04
+        self.move(self.__xd, self.__yd, self.__zd)
+        self.__xd *= 0.98
+        self.__yd *= 0.98
+        self.__zd *= 0.98
 
         if self.onGround:
-            self.xd *= 0.7
-            self.zd *= 0.7
+            self.__xd *= 0.7
+            self.__zd *= 0.7
 
     def render(self, t, a, xa, ya, za, xa2, za2):
-        u0 = (self.tex % 16 + self.uo / 4.0) / 16.0
+        u0 = (self.tex % 16 + self.__uo / 4.0) / 16.0
         u1 = u0 + 0.01560938
-        v0 = (self.tex // 16 + self.vo / 4.0) / 16.0
+        v0 = (self.tex // 16 + self.__vo / 4.0) / 16.0
         v1 = v0 + 0.01560938
-        r = 0.1 * self.size
+        r = 0.1 * self.__size
 
         x = self.xo + (self.x - self.xo) * a
         y = self.yo + (self.y - self.yo) * a

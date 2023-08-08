@@ -11,13 +11,13 @@ class Timer:
     passedTime = 0.0
 
     def __init__(self, ticksPerSecond):
-        self.ticksPerSecond = ticksPerSecond
-        self.lastTime = getNs()
+        self.__ticksPerSecond = ticksPerSecond
+        self.__lastTime = getNs()
 
     def advanceTime(self):
         now = getNs()
-        passedNs = now - self.lastTime
-        self.lastTime = now
+        passedNs = now - self.__lastTime
+        self.__lastTime = now
 
         if passedNs < 0:
             passedNs = 1
@@ -27,7 +27,7 @@ class Timer:
             passedNs = 1
         self.fps = self.NS_PER_SECOND / passedNs
 
-        self.passedTime += passedNs * self.timeScale * self.ticksPerSecond / float(self.NS_PER_SECOND)
+        self.passedTime += passedNs * self.timeScale * self.__ticksPerSecond / float(self.NS_PER_SECOND)
 
         self.ticks = int(self.passedTime)
         if self.ticks > self.MAX_TICKS_PER_UPDATE:

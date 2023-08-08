@@ -7,6 +7,7 @@ class Bush(Tile):
     def __init__(self, tiles, id_):
         super().__init__(tiles, id_)
         self.tex = 15
+        self._setTicking(True)
 
     def tick(self, level, x, y, z, random):
         below = level.getTile(x, y - 1, z)
@@ -17,14 +18,14 @@ class Bush(Tile):
         if level.isLit(x, y, z) ^ layer != 1:
             return
 
-        tex = self.getTexture(15)
+        tex = self._getTexture(15)
         u0 = tex % 16 / 16.0
         u1 = u0 + 0.0624375
         v0 = tex // 16 / 16.0
         v1 = v0 + 0.0624375
 
         rots = 2
-        t.colorRGB(1.0, 1.0, 1.0)
+        t.colorRGB(255, 255, 255)
         for r in range(rots):
             xa = math.sin(r * math.pi / rots + 0.7854) * 0.5
             za = math.cos(r * math.pi / rots + 0.7854) * 0.5

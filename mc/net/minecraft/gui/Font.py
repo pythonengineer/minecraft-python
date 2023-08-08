@@ -5,8 +5,8 @@ from pyglet import gl
 class Font:
 
     def __init__(self, name, textures):
-        self.charWidths = [0] * 256
-        self.fontTexture = textures.loadTexture(name, gl.GL_NEAREST)
+        self.__charWidths = [0] * 256
+        self.__fontTexture = textures.loadTexture(name, gl.GL_NEAREST)
         texture = Resources.textures[name]
         w = texture[0]
         h = texture[1]
@@ -31,7 +31,7 @@ class Font:
                         emptyColumn = False
             if i == 32:
                 x = 4
-            self.charWidths[i] = x
+            self.__charWidths[i] = x
 
     def drawShadow(self, string, x, y, color):
         self.draw(string, x + 1, y + 1, color, True)
@@ -41,9 +41,9 @@ class Font:
         if darken:
             color = (color & 0xFCFCFC) >> 2
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.fontTexture)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fontTexture)
         t = tesselator
-        t.init()
+        t.begin()
         t.color(color)
         xo = 0
         for i in range(len(string)):
@@ -67,9 +67,9 @@ class Font:
             t.vertexUV(x + xo + 8, y, 0.0, (ix + 8) / 128.0, iy / 128.0)
             t.vertexUV(x + xo, y, 0.0, ix / 128.0, iy / 128.0)
 
-            xo += self.charWidths[ord(char)]
+            xo += self.__charWidths[ord(char)]
 
-        t.flush()
+        t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)
 
     def width(self, string):

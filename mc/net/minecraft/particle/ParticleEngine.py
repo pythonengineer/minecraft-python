@@ -1,28 +1,30 @@
 from mc.net.minecraft.renderer.Tesselator import tesselator
-from mc.net.minecraft.renderer.Textures import Textures
 from pyglet import gl
 
 import math
 
 class ParticleEngine:
-    particles = set()
+    __particles = set()
 
     def __init__(self, level, textures):
-        self.level = level
-        self.textures = textures
+        self._level = level
+        self.__textures = textures
 
     def add(self, p):
-        self.particles.add(p)
+        self.__particles.add(p)
 
     def tick(self):
-        for p in self.particles.copy():
+        for p in self.__particles.copy():
             p.tick()
             if p.removed:
-                self.particles.remove(p)
+                self.__particles.remove(p)
 
     def render(self, player, a, layer):
+        if not len(self.__particles):
+            return
+
         gl.glEnable(gl.GL_TEXTURE_2D)
-        id_ = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
+        id_ = self.__textures.loadTexture('terrain.png', gl.GL_NEAREST)
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         xa = -math.cos(player.yRot * math.pi / 180.0)
         za = -math.sin(player.yRot * math.pi / 180.0)
@@ -33,9 +35,9 @@ class ParticleEngine:
 
         t = tesselator
         gl.glColor4f(0.8, 0.8, 0.8, 1.0)
-        t.init()
-        for p in self.particles:
+        t.begin()
+        for p in self.__particles:
             if p.isLit() ^ layer == 1:
                 p.render(t, a, xa, ya, za, xa2, za2)
-        t.flush()
+        t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)

@@ -7,11 +7,11 @@ import random
 import math
 
 class Zombie(Entity):
-    zombieModel = ZombieModel()
+    __zombieModel = ZombieModel()
 
     def __init__(self, level, textures, x, y, z):
         super().__init__(level)
-        self.textures = textures
+        self.__textures = textures
         self.rotA = (random.random() + 1.0) * 0.01
         self.setPos(x, y, z)
         self.timeOffs = random.random() * 1239813.0
@@ -51,7 +51,7 @@ class Zombie(Entity):
 
     def render(self, a):
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('char.png', gl.GL_NEAREST))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('char.png', gl.GL_NEAREST))
 
         gl.glPushMatrix()
         t = getNs() / 1000000000.0 * 10.0 * self.speed + self.timeOffs
@@ -65,6 +65,6 @@ class Zombie(Entity):
         c = 57.29578
         gl.glRotatef(self.rot * c + 180.0, 0.0, 1.0, 0.0)
 
-        self.zombieModel.render(t)
+        self.__zombieModel.render(t)
         gl.glPopMatrix()
         gl.glDisable(gl.GL_TEXTURE_2D)

@@ -8,117 +8,201 @@ from libc.math cimport floor, isnan
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
-from mc.net.minecraft.level.LevelGen import LevelGen
+from mc.net.minecraft.level.levelgen.LevelGen import LevelGen
 from mc.net.minecraft.phys.AABB import AABB
 
 import random
-import gzip
 
 @cython.final
 cdef class Level:
-    TILE_UPDATE_INTERVAL = 400
+    TILE_UPDATE_INTERVAL = 200
 
     def __cinit__(self):
         self.update_interval = self.TILE_UPDATE_INTERVAL
 
-        self.levelListeners = set()
+        self.name = ''
+        self.creator = ''
+        self.createTime = 0
+
+        self.__levelListeners = set()
+        self.__rand = random.Random()
+        self.__randValue = self.__rand.getrandbits(31)
 
         self.unprocessed = 0
 
-    def __init__(self, int w, int h, int d):
-        self.width = w
-        self.height = h
-        self.depth = d
-
-        self.__lightDepths = <int*>malloc(sizeof(int) * (w * h))
-        for i in range(w * h):
-            self.__lightDepths[i] = 0
-
-        if not self.load():
-            blocks = LevelGen(w, h, d).generateMap()
-            self.__blocks = <char*>malloc(sizeof(char) * (w * h * d))
-            for i in range(len(blocks)):
-                self.__blocks[i] = blocks[i]
-
-        self.calcLightDepths(0, 0, w, h)
+        self.__multiplier = 1664525
+        self.__addend = 1013904223
 
     def __dealloc__(self):
         free(self.__blocks)
         free(self.__lightDepths)
 
-    def load(self):
+    def setDataBytes(self, int w, int d, int h, bytearray blocks):
         cdef char* b
+        b = <char*>malloc(sizeof(char) * len(blocks))
+        for i in range(len(blocks)):
+            b[i] = blocks[i]
+        self.setData(w, d, h, b)
 
-        try:
-            with gzip.open('level.dat', 'rb') as f:
-                blocks = bytearray(f.read())
+    cdef setData(self, int w, int d, int h, char* blocks):
+        self.width = w
+        self.height = h
+        self.depth = d
+        self.__blocks = blocks
+        self.__lightDepths = <int*>malloc(sizeof(int) * (w * h))
+        for i in range(w * h):
+            self.__lightDepths[i] = 0
+        self.calcLightDepths(0, 0, w, h)
 
-            b = <char*>malloc(sizeof(char) * len(blocks))
-            for i in range(len(blocks)):
-                b[i] = blocks[i]
+        for levelListener in self.__levelListeners:
+            levelListener.allChanged()
 
-            self.__blocks = b
+    def getBlocks(self):
+        blocks = bytearray(self.width * self.height * self.depth)
+        for i in range(len(blocks)):
+            blocks[i] = self.__blocks[i]
 
-            self.calcLightDepths(0, 0, self.width, self.height)
-            for levelListener in self.levelListeners:
-                levelListener.allChanged()
-
-            return True
-        except Exception as e:
-            print(e)
-
-        return False
-
-    def save(self):
-        try:
-            b = bytearray(self.width * self.height * self.depth)
-            for i in range(len(b)):
-                b[i] = self.__blocks[i]
-
-            with gzip.open('level.dat', 'wb') as f:
-                f.write(b)
-        except Exception as e:
-            print(e)
+        return blocks
 
     cdef calcLightDepths(self, int x0, int y0, int x1, int y1):
         cdef int x, z, oldDepth, y, yl0, yl1
 
         for x in range(x0, x0 + x1):
             for z in range(y0, y0 + y1):
-                oldDepth = self.__lightDepths[(x + z * self.width)]
+                oldDepth = self.__lightDepths[x + z * self.width]
                 y = self.depth - 1
                 while y > 0 and not self.isLightBlocker(x, y, z):
                     y -= 1
 
-                self.__lightDepths[(x + z * self.width)] = y
+                self.__lightDepths[x + z * self.width] = y
 
                 if oldDepth != y:
                     yl0 = oldDepth if oldDepth < y else y
                     yl1 = oldDepth if oldDepth > y else y
-                    for levelListener in self.levelListeners:
+                    for levelListener in self.__levelListeners:
                         levelListener.lightColumnChanged(x, z, yl0, yl1)
 
     def addListener(self, levelListener):
-        self.levelListeners.add(levelListener)
+        self.__levelListeners.add(levelListener)
 
     def removeListener(self, levelListener):
-        self.levelListeners.remove(levelListener)
+        self.__levelListeners.remove(levelListener)
 
     cdef inline bint isLightBlocker(self, int x, int y, int z):
         cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
         return tile.blocksLight() if tile else False
 
-    cpdef getCubes(self, aABB):
+    cpdef getCubes(self, box):
         cdef int x0, x1, y0, y1, z0, z1, x, y, z
         cdef Tile tile
 
-        aABBs = set()
-        x0 = <int>aABB.x0
-        x1 = <int>(aABB.x1 + 1.0)
-        y0 = <int>aABB.y0
-        y1 = <int>(aABB.y1 + 1.0)
-        z0 = <int>aABB.z0
-        z1 = <int>(aABB.z1 + 1.0)
+        boxes = set()
+        x0 = <int>floor(box.x0)
+        x1 = <int>floor(box.x1 + 1)
+        y0 = <int>floor(box.y0)
+        y1 = <int>floor(box.y1 + 1)
+        z0 = <int>floor(box.z0)
+        z1 = <int>floor(box.z1 + 1)
+
+        for x in range(x0, x1):
+            for y in range(y0, y1):
+                for z in range(z0, z1):
+                    if x >= 0 and y >= 0 and z >= 0 and x < self.width and y < self.depth and z < self.height:
+                        tile = tiles.tiles[self.getTile(x, y, z)]
+                        if tile:
+                            aabb = tile.getAABB(x, y, z)
+                            if aabb:
+                                boxes.add(aabb)
+                    elif x < 0 or y < 0 or z < 0 or x >= self.width or z >= self.height:
+                        aabb = tiles.unbreakable.getAABB(x, y, z)
+                        if aabb:
+                            boxes.add(aabb)
+
+        return boxes
+
+    cpdef bint setTile(self, int x, int y, int z, int type_):
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
+            return False
+        if type_ == self.__blocks[(y * self.height + z) * self.width + x]:
+            return False
+
+        self.__blocks[(y * self.height + z) * self.width + x] = type_
+
+        self.__neighborChanged(x - 1, y, z, type_)
+        self.__neighborChanged(x + 1, y, z, type_)
+        self.__neighborChanged(x, y - 1, z, type_)
+        self.__neighborChanged(x, y + 1, z, type_)
+        self.__neighborChanged(x, y, z - 1, type_)
+        self.__neighborChanged(x, y, z + 1, type_)
+
+        self.calcLightDepths(x, z, 1, 1)
+        for levelListener in self.__levelListeners:
+            levelListener.tileChanged(x, y, z)
+
+        return True
+
+    cpdef inline bint setTileNoUpdate(self, int x, int y, int z, int type_):
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
+            return False
+        if type_ == self.__blocks[(y * self.height + z) * self.width + x]:
+            return False
+
+        self.__blocks[(y * self.height + z) * self.width + x] = type_
+        return True
+
+    cdef __neighborChanged(self, int x, int y, int z, int type_):
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
+            return
+
+        cdef Tile tile = tiles.tiles[self.__blocks[(y * self.height + z) * self.width + x]]
+        if tile:
+            tile.neighborChanged(self, x, y, z, type_)
+
+    cpdef inline bint isLit(self, int x, int y, int z):
+        return y >= self.__lightDepths[x + z * self.width] if x >= 0 and y >= 0 and z >= 0 and x < self.width and y < self.depth and z < self.height else True
+
+    cpdef inline int getTile(self, int x, int y, int z):
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
+            return 0
+
+        return self.__blocks[(y * self.height + z) * self.width + x]
+
+    cpdef inline bint isSolidTile(self, int x, int y, int z):
+        cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
+        return False if tile is None else tile.isSolid()
+
+    cpdef tick(self):
+        cdef int ticks, i, x, y, z
+        cdef Tile tile
+
+        self.unprocessed += self.width * self.height * self.depth
+        ticks = self.unprocessed // self.update_interval
+        self.unprocessed -= ticks * self.update_interval
+        for i in range(ticks):
+            self.__randValue *= self.__multiplier + self.__addend
+            x = self.__randValue >> 16 & self.width - 1
+            self.__randValue *= self.__multiplier + self.__addend
+            y = self.__randValue >> 16 & self.depth - 1
+            self.__randValue *= self.__multiplier + self.__addend
+            z = self.__randValue >> 16 & self.height - 1
+
+            id_ = self.__blocks[(y * self.height + z) * self.width + x]
+            if tiles.rock.shouldTick[id_] != 0:
+                tiles.tiles[id_].tick(self, x, y, z, self.__rand)
+
+    cpdef inline float getGroundLevel(self):
+        return 32.0
+
+    cpdef bint containsAnyLiquid(self, box):
+        cdef int x0, x1, y0, y1, z0, z1, x, y, z
+        cdef Tile tile
+
+        x0 = <int>floor(box.x0)
+        x1 = <int>floor(box.x1 + 1.0)
+        y0 = <int>floor(box.y0)
+        y1 = <int>floor(box.y1 + 1.0)
+        z0 = <int>floor(box.z0)
+        z1 = <int>floor(box.z1 + 1.0)
 
         if x0 < 0: x0 = 0
         if y0 < 0: y0 = 0
@@ -130,62 +214,30 @@ cdef class Level:
             for y in range(y0, y1):
                 for z in range(z0, z1):
                     tile = tiles.tiles[self.getTile(x, y, z)]
-                    if tile:
-                        aabb = tile.getAABB(x, y, z)
-                        if aabb:
-                            aABBs.add(aabb)
+                    if tile and tile.getLiquidType() > 0:
+                        return True
 
-        return aABBs
+        return False
 
-    cpdef bint setTile(self, int x, int y, int z, int type_):
-        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
-            return False
-        if type_ == self.__blocks[(y * self.height + z) * self.width + x]:
-            return False
-
-        self.__blocks[(y * self.height + z) * self.width + x] = type_
-        self.calcLightDepths(x, z, 1, 1)
-        for levelListener in self.levelListeners:
-            levelListener.tileChanged(x, y, z)
-
-        return True
-
-    cpdef inline bint isLit(self, int x, int y, int z):
-        x = int(x)
-        y = int(y)
-        z = int(z)
-        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
-            return True
-
-        return y >= self.__lightDepths[x + z * self.width]
-
-    cpdef inline int getTile(self, int x, int y, int z):
-        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
-            return 0
-
-        return self.__blocks[(y * self.height + z) * self.width + x]
-
-    cpdef inline bint isSolidTile(self, int x, int y, int z):
-        cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
-        if not tile:
-            return False
-
-        return tile.isSolid()
-
-    cpdef tick(self):
-        cdef int ticks, i, x, y, z
+    cpdef bint containsLiquid(self, box, int liquidId):
+        cdef int x0, x1, y0, y1, z0, z1, x, y, z
         cdef Tile tile
 
-        self.unprocessed += self.width * self.height * self.depth
-        ticks = self.unprocessed // self.update_interval
-        self.unprocessed -= ticks * self.update_interval
-        for i in range(ticks):
-            x = <int>floor(self.width * random.random())
-            y = <int>floor(self.depth * random.random())
-            z = <int>floor(self.height * random.random())
-            tile = tiles.tiles[self.getTile(x, y, z)]
-            if tile:
-                tile.tick(self, x, y, z, random)
+        x0 = <int>floor(box.x0)
+        x1 = <int>floor(box.x1 + 1.0)
+        y0 = <int>floor(box.y0)
+        y1 = <int>floor(box.y1 + 1.0)
+        z0 = <int>floor(box.z0)
+        z1 = <int>floor(box.z1 + 1.0)
+
+        for x in range(x0, x1):
+            for y in range(y0, y1):
+                for z in range(z0, z1):
+                    tile = tiles.tiles[self.getTile(x, y, z)]
+                    if tile and tile.getLiquidType() == liquidId:
+                        return True
+
+        return False
 
     cpdef clip(self, vec1, vec2):
         cdef int x0, y0, z0, x1, y1, z1

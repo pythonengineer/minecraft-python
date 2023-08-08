@@ -8,123 +8,134 @@ cdef class Tesselator:
     def __cinit__(self):
         self.max_floats = self.MAX_FLOATS
         self.__buffer = (gl.GLfloat * self.MAX_FLOATS)()
-        self.len = 3
+        self.__len = 3
 
-        self.u = 0.0
-        self.v = 0.0
-        self.r = 0.0
-        self.g = 0.0
-        self.b = 0.0
+        self.__u = 0.0
+        self.__v = 0.0
+        self.__r = 0.0
+        self.__g = 0.0
+        self.__b = 0.0
 
-    cpdef flush(self):
+    cpdef end(self):
         cdef int rem, i, n
 
-        if self.vertices > 0:
+        if self.__vertices > 0:
             self.__buffer._position = 0
             self.__buffer._limit = len(self.__buffer)
 
             rem = self.__buffer._limit - self.__buffer._position if self.__buffer._position <= self.__buffer._limit else 0
-            if self.p > rem:
+            if self.__p > rem:
                 raise Exception
 
-            for i, n in enumerate(range(self.p)):
+            for i, n in enumerate(range(self.__p)):
                 self.__buffer[self.__buffer._position + n] = self.__array[i]
 
-            self.__buffer._position += self.p
+            self.__buffer._position += self.__p
             self.__buffer._limit = self.__buffer._position
             self.__buffer._position = 0
 
-            if self.hasTexture and self.hasColor:
+            if self.__hasTexture and self.__hasColor:
                 gl.glInterleavedArrays(gl.GL_T2F_C3F_V3F, 0, self.__buffer)
-            elif self.hasTexture:
+            elif self.__hasTexture:
                 gl.glInterleavedArrays(gl.GL_T2F_V3F, 0, self.__buffer)
-            elif self.hasColor:
+            elif self.__hasColor:
                 gl.glInterleavedArrays(gl.GL_C3F_V3F, 0, self.__buffer)
             else:
                 gl.glInterleavedArrays(gl.GL_V3F, 0, self.__buffer)
 
             gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
-            if self.hasTexture:
+            if self.__hasTexture:
                 gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-            if self.hasColor:
+            if self.__hasColor:
                 gl.glEnableClientState(gl.GL_COLOR_ARRAY)
 
-            gl.glDrawArrays(gl.GL_QUADS, 0, self.vertices)
+            gl.glDrawArrays(gl.GL_QUADS, 0, self.__vertices)
 
             gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
-            if self.hasTexture:
+            if self.__hasTexture:
                 gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
-            if self.hasColor:
+            if self.__hasColor:
                 gl.glDisableClientState(gl.GL_COLOR_ARRAY)
 
-        self.clear()
+        self.__clear()
 
-    cdef clear(self):
-        self.vertices = 0
+    cdef __clear(self):
+        self.__vertices = 0
         self.__buffer._position = 0
         self.__buffer._limit = len(self.__buffer)
-        self.p = 0
+        self.__p = 0
 
-    cpdef init(self):
-        self.clear()
-        self.hasColor = False
-        self.hasTexture = False
-        self.noColor = False
+    cpdef begin(self):
+        self.__clear()
+        self.__hasColor = False
+        self.__hasTexture = False
+        self.__noColor = False
 
     cpdef tex(self, float u, float v):
-        if not self.hasTexture:
-            self.len += 2
+        if not self.__hasTexture:
+            self.__len += 2
 
-        self.hasTexture = True
-        self.u = u
-        self.v = v
+        self.__hasTexture = True
+        self.__u = u
+        self.__v = v
 
     cpdef inline colorRGB(self, float r, float g, float b):
-        if self.noColor:
+        if self.__noColor:
             return
-        if not self.hasColor:
-            self.len += 3
+        if not self.__hasColor:
+            self.__len += 3
 
-        self.hasColor = True
-        self.r = r
-        self.g = g
-        self.b = b
+        self.__hasColor = True
+        self.__r = r
+        self.__g = g
+        self.__b = b
+
+    cpdef inline colorByte(self, char r, char g, char b):
+        if self.__noColor:
+            return
+        if not self.__hasColor:
+            self.__len += 3
+
+        self.__hasColor = True
+        self.__r = (r & 0xFF) / 255.0
+        self.__g = (g & 0xFF) / 255.0
+        self.__b = (b & 0xFF) / 255.0
 
     cpdef vertexUV(self, float x, float y, float z, float u, float v):
         self.tex(u, v)
         self.vertex(x, y, z)
 
     cpdef vertex(self, float x, float y, float z):
-        if self.hasTexture:
-            self.__array[self.p] = self.u
-            self.p += 1
-            self.__array[self.p] = self.v
-            self.p += 1
-        if self.hasColor:
-            self.__array[self.p] = self.r
-            self.p += 1
-            self.__array[self.p] = self.g
-            self.p += 1
-            self.__array[self.p] = self.b
-            self.p += 1
-        self.__array[self.p] = x
-        self.p += 1
-        self.__array[self.p] = y
-        self.p += 1
-        self.__array[self.p] = z
-        self.p += 1
+        if self.__hasTexture:
+            self.__array[self.__p] = self.__u
+            self.__p += 1
+            self.__array[self.__p] = self.__v
+            self.__p += 1
+        if self.__hasColor:
+            self.__array[self.__p] = self.__r
+            self.__p += 1
+            self.__array[self.__p] = self.__g
+            self.__p += 1
+            self.__array[self.__p] = self.__b
+            self.__p += 1
+        self.__array[self.__p] = x
+        self.__p += 1
+        self.__array[self.__p] = y
+        self.__p += 1
+        self.__array[self.__p] = z
+        self.__p += 1
 
-        self.vertices += 1
-        if self.vertices % 4 == 0 and (self.p >= self.max_floats - self.len * 4):
-            self.flush()
+        self.__vertices += 1
+        if self.__vertices % 4 == 0 and (self.__p >= self.max_floats - self.__len * 4):
+            self.end()
 
     cpdef inline color(self, int c):
-        cdef float r = (c >> 16 & 0xFF) / 255.0
-        cdef float g = (c >> 8 & 0xFF) / 255.0
-        cdef float b = (c & 0xFF) / 255.0
-        self.colorRGB(r, g, b)
+        cdef int r = c >> 16 & 0xFF
+        cdef int g = c >> 8 & 0xFF
+        cdef int b = c & 0xFF
+        self.colorByte(r, g, b)
 
-    def disableColor(self):
-        self.noColor = True
+    def noColor(self):
+        self.__noColor = True
 
 tesselator = Tesselator()

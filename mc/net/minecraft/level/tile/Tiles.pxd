@@ -1,6 +1,7 @@
 # cython: language_level=3
 
 from mc.net.minecraft.level.tile.Tile cimport Tile
+from mc.net.minecraft.level.tile.LiquidTile cimport LiquidTile
 
 cdef class Tiles:
 
@@ -13,3 +14,8 @@ cdef class Tiles:
         public Tile stoneBrick
         public Tile wood
         public Tile bush
+        public Tile unbreakable
+        public LiquidTile water
+        public LiquidTile calmWater
+        public LiquidTile lava
+        public LiquidTile calmLava

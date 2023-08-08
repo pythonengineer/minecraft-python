@@ -11,27 +11,28 @@ cdef class Tesselator:
         object __buffer
         float[524288] __array
 
-        public int vertices
+        int __vertices
 
-        public float u
-        public float v
-        public float r
-        public float g
-        public float b
+        float __u
+        float __v
+        float __r
+        float __g
+        float __b
 
-        public bint hasColor
-        public bint hasTexture
+        bint __hasColor
+        bint __hasTexture
 
-        public int len
-        public int p
+        int __len
+        int __p
 
-        public bint noColor
+        bint __noColor
 
-    cpdef flush(self)
-    cdef clear(self)
-    cpdef init(self)
+    cpdef end(self)
+    cdef __clear(self)
+    cpdef begin(self)
     cpdef tex(self, float u, float v)
     cpdef inline colorRGB(self, float r, float g, float b)
+    cpdef inline colorByte(self, char r, char g, char b)
     cpdef vertexUV(self, float x, float y, float z, float u, float v)
     cpdef vertex(self, float x, float y, float z)
     cpdef inline color(self, int c)

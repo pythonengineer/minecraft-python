@@ -17,34 +17,34 @@ class Entity:
     onGround = False
 
     removed = False
-    heightOffset = 0.0
+    _heightOffset = 0.0
 
-    bbWidth = 0.6
-    bbHeight = 1.8
+    _bbWidth = 0.6
+    _bbHeight = 1.8
 
     def __init__(self, level):
-        self.level = level
+        self._level = level
         self.resetPos()
 
     def resetPos(self):
-        x = random.random() * self.level.width
-        y = self.level.depth + 10
-        z = random.random() * self.level.height
+        x = random.random() * self._level.width
+        y = self._level.depth + 10.
+        z = random.random() * self._level.height
         self.setPos(x, y, z)
 
     def remove(self):
         self.removed = True
 
     def setSize(self, w, h):
-        self.bbWidth = w
-        self.bbHeight = h
+        self._bbWidth = w
+        self._bbHeight = h
 
     def setPos(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
-        w = self.bbWidth / 2.0
-        h = self.bbHeight / 2.0
+        w = self._bbWidth / 2.0
+        h = self._bbHeight / 2.0
         self.bb = AABB(x - w, y - h, z - w, x + w, y + h, z + w)
 
     def turn(self, xo, yo):
@@ -65,12 +65,22 @@ class Entity:
         self.yo = self.y
         self.zo = self.z
 
+    def isFree(self, xa, ya, za):
+        box = self.bb.cloneMove(xa, ya, za)
+        aABBs = self._level.getCubes(box)
+        if len(aABBs) > 0:
+            return False
+        if self._level.containsAnyLiquid(box):
+            return False
+
+        return True
+
     def move(self, xa, ya, za):
         xaOrg = xa
         yaOrg = ya
         zaOrg = za
 
-        aABBs = self.level.getCubes(self.bb.expand(xa, ya, za))
+        aABBs = self._level.getCubes(self.bb.expand(xa, ya, za))
         for aABB in aABBs:
             ya = aABB.clipYCollide(self.bb, ya)
 
@@ -86,6 +96,7 @@ class Entity:
 
         self.bb.move(0.0, 0.0, za)
 
+        self.horizontalCollision = xaOrg != xa or zaOrg != za
         self.onGround = yaOrg != ya and yaOrg < 0.0
 
         if xaOrg != xa:
@@ -96,8 +107,14 @@ class Entity:
             self.zd = 0.0
 
         self.x = (self.bb.x0 + self.bb.x1) / 2.0
-        self.y = self.bb.y0 + self.heightOffset
+        self.y = self.bb.y0 + self._heightOffset
         self.z = (self.bb.z0 + self.bb.z1) / 2.0
+
+    def isInWater(self):
+        return self._level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), 1)
+
+    def isInLava(self):
+        return self._level.containsLiquid(self.bb, 2)
 
     def moveRelative(self, xa, za, speed):
         dist = xa * xa + za * za
@@ -115,7 +132,7 @@ class Entity:
         self.zd += za * cos + xa * sin
 
     def isLit(self):
-        return self.level.isLit(self.x, self.y, self.z)
+        return self._level.isLit(int(self.x), int(self.y), int(self.z))
 
     def render(self, a):
         pass

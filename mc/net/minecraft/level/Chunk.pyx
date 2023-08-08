@@ -30,9 +30,10 @@ cdef class Chunk:
         public float z
 
         public object aabb
-        public int lists
-        public bint dirty
+        int __lists
+        bint __dirty
         public object dirtiedTime
+        public bint visible
 
     property updates:
 
@@ -63,9 +64,12 @@ cdef class Chunk:
 
     def __cinit__(self):
         self.__t = tesselator
-        self.dirty = True
+        self.__dirty = True
         self.dirtiedTime = 0
-        self.lists = -1
+        self.__lists = -1
+        self.totalTime = 0
+        self.totalUpdates = 0
+        self.visible = False
 
     def __init__(self, Level level, int x0, int y0, int z0,
                  int x1, int y1, int z1, bint fake=False):
@@ -85,27 +89,29 @@ cdef class Chunk:
         self.z = (z0 + z1) / 2.0
 
         self.aabb = AABB(x0, y0, z0, x1, y1, z1)
-        self.lists = gl.glGenLists(2)
+        self.__lists = gl.glGenLists(3)
 
     cpdef rebuild(self, layer=None):
         cdef int n, count, x, y, z, tileId
         cdef Tesselator t
         cdef Level l
 
-        n = 1 if layer is not None else 2
+        n = 1
+        if layer is None:
+            n = 3
+
+            self.updates += 1
+
         for i in range(n):
             if layer is None or i:
                 layer = i
-
-            self.dirty = False
-            self.updates += 1
 
             t = self.__t
             l = self.level
 
             before = getNs()
-            gl.glNewList(self.lists + layer, gl.GL_COMPILE)
-            t.init()
+            gl.glNewList(self.__lists + layer, gl.GL_COMPILE)
+            t.begin()
             count = 0
             for x in range(self.x0, self.x1):
                 for y in range(self.y0, self.y1):
@@ -114,27 +120,36 @@ cdef class Chunk:
                         if tileId > 0:
                             tiles.tiles[tileId].render(t, l, layer, x, y, z)
                             count += 1
-            t.flush()
+            t.end()
             gl.glEndList()
             after = getNs()
             if count > 0:
                 self.totalTime += after - before
                 self.totalUpdates += 1
 
+        if layer == 2:
+            self.__dirty = False
+
     cpdef render(self, int layer):
-        gl.glCallList(self.lists + layer)
+        gl.glCallList(self.__lists + layer)
 
     def setDirty(self):
-        if not self.dirty:
+        if not self.__dirty:
             self.dirtiedTime = getMillis()
 
-        self.dirty = True
+        self.__dirty = True
 
     cpdef bint isDirty(self):
-        return self.dirty
+        return self.__dirty
 
     cpdef float distanceToSqr(self, player):
         cdef float xd = player.x - self.x
         cdef float yd = player.y - self.y
         cdef float zd = player.z - self.z
         return xd * xd + yd * yd + zd * zd
+
+    def reset(self):
+        self.__dirty = True
+        for i in range(3):
+            gl.glNewList(self.__lists + i, gl.GL_COMPILE)
+            gl.glEndList()

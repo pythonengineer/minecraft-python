@@ -1,5 +1,5 @@
 class AABB:
-    epsilon = 0.0
+    __epsilon = 0.0
 
     def __init__(self, x0, y0, z0, x1, y1, z1):
         self.x0 = x0
@@ -36,6 +36,9 @@ class AABB:
 
         return AABB(_x0, _y0, _z0, _x1, _y1, _z1)
 
+    def cloneMove(self, xa, ya, za):
+        return AABB(self.x0 + za, self.y0 + ya, self.z0 + za, self.x1 + xa, self.y1 + ya, self.z1 + za)
+
     def clipXCollide(self, c, xa):
         if c.y1 <= self.y0 or c.y0 >= self.y1:
             return xa
@@ -43,12 +46,12 @@ class AABB:
             return xa
 
         if xa > 0.0 and c.x1 <= self.x0:
-            maximum = self.x0 - c.x1 - self.epsilon
+            maximum = self.x0 - c.x1 - self.__epsilon
             if maximum < xa:
                 xa = maximum
 
         if xa < 0.0 and c.x0 >= self.x1:
-            maximum = self.x1 - c.x0 + self.epsilon
+            maximum = self.x1 - c.x0 + self.__epsilon
             if maximum > xa:
                 xa = maximum
 
@@ -61,12 +64,12 @@ class AABB:
             return ya
 
         if ya > 0.0 and c.y1 <= self.y0:
-            maximum = self.y0 - c.y1 - self.epsilon
+            maximum = self.y0 - c.y1 - self.__epsilon
             if maximum < ya:
                 ya = maximum
 
         if ya < 0.0 and c.y0 >= self.y1:
-            maximum = self.y1 - c.y0 + self.epsilon
+            maximum = self.y1 - c.y0 + self.__epsilon
             if maximum > ya:
                 ya = maximum
 
@@ -79,12 +82,12 @@ class AABB:
             return za
 
         if za > 0.0 and c.z1 <= self.z0:
-            maximum = self.z0 - c.z1 - self.epsilon
+            maximum = self.z0 - c.z1 - self.__epsilon
             if maximum < za:
                 za = maximum
 
         if za < 0.0 and c.z0 >= self.z1:
-            maximum = self.z1 - c.z0 + self.epsilon
+            maximum = self.z1 - c.z0 + self.__epsilon
             if maximum > za:
                 za = maximum
 
