@@ -30,7 +30,6 @@ cdef class Tesselator:
     cpdef end(self)
     cdef __clear(self)
     cpdef begin(self)
-    cpdef tex(self, float u, float v)
     cpdef inline colorRGB(self, float r, float g, float b)
     cpdef inline colorByte(self, char r, char g, char b)
     cpdef vertexUV(self, float x, float y, float z, float u, float v)

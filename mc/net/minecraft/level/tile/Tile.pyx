@@ -35,36 +35,45 @@ cdef class Tile:
         self.shouldTick[self.id] = tick
 
     def _setShape(self, float x0, float y0, float z0, float x1, float y1, float z1):
-        self._xx0 = x0
-        self._yy0 = y0
-        self._zz0 = z0
-        self._xx1 = x1
-        self._yy1 = y1
-        self._zz1 = z1
+        self.__xx0 = 0.0
+        self.__yy0 = y0
+        self.__zz0 = 0.0
+        self.__xx1 = 1.0
+        self.__yy1 = y1
+        self.__zz1 = 1.0
 
-    cpdef void render(self, Tesselator t, level, int layer, int x, int y, int z) except *:
+    cpdef bint render(self, Tesselator t, level, int layer, int x, int y, int z) except *:
         cdef char c1 = -1
         cdef char c2 = -52
         cdef char c3 = -103
+        cdef bint layerOk = False
 
         if self._shouldRenderFace(level, x, y - 1, z, layer, 0):
             t.colorByte(c1, c1, c1)
             self.renderFace(t, x, y, z, 0)
+            layerOk = True
         if self._shouldRenderFace(level, x, y + 1, z, layer, 1):
             t.colorByte(c1, c1, c1)
             self.renderFace(t, x, y, z, 1)
+            layerOk = True
         if self._shouldRenderFace(level, x, y, z - 1, layer, 2):
             t.colorByte(c2, c2, c2)
             self.renderFace(t, x, y, z, 2)
+            layerOk = True
         if self._shouldRenderFace(level, x, y, z + 1, layer, 3):
             t.colorByte(c2, c2, c2)
             self.renderFace(t, x, y, z, 3)
+            layerOk = True
         if self._shouldRenderFace(level, x - 1, y, z, layer, 4):
             t.colorByte(c3, c3, c3)
             self.renderFace(t, x, y, z, 4)
+            layerOk = True
         if self._shouldRenderFace(level, x + 1, y, z, layer, 5):
             t.colorByte(c3, c3, c3)
             self.renderFace(t, x, y, z, 5)
+            layerOk = True
+
+        return layerOk
 
     cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
         cdef bint layerOk = True
@@ -72,7 +81,9 @@ cdef class Tile:
             return False
         if layer >= 0:
             layerOk = level.isLit(x, y, z) ^ layer == 1
-        return not level.isSolidTile(x, y, z) and layerOk
+
+        tile = self.tiles.tiles[level.getTile(x, y, z)]
+        return not (False if tile is None else tile.isSolid()) and layerOk
 
     cpdef int _getTexture(self, int face):
         return self.tex
@@ -89,12 +100,12 @@ cdef class Tile:
         v0 = yt / 256.0
         v1 = (yt + 15.99) / 256.0
 
-        x0 = x + self._xx0
-        x1 = x + self._xx1
-        y0 = y + self._yy0
-        y1 = y + self._yy1
-        z0 = z + self._zz0
-        z1 = z + self._zz1
+        x0 = x + self.__xx0
+        x1 = x + self.__xx1
+        y0 = y + self.__yy0
+        y1 = y + self.__yy1
+        z0 = z + self.__zz0
+        z1 = z + self.__zz1
 
         if face == 0:
             t.vertexUV(x0, y0, z1, u0, v1)
@@ -137,12 +148,12 @@ cdef class Tile:
         v0 = tex // 16 / 16.0
         v1 = v0 + 0.0624375
 
-        x0 = x + self._xx0
-        x1 = x + self._xx1
-        y0 = y + self._yy0
-        y1 = y + self._yy1
-        z0 = z + self._zz0
-        z1 = z + self._zz1
+        x0 = x + self.__xx0
+        x1 = x + self.__xx1
+        y0 = y + self.__yy0
+        y1 = y + self.__yy1
+        z0 = z + self.__zz0
+        z1 = z + self.__zz1
 
         if face == 0:
             t.vertexUV(x1, y0, z1, u1, v1)

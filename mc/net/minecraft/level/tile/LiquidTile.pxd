@@ -7,7 +7,7 @@ cdef class LiquidTile(Tile):
 
     cdef:
         public int _liquidType
-        public int _spreadSpeed
+        int __spreadSpeed
         public int _calmTileId
         public int _tileId
 

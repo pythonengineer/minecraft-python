@@ -20,13 +20,13 @@ class Font:
             for x in range(8):
                 if emptyColumn:
                     break
-                xPixel = xt * 8 + x
+                xPixel = (xt << 3) + x
                 emptyColumn = True
                 for y in range(8):
                     if not emptyColumn:
                         break
-                    yPixel = (yt * 8 + y) * w
-                    pixel = rawPixels[xPixel + yPixel] & 0xFF
+                    yPixel = ((yt << 3) + y) * w
+                    pixel = rawPixels[xPixel + yPixel] & 255
                     if pixel > 128:
                         emptyColumn = False
             if i == 32:
@@ -50,18 +50,18 @@ class Font:
             char = string[i]
             if char == '&':
                 cc = '0123456789abcdef'.index(string[i + 1])
-                br = (cc & 0x8) * 8
-                b = (cc & 0x1) * 191 + br
-                g = ((cc & 0x2) >> 1) * 191 + br
-                r = ((cc & 0x4) >> 2) * 191 + br
+                br = ((cc & 8) * 8) << 3
+                b = (cc & 1) * 191 + br
+                g = ((cc & 2) >> 1) * 191 + br
+                r = ((cc & 4) >> 2) * 191 + br
                 color = r << 16 | g << 8 | b
                 i += 2
                 if darken:
                     color = (color & 0xFCFCFC) >> 2
                 t.color(color)
 
-            ix = ord(char) % ord('\020') * 8
-            iy = ord(char) // ord('\020') * 8
+            ix = ord(char) % ord('\020') << 3
+            iy = ord(char) // ord('\020') << 3
             t.vertexUV(x + xo, y + 8, 0.0, ix / 128.0, (iy + 8) / 128.0)
             t.vertexUV(x + xo + 8, y + 8, 0.0, (ix + 8) / 128.0, (iy + 8) / 128.0)
             t.vertexUV(x + xo + 8, y, 0.0, (ix + 8) / 128.0, iy / 128.0)

@@ -4,6 +4,8 @@ class Button:
         self.id = id_
         self.x = x
         self.y = y
-        self.w = w
-        self.h = h
+        self.w = 200
+        self.h = 20
         self.msg = msg
+        self.enabled = True
+        self.visible = True

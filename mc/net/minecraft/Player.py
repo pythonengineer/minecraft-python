@@ -2,11 +2,11 @@ from mc.net.minecraft.Entity import Entity
 from pyglet import window
 
 class Player(Entity):
-    __keys = [False] * 10
+    keys = [False] * 10
 
     def __init__(self, level):
         super().__init__(level)
-        self._heightOffset = 1.62
+        self.heightOffset = 1.62
 
     def setKey(self, key, state):
         id_ = -1
@@ -16,11 +16,11 @@ class Player(Entity):
         if key in (window.key.RIGHT, window.key.D): id_ = 3
         if key in (window.key.SPACE, window.key.LWINDOWS, window.key.LMETA): id_ = 4
         if id_ >= 0:
-            self.__keys[id_] = state
+            self.keys[id_] = state
 
     def releaseAllKeys(self):
         for i in range(10):
-            self.__keys[i] = False
+            self.keys[i] = False
 
     def tick(self):
         self.xo = self.x
@@ -32,18 +32,18 @@ class Player(Entity):
         inWater = self.isInWater()
         inLava = self.isInLava()
 
-        if self.__keys[0]: ya -= 1.0
-        if self.__keys[1]: ya += 1.0
-        if self.__keys[2]: xa -= 1.0
-        if self.__keys[3]: xa += 1.0
-        if self.__keys[4]:
+        if self.keys[0]: ya -= 1.0
+        if self.keys[1]: ya += 1.0
+        if self.keys[2]: xa -= 1.0
+        if self.keys[3]: xa += 1.0
+        if self.keys[4]:
             if inWater:
                 self.yd += 0.04
             elif inLava:
                 self.yd += 0.04
             elif self.onGround:
                 self.yd = 0.42
-                self.__keys[4] = False
+                self.keys[4] = False
 
         if inWater:
             yo = self.y

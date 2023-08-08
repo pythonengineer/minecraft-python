@@ -16,6 +16,12 @@ extensions = [
               sources=['mc/net/minecraft/level/Level.pyx']),
     Extension(name='mc.net.minecraft.level.levelgen.LevelGen',
               sources=['mc/net/minecraft/level/levelgen/LevelGen.pyx']),
+    Extension(name='mc.net.minecraft.level.levelgen.synth.ImprovedNoise',
+              sources=['mc/net/minecraft/level/levelgen/synth/ImprovedNoise.pyx']),
+    Extension(name='mc.net.minecraft.level.levelgen.synth.PerlinNoise',
+              sources=['mc/net/minecraft/level/levelgen/synth/PerlinNoise.pyx']),
+    Extension(name='mc.net.minecraft.level.levelgen.synth.Distort',
+              sources=['mc/net/minecraft/level/levelgen/synth/Distort.pyx']),
     Extension(name='mc.net.minecraft.level.tile.Tile',
               sources=['mc/net/minecraft/level/tile/Tile.pyx']),
     Extension(name='mc.net.minecraft.level.tile.LiquidTile',
@@ -26,7 +32,7 @@ extensions = [
 
 setup(
     name='minecraft-python',
-    version='0.0.13',
+    version='0.0.13a_03',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

@@ -71,14 +71,6 @@ cdef class Tesselator:
         self.__hasTexture = False
         self.__noColor = False
 
-    cpdef tex(self, float u, float v):
-        if not self.__hasTexture:
-            self.__len += 2
-
-        self.__hasTexture = True
-        self.__u = u
-        self.__v = v
-
     cpdef inline colorRGB(self, float r, float g, float b):
         if self.__noColor:
             return
@@ -102,7 +94,12 @@ cdef class Tesselator:
         self.__b = (b & 0xFF) / 255.0
 
     cpdef vertexUV(self, float x, float y, float z, float u, float v):
-        self.tex(u, v)
+        if not self.__hasTexture:
+            self.__len += 2
+
+        self.__hasTexture = True
+        self.__u = u
+        self.__v = v
         self.vertex(x, y, z)
 
     cpdef vertex(self, float x, float y, float z):

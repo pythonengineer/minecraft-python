@@ -16,7 +16,7 @@ class Bush(Tile):
 
     def render(self, t, level, layer, x, y, z):
         if level.isLit(x, y, z) ^ layer != 1:
-            return
+            return False
 
         tex = self._getTexture(15)
         u0 = tex % 16 / 16.0
@@ -45,6 +45,8 @@ class Bush(Tile):
             t.vertexUV(x0, y1, z0, u1, v0)
             t.vertexUV(x0, y0, z0, u1, v1)
             t.vertexUV(x1, y0, z1, u0, v1)
+
+        return True
 
     def getAABB(self, x, y, z):
         return None

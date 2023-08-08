@@ -1,7 +1,5 @@
 from mc.net.minecraft.character.Cube import Cube
 
-import math
-
 class ZombieModel:
 
     def __init__(self):
@@ -26,23 +24,3 @@ class ZombieModel:
         self.leg1 = Cube(0, 16)
         self.leg1.addBox(-2.0, 0.0, -2.0, 4, 12, 4)
         self.leg1.setPos(2.0, 12.0, 0.0)
-
-    def render(self, time):
-        self.head.yRot = math.sin(time * 0.83) * 1.0
-        self.head.xRot = math.sin(time) * 0.8
-
-        self.arm0.xRot = math.sin(time * 0.6662 + math.pi) * 2.0
-        self.arm0.zRot = (math.sin(time * 0.2312) + 1.0) * 1.0
-
-        self.arm1.xRot = math.sin(time * 0.6662) * 2.0
-        self.arm1.zRot = (math.sin(time * 0.2812) - 1.0) * 1.0
-
-        self.leg0.xRot = math.sin(time * 0.6662) * 1.4
-        self.leg1.xRot = math.sin(time * 0.6662 + math.pi) * 1.4
-
-        self.head.render()
-        self.body.render()
-        self.arm0.render()
-        self.arm1.render()
-        self.leg0.render()
-        self.leg1.render()

@@ -4,15 +4,15 @@
 
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python using the **Pyglet** multimedia library and **Cython** for performance.
 
-This project is currently recreating the **Classic** versions of Minecraft. The latest version is **Classic 0.0.13a** as released on _**May 22, 2009**_.
+This project is currently recreating the **Classic** versions of Minecraft. The latest version is **Classic 0.0.13a_03** as released on _**May 22, 2009**_.
 
-Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.0.13a).
+Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.0.13a_03).
 
 ### General Usage
 
 *Pyglet* and *Cython* are required dependencies and can easily be installed with *pip*. Use the versions specified in `requirements.txt`.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.0.13`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.0.13a_03`.
 
 Alternatively, for a manual Cython build, run `python setup.py build_ext --inplace`.
 
@@ -22,9 +22,9 @@ Run with the argument `-fullscreen` to open the window in fullscreen mode.
 
 ### Gameplay
 
-Basic terrain and caves, block picking and placing, level saving, and human mobs are featured in this version. There are five different blocks you can place.
+This version features more advanced terrain (including caves and expanding water tiles), level saving, and human mobs. There are five different tiles you can place.
 
-Press *Esc* to pause. Press *R* to reset your position, *G* to spawn a mob, *F* to toggle render distance, *Y* to invert mouse, *Enter* to save the level, and numbers *1-4* (*6* for sapling) to switch blocks.
+Press *Esc* to pause. Press *R* to reset your position, *Y* to invert the mouse, *G* to spawn a mob, *F* to toggle render distance, *Enter* to save the level, and numbers *1-4* (*6* for sapling) to switch blocks.
 
 ### Additional Notes
 

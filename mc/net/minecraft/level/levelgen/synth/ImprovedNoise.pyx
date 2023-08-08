@@ -1,52 +1,52 @@
-from mc.net.minecraft.level.levelgen.synth.Synth import Synth
+# cython: language_level=3
 
-import random
-import math
+from libc.math cimport floor
 
-_GRAD3 = ((1, 1, 0), (-1, 1, 0), (1, -1, 0), (-1, -1, 0),
-    (1, 0, 1), (-1, 0, 1), (1, 0, -1), (-1, 0, -1),
-    (0, 1, 1), (0, -1, 1), (0, 1, -1), (0, -1, -1),
-    (1, 1, 0), (0, -1, 1), (-1, 1, 0), (0, -1, -1),
-)
+from mc.cCompatibilityShims cimport Random
 
-class ImprovedNoise(Synth):
-    __p = [0] * 512
+cdef class ImprovedNoise:
 
-    def __init__(self, rand=None):
-        if not rand:
-            rand = random
+    def __init__(self, Random random):
+        cdef int i, j, tmp
 
         for i in range(256):
             self.__p[i] = i
 
         for i in range(256):
-            j = math.floor(rand.random() * (256 - i))
+            j = random.randInt(256 - i) + i
             tmp = self.__p[i]
             self.__p[i] = self.__p[j]
             self.__p[j] = tmp
             self.__p[i + 256] = self.__p[i]
 
     @staticmethod
-    def __fade(t):
+    cdef double __fade(double t):
         return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
 
     @staticmethod
-    def __lerp(d0, d2, d4):
+    cdef double __lerp(double d0, double d2, double d4):
         return d2 + d0 * (d4 - d2)
 
     @staticmethod
-    def __grad(hash, x, y, z):
-        g = _GRAD3[hash % 16]
-        return x * g[0] + y * g[1] + z * g[2]
+    cdef double __grad(int hash, double x, double y, double z):
+        cdef double d8, d10
 
-    def getValue(self, x, y):
-        X = int(math.floor(x) & 0xFF)
-        Y = int(math.floor(y) & 0xFF)
-        Z = int(math.floor(0.0) & 0xFF)
+        hash &= 15
+        d8 = x if hash < 8 else y
+        d10 = y if hash < 4 else (z if hash != 12 and hash != 14 else x)
+        return (d8 if (hash & 1) == 0 else -d8) + (d10 if (hash & 2) == 0 else -d10)
 
-        x -= math.floor(x)
-        y -= math.floor(y)
-        z = math.floor(0.0)
+    cdef double getValue(self, double x, double y):
+        cdef int X, Y, Z, A, AA, AB, B, BA, BB
+        cdef double z, u, v, w
+
+        X = <int>floor(x) & 0xFF
+        Y = <int>floor(y) & 0xFF
+        Z = <int>floor(0.0) & 0xFF
+
+        x -= floor(x)
+        y -= floor(y)
+        z = floor(0.0)
 
         u = ImprovedNoise.__fade(x)
         v = ImprovedNoise.__fade(y)

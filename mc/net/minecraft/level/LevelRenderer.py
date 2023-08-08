@@ -1,39 +1,40 @@
-from mc.net.minecraft.level.DirtyChunkSorter import DirtyChunkSorter
 from mc.net.minecraft.level.DistanceSorter import DistanceSorter
-from mc.net.minecraft.level.LevelListener import LevelListener
 from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.tile.Tile import Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.renderer.Tesselator import tesselator
-from mc.CompatibilityShims import getMillis
+from mc.CompatibilityShims import BufferUtils, getMillis
 from pyglet import gl
 from functools import cmp_to_key
 
 import math
 
-class LevelRenderer(LevelListener):
+class LevelRenderer:
     MAX_REBUILDS_PER_FRAME = 4
     CHUNK_SIZE = 16
-    __drawDistance = 0
+    chunks = []
+    drawDistance = 0
+    __dummyBuffer = BufferUtils.createIntBuffer(1024)
 
     def __init__(self, level, textures):
-        self.__level = level
+        self.level = level
         self.__textures = textures
-        level.addListener(self)
-
-        self.__surroundLists = gl.glGenLists(2)
+        level.levelListeners.add(self)
+        self.surroundLists = gl.glGenLists(2)
         self.allChanged()
 
     def allChanged(self):
-        self.lX = -900000.0
-        self.lY = -900000.0
-        self.lZ = -900000.0
+        self.__lX = -900000.0
+        self.__lY = -900000.0
+        self.__lZ = -900000.0
+        if self.chunks:
+            for chunk in self.chunks:
+                chunk.reset2()
 
-        self.__xChunks = (self.__level.width + self.CHUNK_SIZE - 1) // self.CHUNK_SIZE
-        self.__yChunks = (self.__level.depth + self.CHUNK_SIZE - 1) // self.CHUNK_SIZE
-        self.__zChunks = (self.__level.height + self.CHUNK_SIZE - 1) // self.CHUNK_SIZE
-
-        self.__chunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
+        self.__xChunks = (self.level.width + self.CHUNK_SIZE - 1) // self.CHUNK_SIZE
+        self.__yChunks = (self.level.depth + self.CHUNK_SIZE - 1) // self.CHUNK_SIZE
+        self.__zChunks = (self.level.height + self.CHUNK_SIZE - 1) // self.CHUNK_SIZE
+        self.chunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
         self.__sortedChunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
         for x in range(self.__xChunks):
             for y in range(self.__yChunks):
@@ -45,75 +46,29 @@ class LevelRenderer(LevelListener):
                     y1 = (y + 1) * self.CHUNK_SIZE
                     z1 = (z + 1) * self.CHUNK_SIZE
 
-                    if x1 > self.__level.width: x1 = self.__level.width
-                    if y1 > self.__level.depth: y1 = self.__level.depth
-                    if z1 > self.__level.height: z1 = self.__level.height
-                    self.__chunks[(x + y * self.__xChunks) * self.__zChunks + z] = Chunk(self.__level, x0, y0, z0, x1, y1, z1)
-                    self.__sortedChunks[(x + y * self.__xChunks) * self.__zChunks + z] = self.__chunks[(x + y * self.__xChunks) * self.__zChunks + z]
+                    if x1 > self.level.width: x1 = self.level.width
+                    if y1 > self.level.depth: y1 = self.level.depth
+                    if z1 > self.level.height: z1 = self.level.height
+                    self.chunks[(x + y * self.__xChunks) * self.__zChunks + z] = Chunk(self.level, x0, y0, z0, x1, y1, z1)
+                    self.__sortedChunks[(x + y * self.__xChunks) * self.__zChunks + z] = self.chunks[(x + y * self.__xChunks) * self.__zChunks + z]
 
-        gl.glNewList(self.__surroundLists + 0, gl.GL_COMPILE)
-        self.compileSurroundingGround()
-        gl.glEndList()
-
-        gl.glNewList(self.__surroundLists + 1, gl.GL_COMPILE)
-        self.compileSurroundingWater()
-        gl.glEndList()
-
-        for chunk in self.__chunks:
-            chunk.reset()
-
-    def getAllDirtyChunks(self):
-        dirty = None
-        for chunk in self.__chunks:
-            if chunk.isDirty():
-                if not dirty:
-                    dirty = set()
-
-                dirty.add(chunk)
-
-        return dirty
-
-    def render(self, player, layer):
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('terrain.png', gl.GL_NEAREST))
-
-        xd = player.x - self.lX
-        yd = player.y - self.lY
-        zd = player.z - self.lZ
-        if xd * xd + yd * yd + zd * zd > 64.0:
-            self.lX = player.x
-            self.lY = player.y
-            self.lZ = player.z
-            self.__sortedChunks = sorted(self.__sortedChunks, key=cmp_to_key(DistanceSorter(player).compare))
-
-        for chunk in self.__sortedChunks:
-            if chunk.visible:
-                dd = 256 / (1 << self.__drawDistance)
-                if self.__drawDistance == 0 or chunk.distanceToSqr(player) < dd * dd:
-                    chunk.render(layer)
-
-        gl.glDisable(gl.GL_TEXTURE_2D)
-
-    def renderSurroundingGround(self):
-        gl.glCallList(self.__surroundLists + 0)
-
-    def compileSurroundingGround(self):
+        gl.glNewList(self.surroundLists + 0, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('rock.png', gl.GL_NEAREST))
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         t = tesselator
-        y = self.__level.getGroundLevel() - 2.0
+        y = 32.0 - 2.0
         s = 128
-        if s > self.__level.width:
-            s = self.__level.width
-        if s > self.__level.height:
-            s = self.__level.height
-        d = 5
+        if s > self.level.width:
+            s = self.level.width
+        if s > self.level.height:
+            s = self.level.height
+        d = 2048 // s
         t.begin()
-        for xx in range(-s * d, self.__level.width + s * d, s):
-            for zz in range(-s * d, self.__level.height + s * d, s):
+        for xx in range(-s * d, self.level.width + s * d, s):
+            for zz in range(-s * d, self.level.height + s * d, s):
                 yy = y
-                if xx >= 0 and zz >= 0 and xx < self.__level.width and zz < self.__level.height:
+                if xx >= 0 and zz >= 0 and xx < self.level.width and zz < self.level.height:
                     yy = 0.0
                 t.vertexUV(xx + 0, yy, zz + s, 0.0, s)
                 t.vertexUV(xx + s, yy, zz + s, s, s)
@@ -123,55 +78,51 @@ class LevelRenderer(LevelListener):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('rock.png', gl.GL_NEAREST))
         gl.glColor3f(0.8, 0.8, 0.8)
         t.begin()
-        for xx in range(0, self.__level.width, s):
+        for xx in range(0, self.level.width, s):
             t.vertexUV(xx + 0, 0.0, 0.0, 0.0, 0.0)
             t.vertexUV(xx + s, 0.0, 0.0, s, 0.0)
             t.vertexUV(xx + s, y, 0.0, s, y)
             t.vertexUV(xx + 0, y, 0.0, 0.0, y)
 
-            t.vertexUV(xx + 0, y, self.__level.height, 0.0, y)
-            t.vertexUV(xx + s, y, self.__level.height, s, y)
-            t.vertexUV(xx + s, 0.0, self.__level.height, s, 0.0)
-            t.vertexUV(xx + 0, 0.0, self.__level.height, 0.0, 0.0)
-
+            t.vertexUV(xx + 0, y, self.level.height, 0.0, y)
+            t.vertexUV(xx + s, y, self.level.height, s, y)
+            t.vertexUV(xx + s, 0.0, self.level.height, s, 0.0)
+            t.vertexUV(xx + 0, 0.0, self.level.height, 0.0, 0.0)
         gl.glColor3f(0.6, 0.6, 0.6)
-        for zz in range(0, self.__level.height, s):
+        for zz in range(0, self.level.height, s):
             t.vertexUV(0.0, y, zz + 0, 0.0, 0.0)
             t.vertexUV(0.0, y, zz + s, s, 0.0)
             t.vertexUV(0.0, 0.0, zz + s, s, y)
             t.vertexUV(0.0, 0.0, zz + 0, 0.0, y)
 
-            t.vertexUV(self.__level.width, 0.0, zz + 0, 0.0, y)
-            t.vertexUV(self.__level.width, 0.0, zz + s, s, y)
-            t.vertexUV(self.__level.width, y, zz + s, s, 0.0)
-            t.vertexUV(self.__level.width, y, zz + 0, 0.0, 0.0)
-        t.end()
+            t.vertexUV(self.level.width, 0.0, zz + 0, 0.0, y)
+            t.vertexUV(self.level.width, 0.0, zz + s, s, y)
+            t.vertexUV(self.level.width, y, zz + s, s, 0.0)
+            t.vertexUV(self.level.width, y, zz + 0, 0.0, 0.0)
 
+        t.end()
         gl.glDisable(gl.GL_BLEND)
         gl.glDisable(gl.GL_TEXTURE_2D)
-
-    def renderSurroundingWater(self):
-        gl.glCallList(self.__surroundLists + 1)
-
-    def compileSurroundingWater(self):
+        gl.glEndList()
+        gl.glNewList(self.surroundLists + 1, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glColor3f(1.0, 1.0, 1.0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('water.png', gl.GL_NEAREST))
-        y = self.__level.getGroundLevel()
+        y = 32.0
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         t = tesselator
         s = 128
-        if s > self.__level.width:
-            s = self.__level.width
-        if s > self.__level.height:
-            s = self.__level.height
-        d = 5
+        if s > self.level.width:
+            s = self.level.width
+        if s > self.level.height:
+            s = self.level.height
+        d = 2048 // s
         t.begin()
-        for xx in range(-s * d, self.__level.width + s * d, s):
-            for zz in range(-s * d, self.__level.height + s * d, s):
+        for xx in range(-s * d, self.level.width + s * d, s):
+            for zz in range(-s * d, self.level.height + s * d, s):
                 yy = y - 0.1
-                if xx < 0 or zz < 0 or xx >= self.__level.width or zz >= self.__level.height:
+                if xx < 0 or zz < 0 or xx >= self.level.width or zz >= self.level.height:
                     t.vertexUV(xx + 0, yy, zz + s, 0.0, s)
                     t.vertexUV(xx + s, yy, zz + s, s, s)
                     t.vertexUV(xx + s, yy, zz + 0, s, 0.0)
@@ -184,18 +135,42 @@ class LevelRenderer(LevelListener):
         t.end()
         gl.glDisable(gl.GL_BLEND)
         gl.glDisable(gl.GL_TEXTURE_2D)
+        gl.glEndList()
 
-    def updateDirtyChunks(self, player):
-        dirty = self.getAllDirtyChunks()
-        if not dirty:
-            return
+        for chunk in self.chunks:
+            chunk.reset()
 
-        dirty = sorted(dirty, key=cmp_to_key(DirtyChunkSorter(player).compare))
-        for i in range(self.MAX_REBUILDS_PER_FRAME):
-            if i >= len(dirty):
-                break
+    def render(self, player, layer):
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('terrain.png', gl.GL_NEAREST))
 
-            dirty[i].rebuild()
+        xd = player.x - self.__lX
+        yd = player.y - self.__lY
+        zd = player.z - self.__lZ
+        if xd * xd + yd * yd + zd * zd > 64.0:
+            self.__lX = player.x
+            self.__lY = player.y
+            self.__lZ = player.z
+            self.__sortedChunks = sorted(self.__sortedChunks, key=cmp_to_key(DistanceSorter(player).compare))
+
+        self.__dummyBuffer.clear()
+
+        for chunk in self.__sortedChunks:
+            if chunk.visible and not chunk.canRender:
+                dd = 256 / (1 << self.drawDistance)
+                if self.drawDistance == 0 or chunk.compare(player) < dd * dd:
+                    i7 = chunk.render(layer)
+                    self.__dummyBuffer.put(i7)
+                    if self.__dummyBuffer.remaining() == 0:
+                        self.__dummyBuffer.flip()
+                        gl.glCallLists(self.__dummyBuffer.capacity(), gl.GL_INT, self.__dummyBuffer)
+                        self.__dummyBuffer.clear()
+
+        if self.__dummyBuffer.position() > 0:
+            self.__dummyBuffer.flip()
+            gl.glCallLists(self.__dummyBuffer.capacity(), gl.GL_INT, self.__dummyBuffer)
+
+        gl.glDisable(gl.GL_TEXTURE_2D)
 
     def renderHit(self, player, h, mode, tileType):
         t = tesselator
@@ -212,7 +187,6 @@ class LevelRenderer(LevelListener):
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
             br = math.sin(getMillis() / 100.0) * 0.2 + 0.8
             gl.glColor4f(br, br, br, math.sin(getMillis() / 200.0) * 0.2 + 0.5)
-
             gl.glEnable(gl.GL_TEXTURE_2D)
             id_ = self.__textures.loadTexture('terrain.png', gl.GL_NEAREST)
             gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
@@ -227,14 +201,15 @@ class LevelRenderer(LevelListener):
             elif h.f == 5: x += 1
             t.begin()
             t.noColor()
-            tiles.tiles[tileType].render(t, self.__level, 0, x, y, z)
-            tiles.tiles[tileType].render(t, self.__level, 1, x, y, z)
+            tiles.tiles[tileType].render(t, self.level, 0, x, y, z)
+            tiles.tiles[tileType].render(t, self.level, 1, x, y, z)
             t.end()
             gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glDisable(gl.GL_BLEND)
         gl.glDisable(gl.GL_ALPHA_TEST)
 
-    def renderHitOutline(self, player, h, mode, tileType):
+    @staticmethod
+    def renderHitOutline(h, mode):
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glColor4f(0.0, 0.0, 0.0, 0.4)
@@ -292,17 +267,4 @@ class LevelRenderer(LevelListener):
         for x in range(x0, x1 + 1):
             for y in range(y0, y1 + 1):
                 for z in range(z0, z1 + 1):
-                    self.__chunks[(x + y * self.__xChunks) * self.__zChunks + z].setDirty()
-
-    def tileChanged(self, x, y, z):
-        self.setDirty(x - 1, y - 1, z - 1, x + 1, y + 1, z + 1)
-
-    def lightColumnChanged(self, x, z, y0, y1):
-        self.setDirty(x - 1, y0 - 1, z - 1, x + 1, y1 + 1, z + 1)
-
-    def toggleDrawDistance(self):
-        self.__drawDistance = (self.__drawDistance + 1) % 4
-
-    def cull(self, frustum):
-        for chunk in self.__chunks:
-            chunk.visible = frustum.isVisible(chunk.aabb)
+                    self.chunks[(x + y * self.__xChunks) * self.__zChunks + z].setDirty()

@@ -12,11 +12,11 @@ class Zombie(Entity):
     def __init__(self, level, textures, x, y, z):
         super().__init__(level)
         self.__textures = textures
-        self.rotA = (random.random() + 1.0) * 0.01
+        self.__rotA = (random.random() + 1.0) * 0.01
         self.setPos(x, y, z)
-        self.timeOffs = random.random() * 1239813.0
-        self.rot = random.random() * math.pi * 2.0
-        self.speed = 1.0
+        self.__timeOffs = random.random() * 1239813.0
+        self.__rot = random.random() * math.pi * 2.0
+        self.__speed = 1.0
 
     def tick(self):
         self.xo = self.x
@@ -26,13 +26,13 @@ class Zombie(Entity):
         ya = 0.0
 
         if self.y < -100.0:
-            self.remove()
+            self.removed = True
 
-        self.rot += self.rotA
-        self.rotA *= 0.99
-        self.rotA += (random.random() - random.random()) * random.random() * random.random() * 0.08
-        xa = math.sin(self.rot)
-        ya = math.cos(self.rot)
+        self.__rot += self.__rotA
+        self.__rotA *= 0.99
+        self.__rotA += (random.random() - random.random()) * random.random() * random.random() * 0.08
+        xa = math.sin(self.__rot)
+        ya = math.cos(self.__rot)
 
         if self.onGround and random.random() < 0.08:
             self.yd = 0.5
@@ -54,7 +54,7 @@ class Zombie(Entity):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('char.png', gl.GL_NEAREST))
 
         gl.glPushMatrix()
-        t = getNs() / 1000000000.0 * 10.0 * self.speed + self.timeOffs
+        t = getNs() / 1000000000.0 * 10.0 * self.__speed + self.__timeOffs
 
         size = 0.05833333
         yy = -abs(math.sin(t * 0.6662)) * 5.0 - 23.0
@@ -63,8 +63,20 @@ class Zombie(Entity):
         gl.glScalef(size, size, size)
         gl.glTranslatef(0.0, yy, 0.0)
         c = 57.29578
-        gl.glRotatef(self.rot * c + 180.0, 0.0, 1.0, 0.0)
-
-        self.__zombieModel.render(t)
+        gl.glRotatef(self.__rot * c + 180.0, 0.0, 1.0, 0.0)
+        self.__zombieModel.head.yRot = math.sin(t * 0.83) * 1.0
+        self.__zombieModel.head.xRot = math.sin(t) * 0.8
+        self.__zombieModel.arm0.xRot = math.sin(t * 0.6662 + math.pi) * 2.0
+        self.__zombieModel.arm0.zRot = (math.sin(t * 0.2312) + 1.0) * 1.0
+        self.__zombieModel.arm1.xRot = math.sin(t * 0.6662) * 2.0
+        self.__zombieModel.arm1.zRot = (math.sin(t * 0.2812) - 1.0) * 1.0
+        self.__zombieModel.leg0.xRot = math.sin(t * 0.6662) * 1.4
+        self.__zombieModel.leg1.xRot = math.sin(t * 0.6662 + math.pi) * 1.4
+        self.__zombieModel.head.render()
+        self.__zombieModel.body.render()
+        self.__zombieModel.arm0.render()
+        self.__zombieModel.arm1.render()
+        self.__zombieModel.leg0.render()
+        self.__zombieModel.leg1.render()
         gl.glPopMatrix()
         gl.glDisable(gl.GL_TEXTURE_2D)

@@ -151,55 +151,16 @@ cdef class Frustum:
         self.__m_Frustum[side][self._c] /= magnitude
         self.__m_Frustum[side][self._d] /= magnitude
 
-    cpdef bint pointInFrustum(self, float x, float y, float z):
+    cpdef bint cubeInFrustum(self, aabb):
+        cdef float x0, y0, z0, x1, y1, z1
         cdef int i
 
-        for i in range(6):
-            if self.__m_Frustum[i][self._a] * x + self.__m_Frustum[i][self._b] * y + \
-               self.__m_Frustum[i][self._c] * z + self.__m_Frustum[i][self._d] <= 0.0:
-                return False
-
-        return True
-
-    cpdef bint sphereInFrustum(self, float x, float y, float z, float radius):
-        cdef int i
-
-        for i in range(6):
-            if self.__m_Frustum[i][self._a] * x + self.__m_Frustum[i][self._b] * y + \
-               self.__m_Frustum[i][self._c] * z + self.__m_Frustum[i][self._d] <= -radius:
-                return False
-
-        return True
-
-    cpdef bint cubeFullyInFrustum(self, float x0, float y0, float z0,
-                                  float x1, float y1, float z1):
-        cdef int i
-
-        for i in range(6):
-            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
-                return False
-            if not self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
-                return False
-            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
-                return False
-            if not self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
-                return False
-            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
-                return False
-            if not self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
-                return False
-            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
-                return False
-            if self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
-                continue
-
-            return False
-
-        return True
-
-    cpdef bint cubeInFrustum(self, float x0, float y0, float z0,
-                             float x1, float y1, float z1):
-        cdef int i
+        x0 = aabb.x0
+        y0 = aabb.y0
+        z0 = aabb.z0
+        x1 = aabb.x1
+        y1 = aabb.y1
+        z1 = aabb.z1
 
         for i in range(6):
             if self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0 or \
@@ -215,6 +176,3 @@ cdef class Frustum:
             return False
 
         return True
-
-    cpdef bint isVisible(self, aabb):
-        return self.cubeInFrustum(aabb.x0, aabb.y0, aabb.z0, aabb.x1, aabb.y1, aabb.z1)

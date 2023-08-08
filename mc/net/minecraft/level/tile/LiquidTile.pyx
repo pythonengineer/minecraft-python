@@ -10,14 +10,14 @@ cdef class LiquidTile(Tile):
         self._liquidType = liquidType
 
         self.tex = 14
-        self._spreadSpeed = 1
+        self.__spreadSpeed = 1
 
         if liquidType == 2:
             self.tex = 30
         if liquidType == 1:
-            self._spreadSpeed = 8
+            self.__spreadSpeed = 8
         if liquidType == 2:
-            self._spreadSpeed = 2
+            self.__spreadSpeed = 2
 
         self._tileId = id_
         self._calmTileId = id_ + 1
@@ -64,7 +64,7 @@ cdef class LiquidTile(Tile):
         type_ = level.getTile(x, y, z)
         if type_ == 0:
             changed = level.setTile(x, y, z, self._tileId)
-            if changed and depth < self._spreadSpeed:
+            if changed and depth < self.__spreadSpeed:
                 hasChanged |= self.updateWater(level, x, y, z, depth + 1)
 
         return hasChanged

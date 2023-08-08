@@ -5,9 +5,9 @@ from pyglet import gl
 class Cube:
     __vertices = []
     __polygons = []
-    x = 0.0
-    y = 0.0
-    z = 0.0
+    __x = 0.0
+    __y = 0.0
+    __z = 0.0
     xRot = 0.0
     yRot = 0.0
     zRot = 0.0
@@ -15,9 +15,6 @@ class Cube:
     __list = 0
 
     def __init__(self, xTexOffs, yTexOffs):
-        self.setTexOffs(xTexOffs, yTexOffs)
-
-    def setTexOffs(self, xTexOffs, yTexOffs):
         self.__xTexOffs = xTexOffs
         self.__yTexOffs = yTexOffs
 
@@ -58,30 +55,31 @@ class Cube:
         self.__polygons[5] = Polygon([l0, l1, l2, l3], self.__xTexOffs + d + w + d, self.__yTexOffs + d, self.__xTexOffs + d + w + d + w, self.__yTexOffs + d + h)
 
     def setPos(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
+        self.__x = x
+        self.__y = y
+        self.__z = 0.0
 
     def render(self):
         if not self.__compiled:
-            self.__compile()
+            self.__list = gl.glGenLists(1)
+            gl.glNewList(self.__list, gl.GL_COMPILE)
+            gl.glBegin(gl.GL_QUADS)
+            for polygon in self.__polygons:
+                gl.glColor3f(1.0, 1.0, 1.0)
+                for i in range(3, -1, -1):
+                    v = polygon.vertices[i]
+                    gl.glTexCoord2f(v.u / 64.0, v.v / 32.0)
+                    gl.glVertex3f(v.pos.x, v.pos.y, v.pos.z)
+            gl.glEnd()
+            gl.glEndList()
+            self.__compiled = True
 
         c = 57.29578
         gl.glPushMatrix()
-        gl.glTranslatef(self.x, self.y, self.z)
+        gl.glTranslatef(self.__x, self.__y, self.__z)
         gl.glRotatef(self.zRot * c, 0.0, 0.0, 1.0)
         gl.glRotatef(self.yRot * c, 0.0, 1.0, 0.0)
         gl.glRotatef(self.xRot * c, 1.0, 0.0, 0.0)
 
         gl.glCallList(self.__list)
         gl.glPopMatrix()
-
-    def __compile(self):
-        self.__list = gl.glGenLists(1)
-        gl.glNewList(self.__list, gl.GL_COMPILE)
-        gl.glBegin(gl.GL_QUADS)
-        for polygon in self.__polygons:
-            polygon.render()
-        gl.glEnd()
-        gl.glEndList()
-        self.__compiled = True
