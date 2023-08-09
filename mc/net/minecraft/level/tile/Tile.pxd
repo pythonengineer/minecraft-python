@@ -20,10 +20,10 @@ cdef class Tile:
     cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face)
     cpdef int _getTexture(self, int face)
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face)
-    cpdef renderBackFace(self, Tesselator t, int x, int y, int z, int face)
-    cpdef renderFaceNoTexture(self, player, Tesselator t, int x, int y, int z, int face)
+    cdef renderBackFace(self, Tesselator t, int x, int y, int z, int face)
     cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
+    cdef bint mayPick(self)
     cpdef void tick(self, level, int x, int y, int z, random) except *
     cpdef int getLiquidType(self)
     cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *

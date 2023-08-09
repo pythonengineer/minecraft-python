@@ -1,8 +1,10 @@
+from mc.net.minecraft.level.Level import Level
 from mc.CompatibilityShims import DataInputStream, DataOutputStream
+import pickle
 
 class LevelIO:
     MAGIC_NUMBER = 656127880
-    CURRENT_VERSION = 1
+    CURRENT_VERSION = 2
 
     def __init__(self, minecraft):
         self.__minecraft = minecraft
@@ -14,31 +16,37 @@ class LevelIO:
             dis = DataInputStream(inp)
             magic = dis.readInt()
             if magic != self.MAGIC_NUMBER:
-                return False
+                dis.close()
+                return None
             version = dis.readByte()
             if version > self.CURRENT_VERSION:
-                return False
+                dis.close()
+                return None
+            elif version == 1:
+                print('Version is 1!')
+                name = dis.readUTF()
+                creator = dis.readUTF()
+                createTime = dis.readLong()
 
-            name = dis.readUTF()
-            creator = dis.readUTF()
-            createTime = dis.readLong()
+                width = dis.readShort()
+                height = dis.readShort()
+                depth = dis.readShort()
 
-            width = dis.readShort()
-            height = dis.readShort()
-            depth = dis.readShort()
+                blocks = bytearray(dis.readFully())
+                dis.close()
 
-            blocks = bytearray(dis.readFully())
+                level = Level()
+                level.setDataLegacy(width, depth, height, blocks)
+                level.name = name
+                level.creator = creator
+                level.createTime = createTime
+            else:
+                level = pickle.loads(dis.readFully())
+
             dis.close()
-
-            level.setDataBytes(width, depth, height, blocks)
-            level.name = name
-            level.creator = creator
-            level.createTime = createTime
-            return True
+            return level
         except Exception as e:
             print('Failed to load level:', e)
-
-        return False
 
     def loadLegacy(self, level, inp):
         self.__minecraft.beginLevelLoading('Loading level')
@@ -57,26 +65,21 @@ class LevelIO:
             blocks = bytearray(dis.readFully())
             dis.close()
 
-            level.setDataBytes(width, depth, height, blocks)
+            level = Level()
+            level.setDataLegacy(width, depth, height, blocks)
             level.name = name
             level.creator = creator
             level.createTime = createTime
-            return True
+
+            dis.close()
+            return level
         except Exception as e:
             print('Failed to load level:', e)
-
-        return False
 
     @staticmethod
     def save(level, out):
         dos = DataOutputStream(out)
         dos.writeInt(LevelIO.MAGIC_NUMBER)
         dos.writeByte(LevelIO.CURRENT_VERSION)
-        dos.writeUTF(level.name.encode())
-        dos.writeUTF(level.creator.encode())
-        dos.writeLong(level.createTime)
-        dos.writeShort(level.width)
-        dos.writeShort(level.height)
-        dos.writeShort(level.depth)
-        dos.write(level.getBlocks())
+        dos.write(pickle.dumps(level))
         dos.close()

@@ -65,7 +65,6 @@ class Cube:
             gl.glNewList(self.__list, gl.GL_COMPILE)
             gl.glBegin(gl.GL_QUADS)
             for polygon in self.__polygons:
-                gl.glColor3f(1.0, 1.0, 1.0)
                 for i in range(3, -1, -1):
                     v = polygon.vertices[i]
                     gl.glTexCoord2f(v.u / 64.0, v.v / 32.0)

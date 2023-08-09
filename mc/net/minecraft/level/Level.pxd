@@ -12,11 +12,17 @@ cdef class Level:
         public str creator
         public object createTime
 
-        public set levelListeners
+        public float rotSpawn
+
+        set __levelListeners
         public object rand
         public int randValue
+        set __tickList
+
+        public set entities
 
         public int unprocessed
+        int __tickCount
 
         public int multiplier
         public unsigned long addend
@@ -28,16 +34,31 @@ cdef class Level:
         char* __blocks
         int* __heightMap
 
+        public int xSpawn
+        public int ySpawn
+        public int zSpawn
+
     cdef setData(self, int w, int d, int h, char* blocks)
-    cdef __calcLightDepths(self, int x0, int y0, int x1, int y1)
-    cdef inline bint isLightBlocker(self, int x, int y, int z)
-    cpdef getCubes(self, box)
+    cdef findSpawn(self)
+    cdef void calcLightDepths(self, int x0, int y0, int x1, int y1) except *
+    cpdef inline bint isLightBlocker(self, int x, int y, int z) except *
+    cdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_)
     cpdef bint setTile(self, int x, int y, int z, int type_)
-    cpdef inline bint setTileNoUpdate(self, int x, int y, int z, int type_)
     cdef __updateNeighborAt(self, int x, int y, int z, int type_)
+    cpdef inline bint setTileNoUpdate(self, int x, int y, int z, int type_)
+    cdef __neighborChanged(self, int x, int y, int z, int type_)
     cpdef inline bint isLit(self, int x, int y, int z)
-    cpdef inline int getTile(self, int x, int y, int z)
-    cpdef tick(self)
+    cpdef inline int getTile(self, int x, int y, int z) except *
+    cpdef inline bint isSolidTile(self, int x, int y, int z)
+    cdef inline bint __isInLevelBounds(self, int x, int y, int z)
+    cpdef inline float getGroundLevel(self)
+    cpdef inline float getWaterLevel(self)
     cpdef bint containsAnyLiquid(self, box)
     cpdef bint containsLiquid(self, box, int liquidId)
-    cpdef clip(self, vec1, vec2)
+    cpdef inline addToTickNextTick(self, int x, int y, int z, int type_)
+    cpdef bint isFree(self, aabb)
+    cpdef inline bint isSolid(self, int x, int y, int z, int f4)
+    cdef inline bint __isSolidTile(self, int x, int y, int z)
+    cdef int getHighestTile(self, int x, int z)
+    cpdef setSpawnPos(self, int x, int y, int z, float yRot)
+    cpdef inline float getBrightness(self, int x, int y, int z)

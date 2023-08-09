@@ -19,28 +19,40 @@ class Entity:
     removed = False
 
     heightOffset = 0.0
-    __bbWidth = 0.6
+    _bbWidth = 0.6
     bbHeight = 1.8
 
     def __init__(self, level):
-        self.__level = level
-        self.resetPos()
+        self._level = level
+        self.setPos(0.0, 0.0, 0.0)
 
     def resetPos(self):
-        x = random.random() * self.__level.width
-        y = self.__level.depth + 10.
-        z = random.random() * self.__level.height
-        self.setPos(x, y, z)
+        x = self._level.xSpawn + 0.5
+        y = self._level.ySpawn
+        z = self._level.zSpawn + 0.5
+        while y > 0.0:
+            self.setPos(x, y, z)
+            if len(self._level.getCubes(self.bb)) == 0:
+                break
+
+            y += 1.0
+
+        self.xd = self.yd = self.zd = 0.0
+        self.yRot = self._level.rotSpawn
+        self.xRot = 0.0
+
+    def remove(self):
+        self.removed = True
 
     def setSize(self, w, h):
-        self.__bbWidth = w
+        self._bbWidth = w
         self.bbHeight = h
 
     def setPos(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
-        w = self.__bbWidth / 2.0
+        w = self._bbWidth / 2.0
         h = self.bbHeight / 2.0
         self.bb = AABB(x - w, y - h, z - w, x + w, y + h, z + w)
 
@@ -57,21 +69,31 @@ class Entity:
         self.xRotO += self.xRot - orgXRot
         self.yRotO += self.yRot - orgYRot
 
+    def interpolateTurn(self, xo, yo):
+        self.yRot = self.yRot + xo * 0.15
+        self.xRot = self.xRot - yo * 0.15
+        if self.xRot < -90.0:
+            self.xRot = -90.0
+        if self.xRot > 90.0:
+            self.xRot = 90.0
+
     def tick(self):
         self.xo = self.x
         self.yo = self.y
         self.zo = self.z
+        self.xRotO = self.xRot
+        self.yRotO = self.yRot
 
     def isFree(self, xa, ya, za):
         aABB = self.bb.cloneMove(xa, ya, za)
-        return False if len(self.__level.getCubes(aABB)) > 0 else not self.__level.containsAnyLiquid(aABB)
+        return False if len(self._level.getCubes(aABB)) > 0 else not self._level.containsAnyLiquid(aABB)
 
     def move(self, xa, ya, za):
         xaOrg = xa
         yaOrg = ya
         zaOrg = za
 
-        aABBs = self.__level.getCubes(self.bb.expand(xa, ya, za))
+        aABBs = self._level.getCubes(self.bb.expand(xa, ya, za))
         for aABB in aABBs:
             ya = aABB.clipYCollide(self.bb, ya)
 
@@ -102,17 +124,20 @@ class Entity:
         self.z = (self.bb.z0 + self.bb.z1) / 2.0
 
     def isInWater(self):
-        return self.__level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), 1)
+        return self._level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), 1)
 
     def isInLava(self):
-        return self.__level.containsLiquid(self.bb, 2)
+        return self._level.containsLiquid(self.bb, 2)
 
     def moveRelative(self, xa, za, speed):
-        dist = xa * xa + za * za
+        dist = math.sqrt(xa * xa + za * za)
         if dist < 0.01:
             return
 
-        dist = speed / math.sqrt(dist)
+        if dist < 1.0:
+            dist = 1.0
+
+        dist = speed / dist
         xa *= dist
         za *= dist
 
@@ -123,7 +148,16 @@ class Entity:
         self.zd += za * cos + xa * sin
 
     def isLit(self):
-        return self.__level.isLit(int(self.x), int(self.y), int(self.z))
+        return self._level.isLit(int(self.x), int(self.y), int(self.z))
+
+    def getBrightness(self):
+        x = int(self.x)
+        y = int(self.y + self.heightOffset / 2.0)
+        z = int(self.z)
+        return self._level.getBrightness(x, y, z)
 
     def render(self, a):
         pass
+
+    def setLevel(self, level):
+        self._level = level

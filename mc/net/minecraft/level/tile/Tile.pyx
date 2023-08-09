@@ -43,54 +43,65 @@ cdef class Tile:
         self.__zz1 = 1.0
 
     cpdef bint render(self, Tesselator t, level, int layer, int x, int y, int z) except *:
-        cdef char c1 = -1
-        cdef char c2 = -52
-        cdef char c3 = -103
-        cdef bint layerOk = False
+        cdef float f8, f9, f10
+        cdef bint layerOk
 
+        layerOk = False
+        f8 = 0.8
+        f9 = 0.6
         if self._shouldRenderFace(level, x, y - 1, z, layer, 0):
-            t.colorByte(c1, c1, c1)
+            f10 = level.getBrightness(x, y - 1, z)
+            t.colorRGB(f10 * 1.0, f10 * 1.0, f10 * 1.0)
             self.renderFace(t, x, y, z, 0)
             layerOk = True
         if self._shouldRenderFace(level, x, y + 1, z, layer, 1):
-            t.colorByte(c1, c1, c1)
+            f10 = level.getBrightness(x, y + 1, z)
+            t.colorRGB(f10 * 1.0, f10 * 1.0, f10 * 1.0)
             self.renderFace(t, x, y, z, 1)
             layerOk = True
         if self._shouldRenderFace(level, x, y, z - 1, layer, 2):
-            t.colorByte(c2, c2, c2)
+            f10 = level.getBrightness(x, y, z - 1)
+            t.colorRGB(f8 * f10, f8 * f10, f8 * f10)
             self.renderFace(t, x, y, z, 2)
             layerOk = True
         if self._shouldRenderFace(level, x, y, z + 1, layer, 3):
-            t.colorByte(c2, c2, c2)
+            f10 = level.getBrightness(x, y, z + 1)
+            t.colorRGB(f8 * f10, f8 * f10, f8 * f10)
             self.renderFace(t, x, y, z, 3)
             layerOk = True
         if self._shouldRenderFace(level, x - 1, y, z, layer, 4):
-            t.colorByte(c3, c3, c3)
+            f10 = level.getBrightness(x - 1, y, z)
+            t.colorRGB(f9 * f10, f9 * f10, f9 * f10)
             self.renderFace(t, x, y, z, 4)
             layerOk = True
         if self._shouldRenderFace(level, x + 1, y, z, layer, 5):
-            t.colorByte(c3, c3, c3)
+            f10 = level.getBrightness(x + 1, y, z)
+            t.colorRGB(f9 * f10, f9 * f10, f9 * f10)
             self.renderFace(t, x, y, z, 5)
             layerOk = True
 
         return layerOk
 
-    cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
-        cdef bint layerOk = True
-        if layer == 2:
-            return False
-        if layer >= 0:
-            layerOk = level.isLit(x, y, z) ^ layer == 1
+    @staticmethod
+    def cullFace(level, int x, int y, int z, int i):
+        if i == 0: y -= 1
+        elif i == 1: y += 1
+        elif i == 2: z -= 1
+        elif i == 3: z += 1
+        elif i == 4: x -= 1
+        elif i == 5: x += 1
 
-        tile = self.tiles.tiles[level.getTile(x, y, z)]
-        return not (False if tile is None else tile.isSolid()) and layerOk
+        return not level.isSolidTile(x, y, z)
+
+    cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
+        return False if layer == 1 else not level.isSolidTile(x, y, z)
 
     cpdef int _getTexture(self, int face):
         return self.tex
 
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face):
         cdef int tex
-        cdef float u0, u1, v0, v1, x0, x1, y0, y1, z0, z1
+        cdef float xt, yt, u0, u1, v0, v1, x0, x1, y0, y1, z0, z1
 
         tex = self._getTexture(face)
         xt = tex % 16 * 16
@@ -138,7 +149,7 @@ cdef class Tile:
             t.vertexUV(x1, y1, z0, u1, v0)
             t.vertexUV(x1, y1, z1, u0, v0)
 
-    cpdef renderBackFace(self, Tesselator t, int x, int y, int z, int face):
+    cdef renderBackFace(self, Tesselator t, int x, int y, int z, int face):
         cdef int tex
         cdef float u0, u1, v0, v1, x0, x1, y0, y1, z0, z1
 
@@ -186,7 +197,8 @@ cdef class Tile:
             t.vertexUV(x1, y0, z0, u1, v1)
             t.vertexUV(x1, y0, z1, u0, v1)
 
-    cpdef renderFaceNoTexture(self, player, Tesselator t, int x, int y, int z, int face):
+    @staticmethod
+    def renderFaceNoTexture(player, Tesselator t, int x, int y, int z, int face):
         cdef float x0, x1, y0, y1, z0, z1
 
         x0 = x + 0.0
@@ -239,7 +251,7 @@ cdef class Tile:
     cpdef bint isSolid(self):
         return True
 
-    def mayPick(self):
+    cdef bint mayPick(self):
         return True
 
     cpdef void tick(self, level, int x, int y, int z, random) except *:
@@ -265,4 +277,7 @@ cdef class Tile:
         return 0
 
     cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *:
+        pass
+
+    def onBlockAdded(self, level, int x, int y, int z):
         pass

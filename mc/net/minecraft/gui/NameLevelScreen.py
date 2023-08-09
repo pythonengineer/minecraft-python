@@ -17,6 +17,7 @@ class NameLevelScreen(Screen):
 
     def init(self, minecraft, width, height):
         super().init(minecraft, width, height)
+        self._buttons.clear()
         self._buttons.append(Button(0, self._width // 2 - 100, self._height // 4 + 120, 200, 20, 'Save'))
         self._buttons.append(Button(1, self._width // 2 - 100, self._height // 4 + 144, 200, 20, 'Cancel'))
         self._buttons[0].enabled = len(self.__name.strip()) > 1
@@ -30,8 +31,7 @@ class NameLevelScreen(Screen):
     def _buttonClicked(self, button):
         if button.enabled:
             if button.id == 0 and len(self.__name.strip()) > 1:
-                name = self.__name.strip()
-                self._minecraft.levelIo.save(self._minecraft.level, gzip.open('level.dat', 'wb'))
+                self._minecraft.saveLevel(self.__id, self.__name.strip())
                 self._minecraft.setScreen(None)
                 self._minecraft.grabMouse()
             elif button.id == 1:

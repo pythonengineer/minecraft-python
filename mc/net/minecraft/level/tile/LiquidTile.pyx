@@ -5,19 +5,14 @@ from mc.net.minecraft.level.tile.Tile cimport Tile
 
 cdef class LiquidTile(Tile):
 
-    def __init__(self, tiles, id_, liquidType):
+    def __init__(self, tiles, int id_, int liquidType):
         Tile.__init__(self, tiles, id_)
         self._liquidType = liquidType
 
         self.tex = 14
-        self.__spreadSpeed = 1
 
         if liquidType == 2:
             self.tex = 30
-        if liquidType == 1:
-            self.__spreadSpeed = 8
-        if liquidType == 2:
-            self.__spreadSpeed = 2
 
         self._tileId = id_
         self._calmTileId = id_ + 1
@@ -26,10 +21,10 @@ cdef class LiquidTile(Tile):
         self._setShape(0.0, 0.0 - dd, 0.0, 1.0, 1.0 - dd, 1.0)
         self._setTicking(True)
 
-    cpdef void tick(self, level, int x, int y, int z, random) except *:
-        self.updateWater(level, x, y, z, 0)
+    def onBlockAdded(self, level, int x, int y, int z):
+        level.addToTickNextTick(x, y, z, self._tileId)
 
-    cdef bint updateWater(self, level, int x, int y, int z, int depth):
+    cpdef void tick(self, level, int x, int y, int z, random) except *:
         cdef bint hasChanged, change
         hasChanged = False
         while True:
@@ -46,35 +41,28 @@ cdef class LiquidTile(Tile):
 
         y += 1
         if self._liquidType == 1 or not hasChanged:
-            hasChanged |= self.__checkWater(level, x - 1, y, z, depth)
-            hasChanged |= self.__checkWater(level, x + 1, y, z, depth)
-            hasChanged |= self.__checkWater(level, x, y, z - 1, depth)
-            hasChanged |= self.__checkWater(level, x, y, z + 1, depth)
+            hasChanged |= self.__checkWater(level, x - 1, y, z)
+            hasChanged |= self.__checkWater(level, x + 1, y, z)
+            hasChanged |= self.__checkWater(level, x, y, z - 1)
+            hasChanged |= self.__checkWater(level, x, y, z + 1)
 
-        if not hasChanged:
+        if hasChanged:
+            level.addToTickNextTick(x, y, z, self._tileId)
+        else:
             level.setTileNoUpdate(x, y, z, self._calmTileId)
 
-        return hasChanged
+    cdef bint __checkWater(self, level, int x, int y, int z):
+        if level.getTile(x, y, z) == 0 and level.setTile(x, y, z, self._tileId):
+            level.addToTickNextTick(x, y, z, self._tileId)
 
-    cdef bint __checkWater(self, level, int x, int y, int z, int depth):
-        cdef bint hasChanged, changed
-        cdef int type_
-
-        hasChanged = False
-        type_ = level.getTile(x, y, z)
-        if type_ == 0:
-            changed = level.setTile(x, y, z, self._tileId)
-            if changed and depth < self.__spreadSpeed:
-                hasChanged |= self.updateWater(level, x, y, z, depth + 1)
-
-        return hasChanged
+        return False
 
     cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
         cdef int id_
 
         if x < 0 or y < 0 or z < 0 or x >= level.width or z >= level.height:
             return False
-        if layer != 2 and self._liquidType == 1:
+        if layer != 1 and self._liquidType == 1:
             return False
 
         id_ = level.getTile(x, y, z)
@@ -87,7 +75,7 @@ cdef class LiquidTile(Tile):
         Tile.renderFace(self, t, x, y, z, face)
         self.renderBackFace(t, x, y, z, face)
 
-    def mayPick(self):
+    cdef bint mayPick(self):
         return False
 
     def getAABB(self, int x, int y, int z):
@@ -107,3 +95,5 @@ cdef class LiquidTile(Tile):
             level.setTileNoUpdate(x, y, z, self.tiles.rock.id)
         if self._liquidType == 2 and (type_ == self.tiles.water.id or type_ == self.tiles.calmWater.id):
             level.setTileNoUpdate(x, y, z, self.tiles.rock.id)
+
+        level.addToTickNextTick(x, y, z, type_)

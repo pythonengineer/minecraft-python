@@ -19,3 +19,10 @@ cdef class Tiles:
         public LiquidTile calmWater
         public LiquidTile lava
         public LiquidTile calmLava
+        public Tile sand
+        public Tile gravel
+        public Tile oreGold
+        public Tile oreIron
+        public Tile oreCoal
+        public Tile log
+        public Tile leaf

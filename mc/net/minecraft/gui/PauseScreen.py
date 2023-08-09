@@ -1,4 +1,5 @@
 from mc.net.minecraft.gui.Screen import Screen
+from mc.net.minecraft.gui.NewLevelScreen import NewLevelScreen
 from mc.net.minecraft.gui.SaveLevelScreen import SaveLevelScreen
 from mc.net.minecraft.gui.LoadLevelScreen import LoadLevelScreen
 from mc.net.minecraft.gui.Button import Button
@@ -8,7 +9,8 @@ class PauseScreen(Screen):
 
     def init(self, minecraft, width, height):
         super().init(minecraft, width, height)
-        self._buttons.append(Button(0, self._width // 2 - 100, self._height // 3, 200, 20, 'Generate new level'))
+        self._buttons.clear()
+        self._buttons.append(Button(0, self._width // 2 - 100, self._height // 3, 200, 20, 'Generate new level...'))
         self._buttons.append(Button(1, self._width // 2 - 100, self._height // 3 + 32, 200, 20, 'Save level..'))
         self._buttons.append(Button(2, self._width // 2 - 100, self._height // 3 + 64, 200, 20, 'Load level..'))
         self._buttons.append(Button(3, self._width // 2 - 100, self._height // 3 + 96, 200, 20, 'Back to game'))
@@ -17,13 +19,12 @@ class PauseScreen(Screen):
 
     def _buttonClicked(self, button):
         if button.id == 0:
-            self._minecraft.generateNewLevel()
-            self._minecraft.setScreen(None)
-            self._minecraft.grabMouse()
+            self._minecraft.setScreen(NewLevelScreen(self))
 
-        if button.id == 1:
-            self._minecraft.attemptSaveLevel()
-            #self._minecraft.setScreen(SaveLevelScreen(self))
+        if button.id == 1 and self._minecraft.user:
+            self._minecraft.setScreen(SaveLevelScreen(self))
+        elif button.id == 1:
+            self._minecraft.saveLevel(None, None)
         elif button.id == 2 and self._minecraft.user:
             self._minecraft.setScreen(LoadLevelScreen(self))
 
