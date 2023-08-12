@@ -65,19 +65,6 @@ class Zombie(Entity):
         gl.glTranslatef(0.0, yy, 0.0)
         c = 57.29578
         gl.glRotatef(self.rot * c + 180.0, 0.0, 1.0, 0.0)
-        self.__zombieModel.head.yRot = math.sin(t * 0.83) * 1.0
-        self.__zombieModel.head.xRot = math.sin(t) * 0.8
-        self.__zombieModel.arm0.xRot = math.sin(t * 0.6662 + math.pi) * 2.0
-        self.__zombieModel.arm0.zRot = (math.sin(t * 0.2312) + 1.0) * 1.0
-        self.__zombieModel.arm1.xRot = math.sin(t * 0.6662) * 2.0
-        self.__zombieModel.arm1.zRot = (math.sin(t * 0.2812) - 1.0) * 1.0
-        self.__zombieModel.leg0.xRot = math.sin(t * 0.6662) * 1.4
-        self.__zombieModel.leg1.xRot = math.sin(t * 0.6662 + math.pi) * 1.4
-        self.__zombieModel.head.render()
-        self.__zombieModel.body.render()
-        self.__zombieModel.arm0.render()
-        self.__zombieModel.arm1.render()
-        self.__zombieModel.leg0.render()
-        self.__zombieModel.leg1.render()
+        self.__zombieModel.render(t, 0.0, 0.0)
         gl.glPopMatrix()
         gl.glDisable(gl.GL_TEXTURE_2D)

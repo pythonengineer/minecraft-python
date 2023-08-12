@@ -21,7 +21,7 @@ class Screen:
                     self._fill(button.x, button.y, button.x + button.w, button.y + button.h, -7303024)
                     self.drawCenteredString(button.msg, button.x + button.w // 2, button.y + (button.h - 8) // 2, -6250336)
 
-    def _keyPressed(self, key, modifiers, state):
+    def _keyPressed(self, key, char, motion):
         if key == window.key.ESCAPE:
             self._minecraft.setScreen(None)
             self._minecraft.grabMouse()
@@ -31,8 +31,8 @@ class Screen:
 
     def init(self, minecraft, width, height):
         self._minecraft = minecraft
-        self._width = width
-        self._height = height
+        self._y = width
+        self._w = height
         self._buttons = []
 
     def _fill(self, x0, y0, x1, y1, col):
@@ -53,20 +53,21 @@ class Screen:
         gl.glDisable(gl.GL_BLEND)
 
     def _fillGradient(self, x0, y0, x1, y1, col1, col2):
-        f9 = 96 / 255.0
-        f10 = 5 / 255.0
-        f11 = 5 / 255.0
-        f12 = 160 / 255.0
-        f6 = 48 / 255.0
-        f7 = 48 / 255.0
-        f8 = 96 / 255.0
+        f10 = rshift(col1, 24) / 255.0
+        f11 = (col1 >> 16 & 255) / 255.0
+        f6 = (col1 >> 8 & 255) / 255.0
+        f12 = (col1 & 255) / 255.0
+        f7 = rshift(col2, 24) / 255.0
+        f8 = (col2 >> 16 & 255) / 255.0
+        f9 = (col2 >> 8 & 255) / 255.0
+        f13 = (col2 & 255) / 255.0
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glBegin(gl.GL_QUADS)
-        gl.glColor4f(f10, f11, 0.0, f9)
+        gl.glColor4f(f11, f6, f12, f10)
         gl.glVertex2f(x1, 0.0)
         gl.glVertex2f(0.0, 0.0)
-        gl.glColor4f(f6, f7, f8, f12)
+        gl.glColor4f(f8, f9, f13, f7)
         gl.glVertex2f(0.0, y1)
         gl.glVertex2f(x1, y1)
         gl.glEnd()
@@ -78,18 +79,18 @@ class Screen:
     def drawString(self, string, x, y, color):
         self._minecraft.font.drawShadow(string, x, y, color)
 
-    def updateEvents(self, button=None, key=None, modifiers=None, state=True):
+    def updateEvents(self, button=None, key=None, char=None, motion=None):
         if button:
-            xm = self._minecraft.mouseX * self._width // self._minecraft.width
-            ym = self._height - self._minecraft.mouseY * self._height // self._minecraft.height - 1
+            xm = self._minecraft.mouseX * self._y // self._minecraft.width
+            ym = self._w - self._minecraft.mouseY * self._w // self._minecraft.height - 1
             if button != window.mouse.LEFT:
                 return
 
             for button in self._buttons:
                 if xm >= button.x and ym >= button.y and xm < button.x + button.w and ym < button.y + button.h:
                     self._buttonClicked(button)
-        elif key and state:
-            self._keyPressed(key, modifiers, state)
+        elif key or char or motion:
+            self._keyPressed(key, char, motion)
 
     def tick(self):
         pass

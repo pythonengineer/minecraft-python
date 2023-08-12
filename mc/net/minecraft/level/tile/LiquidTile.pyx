@@ -1,17 +1,19 @@
 # cython: language_level=3
 
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
+from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.level.tile.Tile cimport Tile
+from mc.net.minecraft.level.liquid.Liquid import Liquid
 
 cdef class LiquidTile(Tile):
 
-    def __init__(self, tiles, int id_, int liquidType):
+    def __init__(self, tiles, int id_, int liquid):
         Tile.__init__(self, tiles, id_)
-        self._liquidType = liquidType
+        self._liquid = liquid
 
         self.tex = 14
 
-        if liquidType == 2:
+        if liquid == Liquid.lava:
             self.tex = 30
 
         self._tileId = id_
@@ -20,27 +22,29 @@ cdef class LiquidTile(Tile):
         dd = 0.1
         self._setShape(0.0, 0.0 - dd, 0.0, 1.0, 1.0 - dd, 1.0)
         self._setTicking(True)
+        if liquid == Liquid.lava:
+            self.setTickSpeed(16)
 
     def onBlockAdded(self, level, int x, int y, int z):
         level.addToTickNextTick(x, y, z, self._tileId)
 
-    cpdef void tick(self, level, int x, int y, int z, random) except *:
+    cpdef void tick(self, Level level, int x, int y, int z, random) except *:
         cdef bint hasChanged, change
         hasChanged = False
         while True:
             y -= 1
-            if level.getTile(x, y, z):
+            if level.getTile(x, y, z) != 0:
                 break
 
             change = level.setTile(x, y, z, self._tileId)
             if change:
                 hasChanged = True
 
-            if not change or self._liquidType == 2:
+            if not change or self._liquid == Liquid.lava:
                 break
 
         y += 1
-        if self._liquidType == 1 or not hasChanged:
+        if self._liquid == Liquid.water or not hasChanged:
             hasChanged |= self.__checkWater(level, x - 1, y, z)
             hasChanged |= self.__checkWater(level, x + 1, y, z)
             hasChanged |= self.__checkWater(level, x, y, z - 1)
@@ -51,25 +55,35 @@ cdef class LiquidTile(Tile):
         else:
             level.setTileNoUpdate(x, y, z, self._calmTileId)
 
-    cdef bint __checkWater(self, level, int x, int y, int z):
+    cdef bint __checkWater(self, Level level, int x, int y, int z):
         if level.getTile(x, y, z) == 0 and level.setTile(x, y, z, self._tileId):
             level.addToTickNextTick(x, y, z, self._tileId)
 
         return False
 
-    cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
-        cdef int id_
+    cdef float _getBrightness(self, Level level, int x, int y, int z):
+        return 100.0 if self._liquid == Liquid.lava else level.getBrightness(x, y, z)
 
-        if x < 0 or y < 0 or z < 0 or x >= level.width or z >= level.height:
-            return False
-        if layer != 1 and self._liquidType == 1:
-            return False
+    cdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
+        cdef int tile
 
-        id_ = level.getTile(x, y, z)
-        if id_ == self._tileId or id_ == self._calmTileId:
+        if x >= 0 and y >= 0 and z >= 0 and x < level.width and z < level.height:
+            if layer != 1:
+                 return False
+            else:
+                tile = level.getTile(x, y, z)
+                if tile != self._tileId and tile != self._calmTileId:
+                    if face != 1 or level.getTile(x - 1, y, z) != 0 and \
+                       level.getTile(x + 1, y, z) != 0 and \
+                       level.getTile(x, y, z - 1) != 0 and \
+                       level.getTile(x, y, z + 1) != 0:
+                        return Tile._shouldRenderFace(self, level, x, y, z, -1, face)
+                    else:
+                        return True
+                else:
+                    return False
+        else:
             return False
-
-        return Tile._shouldRenderFace(self, level, x, y, z, -1, face)
 
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face):
         Tile.renderFace(self, t, x, y, z, face)
@@ -88,12 +102,18 @@ cdef class LiquidTile(Tile):
         return False
 
     cpdef int getLiquidType(self):
-        return self._liquidType
+        return self._liquid
 
-    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *:
-        if self._liquidType == 1 and (type_ == self.tiles.lava.id or type_ == self.tiles.calmLava.id):
-            level.setTileNoUpdate(x, y, z, self.tiles.rock.id)
-        if self._liquidType == 2 and (type_ == self.tiles.water.id or type_ == self.tiles.calmWater.id):
-            level.setTileNoUpdate(x, y, z, self.tiles.rock.id)
+    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *:
+        cdef int liquid
+
+        if type_ != 0:
+            liquid = (<Tile>self.tiles.tiles[type_]).getLiquidType()
+            if self._liquid == Liquid.water and liquid == Liquid.lava or liquid == Liquid.water and self._liquid == Liquid.lava:
+                level.setTile(x, y, z, self.tiles.rock.id)
+                return
 
         level.addToTickNextTick(x, y, z, type_)
+
+    cdef int getTickDelay(self):
+        return 5 if self._liquid == Liquid.lava else 0

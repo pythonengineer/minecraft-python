@@ -14,7 +14,7 @@ class LevelRenderer:
     CHUNK_SIZE = 16
     level = None
     drawDistance = 0
-    __dummyBuffer = BufferUtils.createIntBuffer(65536)
+    dummyBuffer = BufferUtils.createIntBuffer(65536)
     dirtyChunks = set()
     sortedChunks = []
     cloudTickCounter = 0
@@ -23,7 +23,7 @@ class LevelRenderer:
     __lZ = -9999.0
 
     def __init__(self, textures):
-        self.__textures = textures
+        self.textures = textures
         self.surroundLists = gl.glGenLists(2)
 
     def setLevel(self, level):
@@ -31,10 +31,10 @@ class LevelRenderer:
             self.level.removeListener(self)
 
         self.level = level
-        level.addListener(self)
-
-        self.__dummyBuffer = BufferUtils.createIntBuffer(65536)
-        self.compileSurroundingGround()
+        if self.level:
+            level.addListener(self)
+            self.dummyBuffer = BufferUtils.createIntBuffer(65536)
+            self.compileSurroundingGround()
 
     def compileSurroundingGround(self):
         if self.sortedChunks:
@@ -60,7 +60,7 @@ class LevelRenderer:
         self.dirtyChunks.clear()
         gl.glNewList(self.surroundLists, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('rock.png', gl.GL_NEAREST))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('rock.png', gl.GL_NEAREST))
         gl.glColor4f(0.5, 0.5, 0.5, 1.0)
         t = tesselator
         y = self.level.getGroundLevel()
@@ -83,7 +83,7 @@ class LevelRenderer:
                 t.vertexUV(xx + 0, yy, zz + 0, 0.0, 0.0)
 
         t.end()
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('rock.png', gl.GL_NEAREST))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('rock.png', gl.GL_NEAREST))
         gl.glColor3f(0.8, 0.8, 0.8)
         t.begin()
 
@@ -118,7 +118,7 @@ class LevelRenderer:
         gl.glNewList(self.surroundLists + 1, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glColor3f(1.0, 1.0, 1.0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('water.png', gl.GL_NEAREST))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('water.png', gl.GL_NEAREST))
         y = self.level.getWaterLevel()
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
@@ -154,7 +154,7 @@ class LevelRenderer:
     def renderEntities(self, frustum, a):
         for entity in self.level.entities:
             if frustum.isVisible(entity.bb):
-                entity.render(self.__textures, a)
+                entity.render(self.textures, a)
 
     def render(self, player, layer, z=None):
         if z is not None:
@@ -185,9 +185,6 @@ class LevelRenderer:
 
             return
 
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('terrain.png', gl.GL_NEAREST))
-
         xd = player.x - self.__lX
         yd = player.y - self.__lY
         zd = player.z - self.__lZ
@@ -197,20 +194,23 @@ class LevelRenderer:
             self.__lZ = player.z
             self.__chunks = sorted(self.__chunks, key=cmp_to_key(DistanceSorter(player).compare))
 
-        self.__dummyBuffer.clear()
+        self.dummyBuffer.clear()
 
         for chunk in self.__chunks:
-            chunk.render(self.__dummyBuffer, layer)
+            chunk.render(self.dummyBuffer, layer)
 
-        if self.__dummyBuffer.position() > 0:
-            self.__dummyBuffer.flip()
-            gl.glCallLists(self.__dummyBuffer.capacity(), gl.GL_INT, self.__dummyBuffer)
+        self.dummyBuffer.flip()
+        if self.dummyBuffer.remaining() > 0:
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('terrain.png', gl.GL_NEAREST))
+            gl.glCallLists(self.dummyBuffer.capacity(), gl.GL_INT, self.dummyBuffer)
+            gl.glDisable(gl.GL_TEXTURE_2D)
 
-        gl.glDisable(gl.GL_TEXTURE_2D)
+        return self.dummyBuffer.remaining()
 
     def renderClouds(self, a):
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('clouds.png', gl.GL_NEAREST))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('clouds.png', gl.GL_NEAREST))
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         t = tesselator
         f3 = 0.0
@@ -234,7 +234,7 @@ class LevelRenderer:
         t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)
         t.begin()
-        t.colorRGB(0.5, 0.8, 1.0)
+        t.colorFloat(0.5, 0.8, 1.0)
         f3 = self.level.depth + 10.
 
         for i7 in range(-2048, self.level.width + 2048, 512):
@@ -262,7 +262,7 @@ class LevelRenderer:
             br = math.sin(getMillis() / 100.0) * 0.2 + 0.8
             gl.glColor4f(br, br, br, math.sin(getMillis() / 200.0) * 0.2 + 0.5)
             gl.glEnable(gl.GL_TEXTURE_2D)
-            id_ = self.__textures.loadTexture('terrain.png', gl.GL_NEAREST)
+            id_ = self.textures.loadTexture('terrain.png', gl.GL_NEAREST)
             gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
             x = h.x
             y = h.y

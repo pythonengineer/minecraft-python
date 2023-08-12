@@ -110,7 +110,7 @@ cdef class Chunk:
             buffer.put(self.__lists + layer)
 
     cpdef isInFrustum(self, frustum):
-        self._isInFrustum = True#frustum.cubeInFrustum(self.__x0, self.__y0, self.__z0,
-                                #                  self.__x0 + self.__x1,
-                                #                  self.__y0 + self.__y1,
-                                #                  self.__z0 + self.__z1)
+        self._isInFrustum = frustum.cubeInFrustum(self.__x0, self.__y0, self.__z0,
+                                                  self.__x0 + self.__x1,
+                                                  self.__y0 + self.__y1,
+                                                  self.__z0 + self.__z1)

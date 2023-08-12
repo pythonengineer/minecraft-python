@@ -1,0 +1,17 @@
+from mc.net.minecraft.net.Packet import Packet, DataTypes
+
+LOGIN = Packet((DataTypes.Byte, DataTypes.String, DataTypes.String))
+Packet(())
+LEVEL_INITIALIZE = Packet(())
+LEVEL_DATA_CHUNK = Packet((DataTypes.Short, DataTypes.Bytes, DataTypes.Byte))
+LEVEL_FINALIZE = Packet((DataTypes.Short, DataTypes.Short, DataTypes.Short))
+PLACE_OR_REMOVE_TILE = Packet((DataTypes.Short, DataTypes.Short, DataTypes.Short, DataTypes.Byte, DataTypes.Byte))
+SET_TILE = Packet((DataTypes.Short, DataTypes.Short, DataTypes.Short, DataTypes.Byte))
+PLAYER_JOIN = Packet((DataTypes.Byte, DataTypes.String, DataTypes.Short, DataTypes.Short, DataTypes.Short, DataTypes.Byte, DataTypes.Byte))
+PLAYER_TELEPORT = Packet((DataTypes.Byte, DataTypes.Short, DataTypes.Short, DataTypes.Short, DataTypes.Byte, DataTypes.Byte))
+PLAYER_MOVE_AND_ROTATE = Packet((DataTypes.Byte, DataTypes.Byte, DataTypes.Byte, DataTypes.Byte, DataTypes.Byte, DataTypes.Byte))
+PLAYER_MOVE = Packet((DataTypes.Byte, DataTypes.Byte, DataTypes.Byte, DataTypes.Byte))
+PLAYER_ROTATE = Packet((DataTypes.Byte, DataTypes.Byte, DataTypes.Byte))
+PLAYER_DISCONNECT = Packet((DataTypes.Byte,))
+CHAT_MESSAGE = Packet((DataTypes.Byte, DataTypes.String))
+KICK_PLAYER = Packet((DataTypes.String,))

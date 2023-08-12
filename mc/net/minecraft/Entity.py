@@ -1,3 +1,4 @@
+from mc.net.minecraft.level.liquid.Liquid import Liquid
 from mc.net.minecraft.phys.AABB import AABB
 
 import random
@@ -27,19 +28,19 @@ class Entity:
         self.setPos(0.0, 0.0, 0.0)
 
     def resetPos(self):
-        x = self._level.xSpawn + 0.5
-        y = self._level.ySpawn
-        z = self._level.zSpawn + 0.5
-        while y > 0.0:
-            self.setPos(x, y, z)
-            if len(self._level.getCubes(self.bb)) == 0:
-                break
+        if self._level:
+            x = self._level.xSpawn + 0.5
+            y = self._level.ySpawn
+            z = self._level.zSpawn + 0.5
+            while y > 0.0:
+                self.setPos(x, y, z)
+                if len(self._level.getCubes(self.bb)) == 0:
+                    break
+                y += 1.0
 
-            y += 1.0
-
-        self.xd = self.yd = self.zd = 0.0
-        self.yRot = self._level.rotSpawn
-        self.xRot = 0.0
+            self.xd = self.yd = self.zd = 0.0
+            self.yRot = self._level.rotSpawn
+            self.xRot = 0.0
 
     def remove(self):
         self.removed = True
@@ -48,13 +49,30 @@ class Entity:
         self._bbWidth = w
         self.bbHeight = h
 
-    def setPos(self, x, y, z):
+    def setPos(self, x, y=None, z=None):
+        if x and y is None:
+            playerMove = x
+            if playerMove.moving:
+                self.setPos(playerMove.x, playerMove.y, playerMove.z)
+            else:
+                self.setPos(self.x, self.y, self.z)
+
+            if playerMove.rotating:
+                self._setRot(playerMove.yRot, playerMove.xRot)
+            else:
+                self._setRot(self.yRot, self.xRot)
+            return
+
         self.x = x
         self.y = y
         self.z = z
         w = self._bbWidth / 2.0
         h = self.bbHeight / 2.0
         self.bb = AABB(x - w, y - h, z - w, x + w, y + h, z + w)
+
+    def _setRot(self, yRot, xRot):
+        self.yRot = yRot
+        self.xRot = xRot
 
     def turn(self, xo, yo):
         orgXRot = self.xRot
@@ -124,10 +142,10 @@ class Entity:
         self.z = (self.bb.z0 + self.bb.z1) / 2.0
 
     def isInWater(self):
-        return self._level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), 1)
+        return self._level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), Liquid.water)
 
     def isInLava(self):
-        return self._level.containsLiquid(self.bb, 2)
+        return self._level.containsLiquid(self.bb, Liquid.lava)
 
     def moveRelative(self, xa, za, speed):
         dist = math.sqrt(xa * xa + za * za)
@@ -161,3 +179,11 @@ class Entity:
 
     def setLevel(self, level):
         self._level = level
+
+    def moveTo(self, x, y, z, xRot, yRot):
+        self.xo = self.x = x
+        self.yo = self.y = y
+        self.zo = self.z = z
+        self.xRot = xRot
+        self.yRot = yRot
+        self.setPos(x, y, z)

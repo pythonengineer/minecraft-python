@@ -10,12 +10,6 @@ cdef class Tesselator:
         self.__buffer = (gl.GLfloat * self.MAX_FLOATS)()
         self.__len = 3
 
-        self.__u = 0.0
-        self.__v = 0.0
-        self.__r = 0.0
-        self.__g = 0.0
-        self.__b = 0.0
-
     cpdef end(self):
         cdef int rem, i, n
 
@@ -49,7 +43,7 @@ cdef class Tesselator:
             if self.__hasColor:
                 gl.glEnableClientState(gl.GL_COLOR_ARRAY)
 
-            gl.glDrawArrays(gl.GL_QUADS, 0, self.__vertices)
+            gl.glDrawArrays(gl.GL_QUADS, gl.GL_POINTS, self.__vertices)
 
             gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
             if self.__hasTexture:
@@ -71,9 +65,10 @@ cdef class Tesselator:
         self.__hasTexture = False
         self.__noColor = False
 
-    cpdef inline colorRGB(self, float r, float g, float b):
+    cpdef colorFloat(self, float r, float g, float b):
         if self.__noColor:
             return
+
         if not self.__hasColor:
             self.__len += 3
 
@@ -82,16 +77,17 @@ cdef class Tesselator:
         self.__g = g
         self.__b = b
 
-    cpdef inline colorByte(self, char r, char g, char b):
+    cpdef colorInt(self, int r, int g, int b):
         if self.__noColor:
             return
+
         if not self.__hasColor:
             self.__len += 3
 
         self.__hasColor = True
-        self.__r = (r & 0xFF) / 255.0
-        self.__g = (g & 0xFF) / 255.0
-        self.__b = (b & 0xFF) / 255.0
+        self.__r = <float>(<char>r & 0xFF) / 255.0
+        self.__g = <float>(<char>g & 0xFF) / 255.0
+        self.__b = <float>(<char>b & 0xFF) / 255.0
 
     cpdef vertexUV(self, float x, float y, float z, float u, float v):
         if not self.__hasTexture:
@@ -108,6 +104,7 @@ cdef class Tesselator:
             self.__p += 1
             self.__array[self.__p] = self.__v
             self.__p += 1
+
         if self.__hasColor:
             self.__array[self.__p] = self.__r
             self.__p += 1
@@ -115,6 +112,7 @@ cdef class Tesselator:
             self.__p += 1
             self.__array[self.__p] = self.__b
             self.__p += 1
+
         self.__array[self.__p] = x
         self.__p += 1
         self.__array[self.__p] = y
@@ -123,16 +121,16 @@ cdef class Tesselator:
         self.__p += 1
 
         self.__vertices += 1
-        if self.__vertices % 4 == 0 and (self.__p >= self.max_floats - self.__len * 4):
+        if self.__vertices % 4 == 0 and self.__p >= self.max_floats - (self.__len << 2):
             self.end()
 
-    cpdef inline color(self, int c):
+    cpdef color(self, int c):
         cdef int r = c >> 16 & 0xFF
         cdef int g = c >> 8 & 0xFF
         cdef int b = c & 0xFF
-        self.colorByte(r, g, b)
+        self.colorInt(r, g, b)
 
-    def noColor(self):
+    cpdef noColor(self):
         self.__noColor = True
 
 tesselator = Tesselator()

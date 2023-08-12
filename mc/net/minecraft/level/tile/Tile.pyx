@@ -1,15 +1,15 @@
 # cython: language_level=3
 
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
+from mc.net.minecraft.level.liquid.Liquid cimport Liquid
+from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.particle.Particle import Particle
 from mc.net.minecraft.phys.AABB import AABB
 
 cdef list Tile_shouldTick
+cdef list Tile_tickSpeed
 
 cdef class Tile:
-    NOT_LIQUID = 0
-    LIQUID_WATER = 1
-    LIQUID_LAVA = 2
 
     property shouldTick:
 
@@ -20,9 +20,20 @@ cdef class Tile:
             global Tile_shouldTick
             Tile_shouldTick = x
 
+    property tickSpeed:
+
+        def __get__(self):
+            return Tile_tickSpeed
+
+        def __set__(self, x):
+            global Tile_tickSpeed
+            Tile_tickSpeed = x
+
     def __cinit__(self):
         if not self.shouldTick:
             self.shouldTick = [False] * 256
+        if not self.tickSpeed:
+            self.tickSpeed = [0] * 256
 
     def __init__(self, tiles, int id_, int tex=0):
         self.tiles = tiles
@@ -42,45 +53,53 @@ cdef class Tile:
         self.__yy1 = y1
         self.__zz1 = 1.0
 
-    cpdef bint render(self, Tesselator t, level, int layer, int x, int y, int z) except *:
-        cdef float f8, f9, f10
+    cdef setTickSpeed(self, int speed):
+        self.tickSpeed[self.id] = 16
+
+    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *:
+        cdef float f8, f9, f10, f11
         cdef bint layerOk
 
         layerOk = False
-        f8 = 0.8
-        f9 = 0.6
+        f8 = 0.0
+        f9 = 0.8
+        f10 = 0.6
         if self._shouldRenderFace(level, x, y - 1, z, layer, 0):
-            f10 = level.getBrightness(x, y - 1, z)
-            t.colorRGB(f10 * 1.0, f10 * 1.0, f10 * 1.0)
+            f8 = 0.5
+            f11 = self._getBrightness(level, x, y - 1, z)
+            t.colorFloat(f8 * f11, f8 * f11, f8 * f11)
             self.renderFace(t, x, y, z, 0)
             layerOk = True
         if self._shouldRenderFace(level, x, y + 1, z, layer, 1):
-            f10 = level.getBrightness(x, y + 1, z)
-            t.colorRGB(f10 * 1.0, f10 * 1.0, f10 * 1.0)
+            f11 = self._getBrightness(level, x, y + 1, z)
+            t.colorFloat(f11 * 1.0, f11 * 1.0, f11 * 1.0)
             self.renderFace(t, x, y, z, 1)
             layerOk = True
         if self._shouldRenderFace(level, x, y, z - 1, layer, 2):
-            f10 = level.getBrightness(x, y, z - 1)
-            t.colorRGB(f8 * f10, f8 * f10, f8 * f10)
+            f11 = self._getBrightness(level, x, y, z - 1)
+            t.colorFloat(f9 * f11, f9 * f11, f9 * f11)
             self.renderFace(t, x, y, z, 2)
             layerOk = True
         if self._shouldRenderFace(level, x, y, z + 1, layer, 3):
-            f10 = level.getBrightness(x, y, z + 1)
-            t.colorRGB(f8 * f10, f8 * f10, f8 * f10)
+            f11 = self._getBrightness(level, x, y, z + 1)
+            t.colorFloat(f9 * f11, f9 * f11, f9 * f11)
             self.renderFace(t, x, y, z, 3)
             layerOk = True
         if self._shouldRenderFace(level, x - 1, y, z, layer, 4):
-            f10 = level.getBrightness(x - 1, y, z)
-            t.colorRGB(f9 * f10, f9 * f10, f9 * f10)
+            f11 = self._getBrightness(level, x - 1, y, z)
+            t.colorFloat(f10 * f11, f10 * f11, f10 * f11)
             self.renderFace(t, x, y, z, 4)
             layerOk = True
         if self._shouldRenderFace(level, x + 1, y, z, layer, 5):
-            f10 = level.getBrightness(x + 1, y, z)
-            t.colorRGB(f9 * f10, f9 * f10, f9 * f10)
+            f11 = self._getBrightness(level, x + 1, y, z)
+            t.colorFloat(f10 * f11, f10 * f11, f10 * f11)
             self.renderFace(t, x, y, z, 5)
             layerOk = True
 
         return layerOk
+
+    cdef float _getBrightness(self, Level level, int x, int y, int z):
+        return level.getBrightness(x, y, z)
 
     @staticmethod
     def cullFace(level, int x, int y, int z, int i):
@@ -93,7 +112,7 @@ cdef class Tile:
 
         return not level.isSolidTile(x, y, z)
 
-    cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
+    cdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
         return False if layer == 1 else not level.isSolidTile(x, y, z)
 
     cpdef int _getTexture(self, int face):
@@ -154,9 +173,9 @@ cdef class Tile:
         cdef float u0, u1, v0, v1, x0, x1, y0, y1, z0, z1
 
         tex = self._getTexture(face)
-        u0 = tex % 16 / 16.0
+        u0 = (tex % 16) / 16.0
         u1 = u0 + 0.0624375
-        v0 = tex // 16 / 16.0
+        v0 = (tex // 16) / 16.0
         v1 = v0 + 0.0624375
 
         x0 = x + self.__xx0
@@ -254,7 +273,7 @@ cdef class Tile:
     cdef bint mayPick(self):
         return True
 
-    cpdef void tick(self, level, int x, int y, int z, random) except *:
+    cpdef void tick(self, Level level, int x, int y, int z, random) except *:
         pass
 
     def destroy(self, level, int x, int y, int z, particleEngine):
@@ -271,13 +290,16 @@ cdef class Tile:
                     particleEngine.add(Particle(level, xp, yp, zp,
                                                 xp - x - 0.5,
                                                 yp - y - 0.5,
-                                                zp - z - 0.5, self.tex))
+                                                zp - z - 0.5, self))
 
     cpdef int getLiquidType(self):
-        return 0
+        return Liquid.none
 
-    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *:
+    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *:
         pass
 
     def onBlockAdded(self, level, int x, int y, int z):
         pass
+
+    cdef int getTickDelay(self):
+        return 0

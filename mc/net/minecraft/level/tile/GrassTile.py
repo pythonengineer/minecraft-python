@@ -7,7 +7,7 @@ class GrassTile(Tile):
     def __init__(self, tiles, id_):
         super().__init__(tiles, id_)
         self.tex = 3
-        self._setTicking = True
+        self._setTicking(True)
 
     def _getTexture(self, face):
         if face == 1: return 0

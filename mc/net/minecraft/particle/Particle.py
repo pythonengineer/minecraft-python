@@ -5,9 +5,10 @@ import math
 
 class Particle(Entity):
 
-    def __init__(self, level, x, y, z, xa, ya, za, tex):
+    def __init__(self, level, x, y, z, xa, ya, za, tile):
         super().__init__(level)
-        self.tex = tex
+        self.tex = tile.tex
+        self.__gravity = tile.particleGravity
         self.setSize(0.2, 0.2)
         self.heightOffset = self.bbHeight / 2.0
         self.setPos(x, y, z)
@@ -39,7 +40,7 @@ class Particle(Entity):
             self.removed = True
         self.__age += 1
 
-        self.__yd -= 0.04
+        self.__yd -= 0.04 * self.__gravity
         self.move(self.__xd, self.__yd, self.__zd)
         self.__xd *= 0.98
         self.__yd *= 0.98

@@ -46,11 +46,11 @@ class Font:
         t.begin()
         t.color(color)
         xo = 0
-        for i in range(len(string)):
-            char = string[i]
-            if char == '&':
+        i = 0
+        while i < len(string):
+            if string[i] == '&':
                 cc = '0123456789abcdef'.index(string[i + 1])
-                br = ((cc & 8) * 8) << 3
+                br = (cc & 8) << 3
                 b = (cc & 1) * 191 + br
                 g = ((cc & 2) >> 1) * 191 + br
                 r = ((cc & 4) >> 2) * 191 + br
@@ -58,16 +58,19 @@ class Font:
                 i += 2
                 if darken:
                     color = (color & 0xFCFCFC) >> 2
+
                 t.color(color)
 
-            ix = ord(char) % ord('\020') << 3
-            iy = ord(char) // ord('\020') << 3
-            t.vertexUV(x + xo, y + 8, 0.0, ix / 128.0, (iy + 8) / 128.0)
-            t.vertexUV(x + xo + 8, y + 8, 0.0, (ix + 8) / 128.0, (iy + 8) / 128.0)
-            t.vertexUV(x + xo + 8, y, 0.0, (ix + 8) / 128.0, iy / 128.0)
+            ix = ord(string[i]) % ord('\020') << 3
+            iy = ord(string[i]) // ord('\020') << 3
+            f13 = 7.99
+            t.vertexUV(x + xo, y + f13, 0.0, ix / 128.0, (iy + f13) / 128.0)
+            t.vertexUV(x + xo + f13, y + f13, 0.0, (ix + f13) / 128.0, (iy + f13) / 128.0)
+            t.vertexUV(x + xo + f13, y, 0.0, (ix + f13) / 128.0, iy / 128.0)
             t.vertexUV(x + xo, y, 0.0, ix / 128.0, iy / 128.0)
 
-            xo += self.__charWidths[ord(char)]
+            xo += self.__charWidths[ord(string[i])]
+            i += 1
 
         t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)

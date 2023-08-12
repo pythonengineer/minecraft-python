@@ -6,6 +6,7 @@ from libc.stdlib cimport malloc, free
 from libc.math cimport floor, isnan
 
 from mc.net.minecraft.HitResult import HitResult
+from mc.net.minecraft.level.liquid.Liquid cimport Liquid
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
 
@@ -18,12 +19,14 @@ cdef class Coord:
         public int y
         public int z
         public int id
+        public int scheduledTime
 
     def __init__(self, int x, int y, int z, int id_):
         self.x = x
         self.y = y
         self.z = z
         self.id = id_
+        self.scheduledTime = 0
 
 @cython.final
 cdef class Level:
@@ -97,6 +100,8 @@ cdef class Level:
 
         self.__levelListeners = set()
         self.__heightMap = <int*>malloc(sizeof(int) * (self.width * self.height))
+        for i in range(self.width * self.height):
+            self.__heightMap[i] = self.depth
         self.calcLightDepths(0, 0, self.width, self.height)
         self.rand = random.Random()
         self.randValue = self.rand.getrandbits(31)
@@ -120,6 +125,8 @@ cdef class Level:
         self.depth = d
         self.__blocks = blocks
         self.__heightMap = <int*>malloc(sizeof(int) * (w * h))
+        for i in range(w * h):
+            self.__heightMap[i] = d
         self.calcLightDepths(0, 0, w, h)
 
         for levelListener in self.__levelListeners:
@@ -159,11 +166,8 @@ cdef class Level:
             for z in range(y0, y0 + y1):
                 oldDepth = self.__heightMap[x + z * self.width]
                 y = self.depth - 1
-                while y > 0:
-                    if self.isLightBlocker(x, y, z):
-                        break
-                    else:
-                        y -= 1
+                while y > 0 and not self.isLightBlocker(x, y, z):
+                    y -= 1
 
                 self.__heightMap[x + z * self.width] = y + 1
 
@@ -182,9 +186,9 @@ cdef class Level:
     def removeListener(self, levelRenderer):
         self.__levelListeners.remove(levelRenderer)
 
-    cpdef inline bint isLightBlocker(self, int x, int y, int z) except *:
+    cdef inline bint isLightBlocker(self, int x, int y, int z) except *:
         cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
-        return False if tile is None else tile.blocksLight()
+        return tile.blocksLight() if tile else False
 
     def getCubes(self, box):
         cdef int x0, x1, y0, y1, z0, z1, x, y, z
@@ -288,21 +292,22 @@ cdef class Level:
         else:
             return 0
 
-    cpdef inline bint isSolidTile(self, int x, int y, int z):
+    cdef inline bint isSolidTile(self, int x, int y, int z):
         cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
         return False if tile is None else tile.isSolid()
 
-    @cython.cdivision(True)
-    def tick(self):
-        cdef int i1, i2, h, w, d, ticks, i, i12, x, z, y, id_
-        cdef char b
-
-        self.__tickCount += 1
-
+    cpdef void tickEntities(self):
         for entity in self.entities.copy():
             entity.tick()
             if entity.removed:
                 self.entities.remove(entity)
+
+    @cython.cdivision(True)
+    cpdef void tick(self):
+        cdef int i1, i2, h, w, d, ticks, i, i12, x, z, y, id_
+        cdef char b
+
+        self.__tickCount += 1
 
         i1 = 1
         i2 = 1
@@ -324,9 +329,13 @@ cdef class Level:
             ticks = len(self.__tickList)
             for i in range(ticks):
                 coord = self.__tickList.pop()
-                b = self.__blocks[(coord.y * self.height + coord.z) * self.width + coord.x]
-                if self.__isInLevelBounds(coord.x, coord.y, coord.z) and b == coord.id and b > 0:
-                    (<Tile>tiles.tiles[b]).tick(self, coord.x, coord.y, coord.z, self.rand)
+                if coord.scheduledTime > 0:
+                    coord.scheduledTime -= 1
+                    self.__tickList.add(coord)
+                else:
+                    b = self.__blocks[(coord.y * self.height + coord.z) * self.width + coord.x]
+                    if self.__isInLevelBounds(coord.x, coord.y, coord.z) and b == coord.id and b > 0:
+                        (<Tile>tiles.tiles[b]).tick(self, coord.x, coord.y, coord.z, self.rand)
 
         self.unprocessed += self.width * self.height * self.depth
         ticks = self.unprocessed // self.update_interval
@@ -371,12 +380,12 @@ cdef class Level:
             for y in range(y0, y1):
                 for z in range(z0, z1):
                     tile = tiles.tiles[self.getTile(x, y, z)]
-                    if tile and tile.getLiquidType() > 0:
+                    if tile and tile.getLiquidType() != Liquid.none:
                         return True
 
         return False
 
-    cpdef bint containsLiquid(self, box, int liquidId):
+    cpdef bint containsLiquid(self, box, int liquid):
         cdef int x0, x1, y0, y1, z0, z1, x, y, z
         cdef Tile tile
 
@@ -397,13 +406,20 @@ cdef class Level:
             for y in range(y0, y1):
                 for z in range(z0, z1):
                     tile = tiles.tiles[self.getTile(x, y, z)]
-                    if tile and tile.getLiquidType() == liquidId:
+                    if tile and tile.getLiquidType() == liquid:
                         return True
 
         return False
 
     cpdef inline addToTickNextTick(self, int x, int y, int z, int type_):
-        self.__tickList.add(Coord(x, y, z, type_))
+        cdef int tickDelay
+
+        cdef Coord coord = Coord(x, y, z, type_)
+        if type_ > 0:
+            tickDelay = (<Tile>tiles.tiles[type_]).getTickDelay()
+            coord.scheduledTime = tickDelay
+
+        self.__tickList.add(coord)
 
     cpdef bint isFree(self, aabb):
         for entity in self.entities:
@@ -437,7 +453,7 @@ cdef class Level:
     cdef int getHighestTile(self, int x, int z):
         cdef int i
         i = self.depth
-        while (self.getTile(x, i - 1, z) == 0 or (<Tile>tiles.tiles[self.getTile(x, i - 1, z)]).getLiquidType() != 0) and i > 0:
+        while (self.getTile(x, i - 1, z) == 0 or (<Tile>tiles.tiles[self.getTile(x, i - 1, z)]).getLiquidType() != Liquid.none) and i > 0:
             i -= 1
 
         return i
@@ -449,7 +465,7 @@ cdef class Level:
         self.rotSpawn = yRot
 
     cpdef inline float getBrightness(self, int x, int y, int z):
-        return 1.0 if self.isLit(x, y, z) else 0.5
+        return 1.0 if self.isLit(x, y, z) else 0.6
 
     def clip(self, vec1, vec2):
         cdef int x0, y0, z0, x1, y1, z1
