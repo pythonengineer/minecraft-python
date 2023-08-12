@@ -20,13 +20,13 @@ class ChatScreen(Screen):
         elif key == window.key.ENTER:
             string = self.__typedMsg.strip().strip()
             if len(string) > 0:
-                self._minecraft.sendQueue.connection.sendPacket(Packets.CHAT_MESSAGE, [-1, string])
+                self._minecraft.connectionManager.connection.sendPacket(Packets.CHAT_MESSAGE, [-1, string])
 
             self._minecraft.setScreen(None)
         else:
             if motion == window.key.MOTION_BACKSPACE and len(self.__typedMsg) > 0:
                 self.__typedMsg = self.__typedMsg[:-1]
-            if char and char in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ,.:-_\'*!"#%/()=+?[]{}<>' and len(self.__typedMsg) < 64:
+            if char and char in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ,.:-_\'*!"#%/()=+?[]{}<>' and len(self.__typedMsg) < 64 - (len(self._minecraft.user.name) + 2):
                 self.__typedMsg += char
 
     def render(self, xm, ym):

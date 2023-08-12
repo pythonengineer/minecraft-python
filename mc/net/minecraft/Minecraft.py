@@ -1,12 +1,12 @@
 import pyglet
 pyglet.options['debug_gl'] = False
 
-from mc.net.minecraft.User import User
 from mc.net.minecraft.Timer import Timer
 from mc.net.minecraft.ChatLine import ChatLine
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.character.Vec3 import Vec3
 from mc.net.minecraft.character.Zombie import Zombie
+from mc.net.minecraft.character.ZombieModel import ZombieModel
 from mc.net.minecraft.level.tile.Tile import Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.level.liquid.Liquid import Liquid
@@ -28,6 +28,7 @@ from mc.net.minecraft.renderer.Tesselator import tesselator
 from mc.net.minecraft.renderer.Textures import Textures
 from mc.net.minecraft.renderer.Frustum import Frustum
 from mc.net.minecraft.renderer.Chunk import Chunk
+from mc.net.minecraft.User import User
 from mc.CompatibilityShims import BufferUtils, gluPerspective, getMillis, getNs
 from pyglet import window, canvas, clock, gl, compat_platform
 
@@ -41,7 +42,7 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.0.16a_02'
+    VERSION_STRING = '0.0.17a'
     __timer = Timer(20.0)
     level = None
     __levelRenderer = None
@@ -62,21 +63,17 @@ class Minecraft(window.Window):
     loadMapUser = ''
     loadMapID = 0
 
-    sendQueue = None
+    connectionManager = None
     __chatMessages = []
 
-    __creativeTiles = [tiles.rock.id, tiles.dirt.id, tiles.stoneBrick.id,
-                       tiles.wood.id, tiles.bush.id, tiles.log.id,
-                       tiles.leaf.id, tiles.sand.id, tiles.gravel.id]
-
-    __server = ''
-    __port = 0
+    server = ''
+    port = 0
 
     __fogColorRed = 0.5
     __fogColorGreen = 0.8
     __fogColorBlue = 1.0
 
-    __running = True
+    running = True
     __fpsString = ''
 
     __ksh = window.key.KeyStateHandler()
@@ -100,6 +97,7 @@ class Minecraft(window.Window):
     __text = ''
     __screenChanged = False
     hideGui = False
+    playerModel = ZombieModel()
 
     def __init__(self, fullscreen, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -111,8 +109,8 @@ class Minecraft(window.Window):
         self.push_handlers(self.__msh)
 
     def setServer(self, server, port):
-        self.__server = server
-        self.__port = port
+        self.server = server
+        self.port = port
 
     def setScreen(self, screen):
         if not isinstance(self.__screen, ErrorScreen):
@@ -140,14 +138,14 @@ class Minecraft(window.Window):
                 print(errorCode)
                 sys.exit(1)
 
-    def destroy(self):
+    def __destroy(self):
         try:
             LevelIO.save(self.level, gzip.open('level.dat', 'wb'))
         except Exception as e:
             print(traceback.format_exc())
 
     def on_close(self):
-        self.__running = False
+        self.running = False
 
     def on_activate(self):
         self.__active = True
@@ -181,7 +179,7 @@ class Minecraft(window.Window):
                     if tile == tiles.grass.id:
                         tile = tiles.dirt.id
 
-                    for t in self.__creativeTiles:
+                    for t in User.creativeTiles:
                         if tile == t:
                             self.__paintTexture = t
         except Exception as e:
@@ -202,18 +200,18 @@ class Minecraft(window.Window):
 
             i3 = 0
 
-            for i, tile in enumerate(self.__creativeTiles):
+            for i, tile in enumerate(User.creativeTiles):
                 if tile == self.__paintTexture:
                     i3 = i
 
             i3 += dy
             while i3 < 0:
-                i3 += len(self.__creativeTiles)
+                i3 += len(User.creativeTiles)
 
-            while i3 >= len(self.__creativeTiles):
-                i3 -= len(self.__creativeTiles)
+            while i3 >= len(User.creativeTiles):
+                i3 -= len(User.creativeTiles)
 
-            self.__paintTexture = self.__creativeTiles[i3]
+            self.__paintTexture = User.creativeTiles[i3]
         except Exception as e:
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
@@ -249,15 +247,16 @@ class Minecraft(window.Window):
 
             for i in range(9):
                 if symbol == getattr(window.key, '_' + str(i + 1)):
-                    self.__paintTexture = self.__creativeTiles[i]
+                    self.__paintTexture = User.creativeTiles[i]
 
             if symbol == window.key.Y:
                 self.__yMouseAxis = -self.__yMouseAxis
-            elif symbol == window.key.G and self.sendQueue is None and len(self.level.entities) < 256:
+            elif symbol == window.key.G and self.connectionManager is None and len(self.level.entities) < 256:
                 self.level.entities.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
             elif symbol == window.key.F:
-                self.__levelRenderer.drawDistance = (self.__levelRenderer.drawDistance + 1) % 4
-            elif symbol == window.key.T:
+                z15 = modifiers & window.key.MOD_SHIFT
+                self.__levelRenderer.drawDistance = self.__levelRenderer.drawDistance + (-1 if z15 else 1) & 3
+            elif symbol == window.key.T and self.connectionManager and self.connectionManager.isConnected():
                 self.player.releaseAllKeys()
                 self.setScreen(ChatScreen())
         except Exception as e:
@@ -333,6 +332,7 @@ class Minecraft(window.Window):
                     self.__renderGui()
                     self.__checkGlError('Rendered gui')
                 else:
+                    #gl.glViewport(0, 0, self.width, self.height)
                     gl.glClearColor(0.0, 0.0, 0.0, 0.0)
                     gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
                     gl.glMatrixMode(gl.GL_PROJECTION)
@@ -355,7 +355,7 @@ class Minecraft(window.Window):
 
     def run(self):
         self.__frustum = Frustum()
-        self.__dummyChunk = Chunk(None, 0, 0, 0, 0, True)
+        self.__dummyChunk = Chunk(None, 0, 0, 0, 0, 0, True)
 
         self.__fogColor0 = (self.__fogColorRed, self.__fogColorGreen, self.__fogColorBlue, 1.0)
         self.__fogColor1 = (14 / 255.0, 11 / 255.0, 10 / 255.0, 1.0)
@@ -385,20 +385,18 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         self.__checkGlError('Startup')
 
-        self.font = Font('default.gif', self.__textures)
+        self.font = Font('default.png', self.__textures)
 
         imgData = BufferUtils.createIntBuffer(256)
         imgData.clear().limit(256)
 
-        self.__levelIo = LevelIO(self)
+        #gl.glViewport(0, 0, self.width, self.height)
+
+        self.levelIo = LevelIO(self)
         self.__levelGen = LevelGen(self)
 
-        if self.__server:
-            try:
-                self.sendQueue = ConnectionManager(self, self.__server, self.__port, self.user.name if self.user is not None else 'guest')
-            except ConnectionRefusedError:
-                self.setScreen(ErrorScreen('Failed to connect', 'You failed to connect to the server. It\'s probably down!'))
-
+        if self.server and self.user:
+            self.connectionManager = ConnectionManager(self, self.server, self.port, self.user.name, self.user.mpPass)
             self.level = None
         else:
             success = False
@@ -407,10 +405,10 @@ class Minecraft(window.Window):
                 if self.loadMapUser:
                     success = self.loadLevel(self.loadMapUser, self.loadMapID)
                 else:
-                    level = self.__levelIo.load(self.level, gzip.open('level.dat', 'rb'))
+                    level = self.levelIo.load(self.level, gzip.open('level.dat', 'rb'))
                     success = level != None
                     if not success:
-                        level = self.__levelIo.loadLegacy(self.level, gzip.open('level.dat', 'rb'))
+                        level = self.levelIo.loadLegacy(self.level, gzip.open('level.dat', 'rb'))
                         success = level != None
 
                     self.setLevel(level)
@@ -426,13 +424,13 @@ class Minecraft(window.Window):
         self.player = Player(self.level, MovementInputFromOptions())
         self.player.resetPos()
         if self.level:
-            self.__levelRenderer.setLevel(self.level)
+            self.setLevel(self.level)
 
         self.__checkGlError('Post startup')
 
         lastTime = getMillis()
         frames = -2
-        while self.__running:
+        while self.running:
             clock.tick()
             self.dispatch_events()
             self.dispatch_event('on_draw')
@@ -446,10 +444,7 @@ class Minecraft(window.Window):
                 lastTime += 1000
                 frames = 0
 
-        self.destroy()
-
-    def stop(self):
-        self.__running = False
+        self.__destroy()
 
     def grabMouse(self):
         if self.__mouseGrabbed:
@@ -490,7 +485,7 @@ class Minecraft(window.Window):
                 changed = self.level.setTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, 0)
                 if oldTile and changed:
                     if self.__isMultiplayer():
-                        self.sendQueue.sendBlockChange(x, y, z, self.__editMode, self.__paintTexture)
+                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.__paintTexture)
 
                     oldTile.destroy(self.level, self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, self.__particleEngine)
             else:
@@ -499,7 +494,7 @@ class Minecraft(window.Window):
                 if (tile is None or tile == tiles.water or tile == tiles.calmWater or tile == tiles.lava or tile == tiles.calmLava) and \
                    (aabb is None or (False if self.player.bb.intersects(aabb) else self.level.isFree(aabb))):
                     if self.__isMultiplayer():
-                        self.sendQueue.sendBlockChange(x, y, z, self.__editMode, self.__paintTexture)
+                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.__paintTexture)
 
                     self.level.setTile(x, y, z, self.__paintTexture)
                     tiles.tiles[self.__paintTexture].onBlockAdded(self.level, x, y, z)
@@ -510,23 +505,29 @@ class Minecraft(window.Window):
             if message.counter >= self.__timer.ticksPerSecond * 10.0:
                 self.__chatMessages.remove(message)
 
-        if self.sendQueue:
-            if self.sendQueue.connection.connected:
-                try:
-                    self.sendQueue.connection.processData()
-                except Exception as e:
-                    self.setScreen(ErrorScreen('Disconnected!', 'You\'ve lost connection to the server'))
-                    self.hideGui = False
-                    print(traceback.format_exc())
-                    self.sendQueue.connection.disconnect()
-                    self.sendQueue = None
+        if self.connectionManager:
+            if not self.connectionManager.isConnected():
+                self.beginLevelLoading('Connecting..')
+                self.setLoadingProgress()
+            else:
+                if self.connectionManager.processData:
+                    if self.connectionManager.connection.connected:
+                        try:
+                            self.connectionManager.connection.processData()
+                        except Exception as e:
+                            self.setScreen(ErrorScreen('Disconnected!', 'You\'ve lost connection to the server'))
+                            self.hideGui = False
+                            print(traceback.format_exc())
+                            self.connectionManager.connection.disconnect()
+                            self.connectionManager = None
 
-            i10 = int(self.player.x * 32.0)
-            i4 = int(self.player.y * 32.0)
-            i5 = int(self.player.z * 32.0)
-            i6 = int(self.player.yRot * 256.0 / 360.0) & 255
-            i9 = int(self.player.xRot * 256.0 / 360.0) & 255
-            self.sendQueue.connection.sendPacket(Packets.PLAYER_TELEPORT, [-1, i10, i4, i5, i6, i9])
+                if self.connectionManager.connection._loggedIn:
+                    i10 = int(self.player.x * 32.0)
+                    i4 = int(self.player.y * 32.0)
+                    i5 = int(self.player.z * 32.0)
+                    i6 = int(self.player.yRot * 256.0 / 360.0) & 255
+                    i9 = int(self.player.xRot * 256.0 / 360.0) & 255
+                    self.connectionManager.connection.sendPacket(Packets.PLAYER_TELEPORT, [-1, i10, i4, i5, i6, i9])
 
         if self.__screen:
             self.__prevFrameTime = self.__ticksRan + 10000
@@ -552,7 +553,7 @@ class Minecraft(window.Window):
             self.player.tick()
 
     def __isMultiplayer(self):
-        return self.sendQueue is not None
+        return self.connectionManager is not None
 
     def __orientCamera(self, a):
         gl.glTranslatef(0.0, 0.0, -0.3)
@@ -591,6 +592,8 @@ class Minecraft(window.Window):
         self.__hitResult = self.level.clip(vec1, vec2)
 
     def __render(self, a):
+        #gl.glViewport(0, 0, self.width, self.height)
+
         f4 = pow(1.0 / (4 - self.__levelRenderer.drawDistance), 0.25)
         self.__fogColorRed = 0.6 * (1.0 - f4) + f4
         self.__fogColorGreen = 0.8 * (1.0 - f4) + f4
@@ -737,8 +740,18 @@ class Minecraft(window.Window):
         self.font.drawShadow(self.VERSION_STRING, 2, 2, 16777215)
         self.font.drawShadow(self.__fpsString, 2, 12, 16777215)
 
+        b13 = 10
+        z5 = False
+        if isinstance(self.__screen, ChatScreen):
+            b13 = 20
+            z5 = True
+
         for i, message in enumerate(self.__chatMessages):
-            self.font.drawShadow(message.message, 2, screenHeight - 4 - (len(self.__chatMessages) << 3) + (i << 3) - 16, 0xFFFFFF)
+            if i >= b13:
+                break
+
+            if message.counter < 200 or z5:
+                self.font.drawShadow(message.message, 2, screenHeight - 8 - (i << 3) - 16, 0xFFFFFF)
 
         self.__checkGlError('GUI: Draw text')
         screenWidth //= 2
@@ -757,6 +770,30 @@ class Minecraft(window.Window):
         t.end()
 
         self.__checkGlError('GUI: Draw crosshair')
+        if self.__ksh[window.key.TAB] and self.connectionManager and self.connectionManager.isConnected():
+            players = []
+            players.append(self.user.name)
+            for player in self.connectionManager.players.values():
+                players.append(player.name)
+
+            gl.glEnable(gl.GL_BLEND)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+            gl.glBegin(gl.GL_QUADS)
+            gl.glColor4f(0.0, 0.0, 0.0, 0.7)
+            gl.glVertex2f(screenWidth + 128, screenHeight - 68 - 12)
+            gl.glVertex2f(screenWidth - 128, screenHeight - 68 - 12)
+            gl.glColor4f(0.2, 0.2, 0.2, 0.8)
+            gl.glVertex2f(screenWidth - 128, screenHeight + 68)
+            gl.glVertex2f(screenWidth + 128, screenHeight + 68)
+            gl.glEnd()
+            gl.glDisable(gl.GL_BLEND)
+            string = 'Connected players:'
+            self.font.drawShadow(string, screenWidth - self.font.width(string) // 2, screenHeight - 64 - 12, 0xFFFFFF)
+
+            for i, name in enumerate(players):
+                i4 = screenWidth + i % 2 * 120 - 120
+                i15 = screenHeight - 64 + (i // 2 << 3)
+                self.font.draw(name, i4, i15, 0xFFFFFF)
 
     def __setupFog(self):
         gl.glFogfv(gl.GL_FOG_COLOR, self.__getBuffer(self.__fogColorRed, self.__fogColorGreen, self.__fogColorBlue, 1.0))
@@ -832,10 +869,10 @@ class Minecraft(window.Window):
         self.setLevel(self.__levelGen.generateLevel(name, 128 << i, 128 << i, 64))
 
     def saveLevel(self, i, name):
-        return self.__levelIo.save(self.level, gzip.open('level.dat', 'wb'))
+        return self.levelIo.save(self.level, gzip.open('level.dat', 'wb'))
 
     def loadLevel(self, name, i):
-        level = self.__levelIo.load(self.level, gzip.open('level.dat', 'rb'))
+        level = self.levelIo.load(self.level, gzip.open('level.dat', 'rb'))
         if not level:
             return False
         else:
@@ -857,16 +894,17 @@ class Minecraft(window.Window):
         gc.collect()
 
     def addChatMessage(self, string):
-        self.__chatMessages.append(ChatLine(string))
+        self.__chatMessages.insert(0, ChatLine(string))
 
-        while len(self.__chatMessages) > 8:
-            self.__chatMessages.pop(0)
+        while len(self.__chatMessages) > 50:
+            self.__chatMessages.pop(len(self.__chatMessage) - 1)
 
 if __name__ == '__main__':
     fullScreen = False
     server = None
     port = None
     name = 'guest'
+    mpPass = ''
     for i, arg in enumerate(sys.argv):
         if arg == '-fullscreen':
             fullScreen = True
@@ -874,9 +912,11 @@ if __name__ == '__main__':
             server, port = sys.argv[i + 1].split(':')
         elif arg == '-user':
             name = sys.argv[i + 1]
+        elif arg == '-mppass':
+            mpPass = sys.argv[i + 1]
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.16a_02')
-    game.user = User(name, 0)
+    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.17a')
+    game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))
     game.run()

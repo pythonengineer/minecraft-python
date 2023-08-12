@@ -1,5 +1,18 @@
 ## Minecraft public server alpha release ##
 
+Version 1.3:
+
++ Name security
++ Server-side client verification
++ Add logged-in.txt on the server
++ added /setspawn command for admins
++ Fix heartbeat pausing the game
++ Don’t let people spam ping requests
++ Fix ban ip (it was working, but not intuitive)
++ Various server fill exploit preventions. No more lava floods!
++ Private server adresses changed behavior, sorry. The server generates an externalurl.txt when run now.
++ Added verify-names to properties. Set this to false to allow people to connect directly via http://www.minecraft.net/play.jsp?ip=<ip>&port=<port>
+
 Version 1.2:
 
 + Fixed a connection problem
@@ -32,6 +45,8 @@ Ingame, ops can use the following commands:
 /unban <name>      Pardons a banned player
 /banip <name>      Bans a player by ip number. Cannot be undone ingame, you must manually change banned-ip.txt
 /say <message>     Broadcasts <message> across the entire server.
+/setspawn          Sets the current location as the default spawn location for new players
+
 
 
 

@@ -39,7 +39,8 @@ cdef class Chunk:
         self.__lists = -1
         self.__skipRenderPass = [False, False]
 
-    def __init__(self, Level level, int x0, int y0, int z0, int size, bint fake=False):
+    def __init__(self, Level level, int x0, int y0, int z0,
+                 int size, int lists, bint fake=False):
         if fake:
             return
 
@@ -50,7 +51,7 @@ cdef class Chunk:
         self.__x1 = size
         self.__y1 = size
         self.__z1 = size
-        self.__lists = gl.glGenLists(2)
+        self.__lists = lists
         self.__reset()
 
     cpdef float compare(self, player):
@@ -66,7 +67,7 @@ cdef class Chunk:
             gl.glEndList()
 
     def clear(self):
-        gl.glDeleteLists(self.__lists, 2)
+        self.__reset()
         self.__level = None
 
     cpdef rebuild(self):

@@ -1,7 +1,7 @@
 from mc.net.minecraft.level.tile.Tile import Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.renderer.DistanceSorter import DistanceSorter
-from mc.net.minecraft.renderer.Tesselator import tesselator
+from mc.net.minecraft.renderer.Tesselator import Tesselator, tesselator
 from mc.net.minecraft.renderer.Chunk import Chunk
 from mc.CompatibilityShims import BufferUtils, getMillis
 from pyglet import gl
@@ -25,6 +25,7 @@ class LevelRenderer:
     def __init__(self, textures):
         self.textures = textures
         self.surroundLists = gl.glGenLists(2)
+        self.__chunkRenderLists = gl.glGenLists(Tesselator.MAX_FLOATS)
 
     def setLevel(self, level):
         if self.level:
@@ -47,6 +48,7 @@ class LevelRenderer:
         self.sortedChunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
         self.__chunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
 
+        lists = 0
         for x in range(self.__xChunks):
             for y in range(self.__yChunks):
                 for z in range(self.__zChunks):
@@ -54,8 +56,10 @@ class LevelRenderer:
                                                                                              x << 4,
                                                                                              y << 4,
                                                                                              z << 4,
-                                                                                             self.CHUNK_SIZE)
+                                                                                             self.CHUNK_SIZE,
+                                                                                             self.__chunkRenderLists + lists)
                     self.__chunks[(z * self.__yChunks + y) * self.__xChunks + x] = self.sortedChunks[(z * self.__yChunks + y) * self.__xChunks + x]
+                    lists += 2
 
         self.dirtyChunks.clear()
         gl.glNewList(self.surroundLists, gl.GL_COMPILE)

@@ -180,10 +180,10 @@ class Entity:
     def setLevel(self, level):
         self._level = level
 
-    def moveTo(self, x, y, z, xRot, yRot):
+    def moveTo(self, x, y, z, yRot, xRot):
         self.xo = self.x = x
         self.yo = self.y = y
         self.zo = self.z = z
-        self.xRot = xRot
         self.yRot = yRot
+        self.xRot = xRot
         self.setPos(x, y, z)
