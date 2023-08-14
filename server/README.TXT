@@ -1,5 +1,14 @@
 ## Minecraft public server alpha release ##
 
+Version 1.4.1:
+
++ Fixed bad names connecting and crashing all players
+
+Version 1.4:
+
++ Added a /teleport command. It doesn't work yet, though, since it requires a client update.
++ Tried to fix two remove client crashes
+
 Version 1.3:
 
 + Name security

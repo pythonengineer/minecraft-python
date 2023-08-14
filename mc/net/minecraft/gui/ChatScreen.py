@@ -26,7 +26,7 @@ class ChatScreen(Screen):
         else:
             if motion == window.key.MOTION_BACKSPACE and len(self.__typedMsg) > 0:
                 self.__typedMsg = self.__typedMsg[:-1]
-            if char and char in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ,.:-_\'*!"#%/()=+?[]{}<>' and len(self.__typedMsg) < 64 - (len(self._minecraft.user.name) + 2):
+            if char and char in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ,.:-_\'*!\\"#%/()=+?[]{}<>@|$' and len(self.__typedMsg) < 64 - (len(self._minecraft.user.name) + 2):
                 self.__typedMsg += char
 
     def render(self, xm, ym):

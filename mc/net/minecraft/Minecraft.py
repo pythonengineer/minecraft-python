@@ -41,8 +41,11 @@ import gc
 
 GL_DEBUG = False
 
+class StopGameException(Exception):
+    pass
+
 class Minecraft(window.Window):
-    VERSION_STRING = '0.0.17a'
+    VERSION_STRING = '0.0.18a_02'
     __timer = Timer(20.0)
     level = None
     __levelRenderer = None
@@ -138,7 +141,7 @@ class Minecraft(window.Window):
                 print(errorCode)
                 sys.exit(1)
 
-    def __destroy(self):
+    def destroy(self):
         try:
             LevelIO.save(self.level, gzip.open('level.dat', 'wb'))
         except Exception as e:
@@ -444,7 +447,7 @@ class Minecraft(window.Window):
                 lastTime += 1000
                 frames = 0
 
-        self.__destroy()
+        self.destroy()
 
     def grabMouse(self):
         if self.__mouseGrabbed:
@@ -680,7 +683,7 @@ class Minecraft(window.Window):
         gl.glColorMask(True, True, True, True)
         if i20 > 0:
             gl.glEnable(gl.GL_TEXTURE_2D)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__levelRenderer.textures.loadTexture('terrain.png', gl.GL_NEAREST))
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__levelRenderer.textures.getTextureId('terrain.png'))
             gl.glCallLists(self.__levelRenderer.dummyBuffer.capacity(), gl.GL_INT, self.__levelRenderer.dummyBuffer)
             gl.glDisable(gl.GL_TEXTURE_2D)
 
@@ -726,7 +729,7 @@ class Minecraft(window.Window):
         gl.glTranslatef(-1.5, 0.5, 0.5)
         gl.glScalef(-1.0, -1.0, -1.0)
 
-        id_ = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
+        id_ = self.__textures.getTextureId('terrain.png')
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         gl.glEnable(gl.GL_TEXTURE_2D)
         t.begin()
@@ -824,45 +827,54 @@ class Minecraft(window.Window):
         return self.__lb
 
     def beginLevelLoading(self, title):
-        self.__title = title
-        screenWidth = self.width * 240 / self.height
-        screenHeight = self.height * 240 / self.height
+        if not self.running:
+            raise StopGameException
+        else:
+            self.__title = title
+            screenWidth = self.width * 240 / self.height
+            screenHeight = self.height * 240 / self.height
 
-        gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
-        gl.glOrtho(0.0, screenWidth, screenHeight, 0.0, 100.0, 300.0)
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
-        gl.glTranslatef(0.0, 0.0, -200.0)
+            gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadIdentity()
+            gl.glOrtho(0.0, screenWidth, screenHeight, 0.0, 100.0, 300.0)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadIdentity()
+            gl.glTranslatef(0.0, 0.0, -200.0)
 
     def levelLoadUpdate(self, status):
-        self.__text = status
-        self.setLoadingProgress()
+        if not self.running:
+            raise StopGameException
+        else:
+            self.__text = status
+            self.setLoadingProgress()
 
     def setLoadingProgress(self):
-        screenWidth = self.width * 240 // self.height
-        screenHeight = self.height * 240 // self.height
+        if not self.running:
+            raise StopGameException
+        else:
+            screenWidth = self.width * 240 // self.height
+            screenHeight = self.height * 240 // self.height
 
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
-        t = tesselator
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        id_ = self.__textures.loadTexture('dirt.png', gl.GL_NEAREST)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
-        s = 32.0
-        t.begin()
-        t.color(4210752)
-        t.vertexUV(0.0, screenHeight, 0.0, 0.0, screenHeight / s)
-        t.vertexUV(screenWidth, screenHeight, 0.0, screenWidth / s, screenHeight / s)
-        t.vertexUV(screenWidth, 0.0, 0.0, screenWidth / s, 0.0)
-        t.vertexUV(0.0, 0.0, 0.0, 0.0, 0.0)
-        t.end()
+            t = tesselator
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            id_ = self.__textures.getTextureId('dirt.png')
+            gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
+            s = 32.0
+            t.begin()
+            t.color(4210752)
+            t.vertexUV(0.0, screenHeight, 0.0, 0.0, screenHeight / s)
+            t.vertexUV(screenWidth, screenHeight, 0.0, screenWidth / s, screenHeight / s)
+            t.vertexUV(screenWidth, 0.0, 0.0, screenWidth / s, 0.0)
+            t.vertexUV(0.0, 0.0, 0.0, 0.0, 0.0)
+            t.end()
 
-        self.font.drawShadow(self.__title, (screenWidth - self.font.width(self.__title)) // 2, screenHeight // 2 - 4 - 16, 0xFFFFFF)
-        self.font.drawShadow(self.__text, (screenWidth - self.font.width(self.__text)) // 2, screenHeight // 2 - 4 + 8, 0xFFFFFF)
-        clock.tick()
-        self.flip()
+            self.font.drawShadow(self.__title, (screenWidth - self.font.width(self.__title)) // 2, screenHeight // 2 - 4 - 16, 0xFFFFFF)
+            self.font.drawShadow(self.__text, (screenWidth - self.font.width(self.__text)) // 2, screenHeight // 2 - 4 + 8, 0xFFFFFF)
+            clock.tick()
+            self.flip()
 
     def generateLevel(self, i):
         name = self.user.name if self.user else 'anonymous'
@@ -915,7 +927,7 @@ if __name__ == '__main__':
         elif arg == '-mppass':
             mpPass = sys.argv[i + 1]
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.17a')
+    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.18a_02')
     game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))

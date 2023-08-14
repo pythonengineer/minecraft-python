@@ -51,7 +51,7 @@ class Zombie(Entity):
 
     def render(self, textures, a):
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, textures.loadTexture('char.png', gl.GL_NEAREST))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, textures.getTextureId('char.png'))
 
         gl.glPushMatrix()
         t = getNs() / 1000000000.0 * 10.0 * self.speed + self.timeOffs
