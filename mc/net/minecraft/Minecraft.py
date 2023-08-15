@@ -4,13 +4,13 @@ import pyglet
 from pyglet import gl as opengl
 from pyglet import window, canvas, clock, compat_platform
 
+from mc import compat
 from mc.net.minecraft.Timer import Timer
 from mc.net.minecraft.Player import Player
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.Level import Level
 from mc.net.minecraft.level.LevelRenderer import LevelRenderer
-from mc.CompatibilityShims import BufferUtils, gluPerspective, getMillis
 
 
 pyglet.options['debug_gl'] = False
@@ -131,7 +131,7 @@ class Minecraft(window.Window):
         self.set_location(locationX, locationY)
         self.set_visible(True)
 
-        lastTime = getMillis()
+        lastTime = compat.getMillis()
         frames = 0
         while self.running:
             clock.tick()
@@ -140,7 +140,7 @@ class Minecraft(window.Window):
             self.flip()
 
             frames += 1
-            while getMillis() >= lastTime + 1000:
+            while compat.getMillis() >= lastTime + 1000:
                 print(str(frames) + ' fps, ' + str(self.__chunk.updates) + ' chunk updates')
                 self.__chunk.updates = 0
                 lastTime += 1000
@@ -164,7 +164,7 @@ class Minecraft(window.Window):
     def setupCamera(self, a):
         opengl.glMatrixMode(opengl.GL_PROJECTION)
         opengl.glLoadIdentity()
-        gluPerspective(70.0, self.width / self.height, 0.05, 1000.0)
+        compat.gluPerspective(70.0, self.width / self.height, 0.05, 1000.0)
         opengl.glMatrixMode(opengl.GL_MODELVIEW)
         opengl.glLoadIdentity()
         self.moveCameraToPlayer(a)

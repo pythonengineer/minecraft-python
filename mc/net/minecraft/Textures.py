@@ -1,7 +1,6 @@
 from pyglet import gl as opengl
 
-from mc import Resources
-from mc.CompatibilityShims import BufferUtils
+from mc import compat, resources
 
 
 TEXTURE_ID_MAP = {}
@@ -20,7 +19,7 @@ def load(resource, mode):
     if resource in TEXTURE_ID_MAP:
         return TEXTURE_ID_MAP[resource]
 
-    ib = BufferUtils.createUintBuffer(1).clear()
+    ib = compat.BufferUtils.createUintBuffer(1).clear()
     opengl.glGenTextures(1, ib)
     tid = ib.get(0)
     bind(tid)
@@ -37,9 +36,11 @@ def load(resource, mode):
         mode,
         )
 
-    img = Resources.textures[resource]
-    pixels = BufferUtils.createIntBuffer(img[0] * img[1] * 4).clear()
+    img = resources.textures[resource]
+    pixels = compat.BufferUtils.createIntBuffer(img[0] * img[1] * 4)
+    pixels.clear()
     pixels.put(img[2], 0, len(img[2]))
+
     opengl.glTexImage2D(
         opengl.GL_TEXTURE_2D,    # target
         0,                       # level

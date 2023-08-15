@@ -1,4 +1,4 @@
-from mc.CompatibilityShims import getNs
+from mc import compat
 
 class Timer:
     NS_PER_SECOND = 1000000000

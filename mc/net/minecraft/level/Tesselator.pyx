@@ -2,7 +2,7 @@
 
 from pyglet import gl as opengl
 
-from mc.CompatibilityShims import BufferUtils
+from mc import compat
 
 
 cdef class Tesselator:
@@ -21,9 +21,9 @@ cdef class Tesselator:
         self.hasColor = False
         self.hasTexture = False
 
-        self.vertexBuffer = BufferUtils.createFloatBuffer(300000)
-        self.texCoordBuffer = BufferUtils.createFloatBuffer(200000)
-        self.colorBuffer = BufferUtils.createFloatBuffer(300000)
+        self.vertexBuffer = compat.BufferUtils.createFloatBuffer(300000)
+        self.texCoordBuffer = compat.BufferUtils.createFloatBuffer(200000)
+        self.colorBuffer = compat.BufferUtils.createFloatBuffer(300000)
 
     cpdef flush(self):
         self.vertexBuffer.flip()

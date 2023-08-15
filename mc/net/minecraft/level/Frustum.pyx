@@ -4,7 +4,7 @@ from libc.math cimport sqrt
 
 from pyglet import gl as opengl
 
-from mc.CompatibilityShims import BufferUtils
+from mc import compat
 from mc.net.minecraft.phys.AABB import AABB
 
 
@@ -33,9 +33,9 @@ cdef class Frustum:
         self._c = Frustum.C
         self._d = Frustum.D
 
-        self._proj = BufferUtils.createFloatBuffer(16)
-        self._modl = BufferUtils.createFloatBuffer(16)
-        self._clip = BufferUtils.createFloatBuffer(16)
+        self._proj = compat.BufferUtils.createFloatBuffer(16)
+        self._modl = compat.BufferUtils.createFloatBuffer(16)
+        self._clip = compat.BufferUtils.createFloatBuffer(16)
         for i in range(16):
             self.__proj[i] = 0.0
             self.__modl[i] = 0.0

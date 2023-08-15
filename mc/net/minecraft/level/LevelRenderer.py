@@ -2,7 +2,7 @@ import math
 
 from pyglet import gl as opengl
 
-from mc.CompatibilityShims import getMillis
+from mc import compat
 from mc.net.minecraft.level.LevelListener import LevelListener
 from mc.net.minecraft.level.Tesselator import Tesselator
 from mc.net.minecraft.level.Frustum import Frustum
@@ -53,7 +53,7 @@ class LevelRenderer(LevelListener):
         opengl.glEnable(opengl.GL_BLEND)
 
         opengl.glBlendFunc(opengl.GL_SRC_ALPHA, 1)
-        opengl.glColor4f(1.0, 1.0, 1.0, math.sin(getMillis() / 100.0) * 0.2 + 0.4)
+        opengl.glColor4f(1.0, 1.0, 1.0, math.sin(compat.getMillis() / 100.0) * 0.2 + 0.4)
         self.t.init()
         tiles.rock.renderFace(self.t, h.x, h.y, h.z, h.f)
         self.t.flush()
