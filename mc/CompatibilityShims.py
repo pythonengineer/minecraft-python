@@ -26,16 +26,19 @@ def gluPerspective(fovY, aspect, zNear, zFar):
     opengl.glFrustum(-fW, fW, -fH, fH, zNear, zFar)
 
 
-class DataInputStream(object):
+class DataStream(object):
 
     def __init__(self, stream):
         self.stream = stream
 
-    def close(self):
-        self.stream.close()
-
     def read(self, n: int = -1):
         return self.stream.read(n)
+
+    def write(self, data):
+        self.stream.write(data)
+
+    def close(self):
+        self.stream.close()
 
     for name, (format, size) in {'Boolean': ('?', 1),
                                  'Byte': ('b', 1),
@@ -50,56 +53,10 @@ class DataInputStream(object):
         exec(textwrap.dedent(f"""
         def read{name}():
             return struct.unpack({format!r}, self.read({size!r}))
+
+        def write{name}(value):
+            return self.write(struct.pack({format!r}, value))
         """))
-
-
-class DataOutputStream:
-
-    def __init__(self, stream):
-        self.stream = stream
-
-    def close(self):
-        self.stream.close()
-
-    def write(self, data):
-        self.stream.write(data)
-
-    def writeBoolean(self, boolean):
-        self.stream.write(struct.pack('?', boolean))
-
-    def writeByte(self, val):
-        self.stream.write(struct.pack('b', val))
-
-    def writeUnsignedByte(self, val):
-        self.stream.write(struct.pack('B', val))
-
-    def writeChar(self, val):
-        self.stream.write(struct.pack('>H', ord(val)))
-
-    def writeDouble(self, val):
-        self.stream.write(struct.pack('>d', val))
-
-    def writeFloat(self, val):
-        self.stream.write(struct.pack('>f', val))
-
-    def writeShort(self, val):
-        self.stream.write(struct.pack('>h', val))
-
-    def writeUnsignedShort(self, val):
-        self.stream.write(struct.pack('>H', val))
-
-    def writeLong(self, val):
-        self.stream.write(struct.pack('>q', val))
-
-    def writeUTF(self, string):
-        self.stream.write(struct.pack('>H', len(string)))
-        self.stream.write(string)
-
-    def writeInt(self, val):
-        self.stream.write(struct.pack('>i', val))
-
-    def writeUnsignedInt(self, val):
-        self.stream.write(struct.pack('>I', val))
 
 
 class ByteArrayInputStream:
