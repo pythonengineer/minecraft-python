@@ -1,10 +1,10 @@
 from pyglet import gl as opengl
 
+from mc.net.minecraft import Textures
 from mc.net.minecraft.level.Tesselator cimport Tesselator
 from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.level.Tiles import tiles
 from mc.net.minecraft.phys.AABB import AABB
-from mc.net.minecraft.Textures import Textures
 
 
 cdef object Chunk_t = Tesselator()
@@ -14,7 +14,7 @@ cdef int Chunk_rebuiltThisFrame = 0
 
 
 cdef class Chunk:
-    texture = Textures.loadTexture('terrain.png', opengl.GL_NEAREST)
+    texture = Textures.load('terrain.png', opengl.GL_NEAREST)
 
     cdef:
         public Level level

@@ -4,39 +4,52 @@ from mc import Resources
 from mc.CompatibilityShims import BufferUtils
 
 
-class Textures:
+TEXTURE_ID_MAP = {}
+TEXTURE_ID_LAST = -9999999
 
-    idMap = {}
-    lastId = -9999999
 
-    @classmethod
-    def loadTexture(cls, resourceName, mode):
-        if resourceName in cls.idMap:
-            return cls.idMap[resourceName]
+def bind(tid):
+    global TEXTURE_ID_LAST
+    if tid != TEXTURE_ID_LAST:
+        opengl.glBindTexture(opengl.GL_TEXTURE_2D, tid)
+        TEXTURE_ID_LAST = tid
 
-        ib = BufferUtils.createUintBuffer(1).clear()
 
-        opengl.glGenTextures(1, ib)
-        id_ = ib.get(0)
+def load(resource, mode):
+    global TEXTURE_ID_MAP
+    if resource in TEXTURE_ID_MAP:
+        return TEXTURE_ID_MAP[resource]
 
-        cls.bind(id_)
+    ib = BufferUtils.createUintBuffer(1).clear()
+    opengl.glGenTextures(1, ib)
+    tid = ib.get(0)
+    bind(tid)
 
-        opengl.glTexParameteri(opengl.GL_TEXTURE_2D, opengl.GL_TEXTURE_MIN_FILTER, mode)
-        opengl.glTexParameteri(opengl.GL_TEXTURE_2D, opengl.GL_TEXTURE_MAG_FILTER, mode)
+    opengl.glTexParameteri(
+        opengl.GL_TEXTURE_2D,
+        opengl.GL_TEXTURE_MIN_FILTER,
+        mode,
+        )
 
-        img = Resources.textures[resourceName]
-        w = img[0]
-        h = img[1]
+    opengl.glTexParameteri(
+        opengl.GL_TEXTURE_2D,
+        opengl.GL_TEXTURE_MAG_FILTER,
+        mode,
+        )
 
-        pixels = BufferUtils.createIntBuffer(w * h * 4).clear()
-        pixels.put(img[2], 0, len(img[2]))
+    img = Resources.textures[resource]
+    pixels = BufferUtils.createIntBuffer(img[0] * img[1] * 4).clear()
+    pixels.put(img[2], 0, len(img[2]))
+    opengl.glTexImage2D(
+        opengl.GL_TEXTURE_2D,    # target
+        0,                       # level
+        opengl.GL_RGBA,          # internalformat
+        img[0],                  # width
+        img[1],                  # height
+        0,                       # border
+        opengl.GL_RGBA,          # format
+        opengl.GL_UNSIGNED_BYTE, # type
+        pixels,                  # data
+        )
 
-        opengl.glTexImage2D(opengl.GL_TEXTURE_2D, 0, opengl.GL_RGBA, w, h, 0, opengl.GL_RGBA, opengl.GL_UNSIGNED_BYTE, pixels)
-
-        return id_
-
-    @classmethod
-    def bind(cls, id_):
-        if id_ != cls.lastId:
-            opengl.glBindTexture(opengl.GL_TEXTURE_2D, id_)
-            cls.lastId = id_
+    return tid
