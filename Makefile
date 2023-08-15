@@ -12,7 +12,7 @@ install:
 	CYTHONIZE=1 pip install .
 
 install-from-source: dist
-	pip install dist/minecraft-python-0.0.14a8.tar.gz
+	pip install dist/minecraft-python-0.0.16a2.tar.gz
 
 clean:
 	$(RM) -r build dist src/*.egg-info

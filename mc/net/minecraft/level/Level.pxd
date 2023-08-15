@@ -41,7 +41,7 @@ cdef class Level:
     cdef setData(self, int w, int d, int h, char* blocks)
     cdef findSpawn(self)
     cdef void calcLightDepths(self, int x0, int y0, int x1, int y1) except *
-    cpdef inline bint isLightBlocker(self, int x, int y, int z) except *
+    cdef inline bint isLightBlocker(self, int x, int y, int z) except *
     cdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_)
     cpdef bint setTile(self, int x, int y, int z, int type_)
     cdef __updateNeighborAt(self, int x, int y, int z, int type_)
@@ -49,7 +49,9 @@ cdef class Level:
     cdef __neighborChanged(self, int x, int y, int z, int type_)
     cpdef inline bint isLit(self, int x, int y, int z)
     cpdef inline int getTile(self, int x, int y, int z) except *
-    cpdef inline bint isSolidTile(self, int x, int y, int z)
+    cpdef void tickEntities(self)
+    cpdef void tick(self)
+    cdef inline bint isSolidTile(self, int x, int y, int z)
     cdef inline bint __isInLevelBounds(self, int x, int y, int z)
     cpdef inline float getGroundLevel(self)
     cpdef inline float getWaterLevel(self)

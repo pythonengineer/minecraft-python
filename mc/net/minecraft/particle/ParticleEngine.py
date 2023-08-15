@@ -1,5 +1,4 @@
 from mc.net.minecraft.renderer.Tesselator import tesselator
-from mc.net.minecraft.renderer.Textures import Textures
 from pyglet import gl
 
 import math
@@ -18,7 +17,7 @@ class ParticleEngine:
             return
 
         gl.glEnable(gl.GL_TEXTURE_2D)
-        id_ = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
+        id_ = self.__textures.loadTexture('terrain.png', gl.GL_NEAREST)
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         xa = -math.cos(player.yRot * math.pi / 180.0)
         za = -math.sin(player.yRot * math.pi / 180.0)
@@ -31,7 +30,7 @@ class ParticleEngine:
         t.begin()
         for p in self.particles:
             f10 = 0.8 * p.getBrightness()
-            t.colorRGB(f10, f10, f10)
+            t.colorFloat(f10, f10, f10)
             p.render(t, a, xa, ya, za, xa2, za2)
         t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)

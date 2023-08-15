@@ -1,6 +1,7 @@
 # cython: language_level=3
 
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
+from mc.net.minecraft.level.Level cimport Level
 
 cdef class Tile:
 
@@ -8,6 +9,7 @@ cdef class Tile:
         public object tiles
         public int tex
         public int id
+        public float particleGravity
 
         float __xx0
         float __yy0
@@ -16,14 +18,17 @@ cdef class Tile:
         float __yy1
         float __zz1
 
-    cpdef bint render(self, Tesselator t, level, int layer, int x, int y, int z) except *
-    cdef bint _shouldRenderFace(self, level, int x, int y, int z, int layer, int face)
+    cdef setTickSpeed(self, int speed)
+    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *
+    cdef float _getBrightness(self, Level level, int x, int y, int z)
+    cdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face)
     cpdef int _getTexture(self, int face)
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face)
     cdef renderBackFace(self, Tesselator t, int x, int y, int z, int face)
     cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
     cdef bint mayPick(self)
-    cpdef void tick(self, level, int x, int y, int z, random) except *
+    cpdef void tick(self, Level level, int x, int y, int z, random) except *
     cpdef int getLiquidType(self)
-    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *
+    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *
+    cdef int getTickDelay(self)

@@ -5,8 +5,11 @@ minecraft_python.egg-info
 *.pyd
 *.dat
 *.bat
+!start server.bat
 *.log
 *.html
 *.prof
 *.c
 *.h
+*.so
+.DS_Store

@@ -83,3 +83,11 @@ class LevelIO:
         dos.writeByte(LevelIO.CURRENT_VERSION)
         dos.write(pickle.dumps(level))
         dos.close()
+
+    @staticmethod
+    def loadBlocks(inp):
+        dis = DataInputStream(inp)
+        blocks = bytearray(dis.readInt())
+        dis.readFully(blocks)
+        dis.close()
+        return blocks

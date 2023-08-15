@@ -193,7 +193,7 @@ cdef class LevelGen:
         return level
 
     cdef __addBeaches(self, int* heightmap):
-        cdef int w, h, d, x, y, heightmap1, heightmap2
+        cdef int w, h, d, x, y, heightmap1, heightmap2, i13
         cdef bint z9, z10
         cdef char heightmap3
         cdef PerlinNoise perlinNoise5
@@ -211,11 +211,12 @@ cdef class LevelGen:
                 z10 = perlinNoise6.getValue(x, y) > 12.0
                 heightmap1 = heightmap[x + y * w]
                 heightmap2 = (heightmap1 * h + y) * w + x
-                if self.__blocks[((heightmap1 + 1) * h + y) * w + x] & 255 == 0:
-                    heightmap3 = tiles.grass.id
-                    if heightmap1 <= d // 2 - 1 and z10:
-                        heightmap3 = tiles.gravel.id
+                i13 = self.__blocks[((heightmap1 + 1) * h + y) * w + x] & 255
+                if (i13 == tiles.water.id or i13 == tiles.calmWater.id) and heightmap1 <= d // 2 - 1 and z10:
+                    self.__blocks[heightmap2] = tiles.gravel.id
 
+                if i13 == 0:
+                    heightmap3 = tiles.grass.id
                     if heightmap1 <= d // 2 - 1 and z9:
                         heightmap3 = tiles.sand.id
 
@@ -223,7 +224,7 @@ cdef class LevelGen:
 
     cdef __plantTrees(self, int* heightmap):
         cdef int w, i3, i4, i8, i9, i7, i10, i11, i12, i14
-        cdef int i16, i17, i20, i19, i18, i21
+        cdef int i16, i17, i20, i19, i18, i21, i22
         cdef bint z13
         cdef char b15
 
@@ -239,7 +240,7 @@ cdef class LevelGen:
                     i9 += self.__random.randInt(6) - self.__random.randInt(6)
                     if i8 >= 0 and i9 >= 0 and i8 < w and i9 < self.__height:
                         i11 = heightmap[i8 + i9 * w] + 1
-                        i12 = self.__random.randInt(2) + 4
+                        i12 = self.__random.randInt(3) + 4
                         z13 = True
 
                         for i14 in range(i11, i11 + 2 + i12):
@@ -266,16 +267,17 @@ cdef class LevelGen:
                             if (self.__blocks[((i11 - 1) * self.__height + i9) * w + i8] & 255) == tiles.grass.id and i11 < self.__depth - i12 - 1:
                                 self.__blocks[i14 - 1 * w * self.__height] = tiles.dirt.id
 
-                                for i16 in range(i11 - 2 + i12, i11 + i12 + 1):
+                                for i16 in range(i11 - 3 + i12, i11 + i12 + 1):
                                     i17 = i16 - (i11 + i12)
+                                    i18 = <int>(1 - i17 / 2)
 
-                                    for i20 in range(i8 - 1, i8 + 2):
-                                        i21 = i20 - i8
+                                    for i21 in range(i8 - i18, i8 + i18 + 1):
+                                        i22 = i21 - i8
 
-                                        for i18 in range(i9 - 1, i9 + 2):
-                                            i19 = i18 - i9
-                                            if i17 != 0 or abs(i21) != 1 or abs(i19) != 1:
-                                                self.__blocks[(i16 * self.__height + i18) * w + i20] = tiles.leaf.id
+                                        for i19 in range(i9 - i18, i9 + i18 + 1):
+                                            i20 = i19 - i9
+                                            if abs(i22) != i18 or abs(i20) != i18 or floor(self.__random.randInt(2)) != 0 and i17 != 0:
+                                                self.__blocks[(i16 * self.__height + i19) * w + i21] = tiles.leaf.id
 
                                 for i16 in range(i12):
                                     self.__blocks[i14 + i16 * w * self.__height] = tiles.log.id
