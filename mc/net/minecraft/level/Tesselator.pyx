@@ -1,9 +1,12 @@
 # cython: language_level=3
 
+from pyglet import gl as opengl
+
 from mc.CompatibilityShims import BufferUtils
-from pyglet import gl
+
 
 cdef class Tesselator:
+
     MAX_VERTICES = 100000
 
     def __cinit__(self):
@@ -27,25 +30,25 @@ cdef class Tesselator:
         self.texCoordBuffer.flip()
         self.colorBuffer.flip()
 
-        gl.glVertexPointer(3, gl.GL_FLOAT, 0, self.vertexBuffer)
+        opengl.glVertexPointer(3, opengl.GL_FLOAT, 0, self.vertexBuffer)
         if self.hasTexture:
-            gl.glTexCoordPointer(2, gl.GL_FLOAT, 0, self.texCoordBuffer)
+            opengl.glTexCoordPointer(2, opengl.GL_FLOAT, 0, self.texCoordBuffer)
         if self.hasColor:
-            gl.glColorPointer(3, gl.GL_FLOAT, 0, self.colorBuffer)
+            opengl.glColorPointer(3, opengl.GL_FLOAT, 0, self.colorBuffer)
 
-        gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
+        opengl.glEnableClientState(opengl.GL_VERTEX_ARRAY)
         if self.hasTexture:
-            gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+            opengl.glEnableClientState(opengl.GL_TEXTURE_COORD_ARRAY)
         if self.hasColor:
-            gl.glEnableClientState(gl.GL_COLOR_ARRAY)
+            opengl.glEnableClientState(opengl.GL_COLOR_ARRAY)
 
-        gl.glDrawArrays(gl.GL_QUADS, 0, self.vertices)
+        opengl.glDrawArrays(opengl.GL_QUADS, 0, self.vertices)
 
-        gl.glDisableClientState(gl.GL_VERTEX_ARRAY)
+        opengl.glDisableClientState(opengl.GL_VERTEX_ARRAY)
         if self.hasTexture:
-            gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
+            opengl.glDisableClientState(opengl.GL_TEXTURE_COORD_ARRAY)
         if self.hasColor:
-            gl.glDisableClientState(gl.GL_COLOR_ARRAY)
+            opengl.glDisableClientState(opengl.GL_COLOR_ARRAY)
 
         self.clear()
 

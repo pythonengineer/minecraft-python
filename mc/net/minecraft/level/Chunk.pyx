@@ -1,16 +1,20 @@
+from pyglet import gl as opengl
+
 from mc.net.minecraft.level.Tesselator cimport Tesselator
 from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.level.Tiles import tiles
 from mc.net.minecraft.phys.AABB import AABB
 from mc.net.minecraft.Textures import Textures
-from pyglet import gl
+
 
 cdef object Chunk_t = Tesselator()
+
 cdef int Chunk_updates = 0
 cdef int Chunk_rebuiltThisFrame = 0
 
+
 cdef class Chunk:
-    texture = Textures.loadTexture('terrain.png', gl.GL_NEAREST)
+    texture = Textures.loadTexture('terrain.png', opengl.GL_NEAREST)
 
     cdef:
         public Level level
@@ -71,7 +75,7 @@ cdef class Chunk:
         self.z1 = z1
 
         self.aabb = AABB(x0, y0, z0, x1, y1, z1)
-        self.lists = gl.glGenLists(2)
+        self.lists = opengl.glGenLists(2)
 
     cpdef rebuild(self, int layer):
         cdef int count, x, y, z, tex
@@ -85,9 +89,9 @@ cdef class Chunk:
         self.updates += 1
         self.rebuiltThisFrame += 1
 
-        gl.glNewList(self.lists + layer, gl.GL_COMPILE)
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+        opengl.glNewList(self.lists + layer, opengl.GL_COMPILE)
+        opengl.glEnable(opengl.GL_TEXTURE_2D)
+        opengl.glBindTexture(opengl.GL_TEXTURE_2D, self.texture)
 
         t = <Tesselator>self.t
         t.init()
@@ -103,15 +107,15 @@ cdef class Chunk:
                         else:
                             tiles.grass.render(t, self.level, layer, x, y, z)
         t.flush()
-        gl.glDisable(gl.GL_TEXTURE_2D)
-        gl.glEndList()
+        opengl.glDisable(opengl.GL_TEXTURE_2D)
+        opengl.glEndList()
 
     cpdef render(self, int layer):
         if self.dirty:
             self.rebuild(0)
             self.rebuild(1)
 
-        gl.glCallList(self.lists + layer)
+        opengl.glCallList(self.lists + layer)
 
     def setDirty(self):
         self.dirty = True

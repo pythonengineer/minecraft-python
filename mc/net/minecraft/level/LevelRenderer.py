@@ -1,14 +1,17 @@
+import math
+
+from pyglet import gl as opengl
+
+from mc.CompatibilityShims import getMillis
 from mc.net.minecraft.level.LevelListener import LevelListener
 from mc.net.minecraft.level.Tesselator import Tesselator
 from mc.net.minecraft.level.Frustum import Frustum
 from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.Tiles import tiles
-from mc.CompatibilityShims import getMillis
-from pyglet import gl
 
-import math
 
 class LevelRenderer(LevelListener):
+
     CHUNK_SIZE = 16
     t = Tesselator()
 
@@ -47,14 +50,14 @@ class LevelRenderer(LevelListener):
             #    chunk.render(layer)
 
     def renderHit(self, h):
-        gl.glEnable(gl.GL_BLEND)
+        opengl.glEnable(opengl.GL_BLEND)
 
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, 1)
-        gl.glColor4f(1.0, 1.0, 1.0, math.sin(getMillis() / 100.0) * 0.2 + 0.4)
+        opengl.glBlendFunc(opengl.GL_SRC_ALPHA, 1)
+        opengl.glColor4f(1.0, 1.0, 1.0, math.sin(getMillis() / 100.0) * 0.2 + 0.4)
         self.t.init()
         tiles.rock.renderFace(self.t, h.x, h.y, h.z, h.f)
         self.t.flush()
-        gl.glDisable(gl.GL_BLEND)
+        opengl.glDisable(opengl.GL_BLEND)
 
     def setDirty(self, x0, y0, z0, x1, y1, z1):
         x0 //= self.CHUNK_SIZE

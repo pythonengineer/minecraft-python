@@ -1,24 +1,29 @@
-from pyglet import gl
-
 import ctypes
-import struct
 import math
+import struct
 import time
+
+from pyglet import gl as opengl
+
 
 def getMillis():
     return int(round(time.time() * 1000))
 
+
 def getNs():
     return time.time_ns()
 
+
 def rshift(val, n):
     return (val % 0x100000000) >> n
+
 
 def gluPerspective(fovY, aspect, zNear, zFar):
     fH = math.tan(fovY / 360 * math.pi) * zNear
     fW = fH * aspect
 
-    gl.glFrustum(-fW, fW, -fH, fH, zNear, zFar)
+    opengl.glFrustum(-fW, fW, -fH, fH, zNear, zFar)
+
 
 class DataInputStream:
 
@@ -70,6 +75,7 @@ class DataInputStream:
     def readInt(self):
         return struct.unpack('>i', self.stream.read(4))[0]
 
+
 class DataOutputStream:
 
     def __init__(self, stream):
@@ -118,6 +124,7 @@ class DataOutputStream:
     def writeUnsignedInt(self, val):
         self.stream.write(struct.pack('>I', val))
 
+
 class ByteArrayInputStream:
 
     def __init__(self, byteArray):
@@ -134,6 +141,7 @@ class ByteArrayInputStream:
     def close(self):
         pass
 
+
 class ByteArrayOutputStream:
 
     def __init__(self):
@@ -148,6 +156,7 @@ class ByteArrayOutputStream:
 
     def close(self):
         pass
+
 
 class BufferUtils:
 
@@ -384,10 +393,10 @@ class BufferUtils:
         return BufferUtils.extend((ctypes.c_byte * capacity)())
 
     def createUintBuffer(capacity):
-        return BufferUtils.extend((gl.GLuint * capacity)())
+        return BufferUtils.extend((opengl.GLuint * capacity)())
 
     def createIntBuffer(capacity):
-        return BufferUtils.extend((gl.GLint * capacity)())
+        return BufferUtils.extend((opengl.GLint * capacity)())
 
     def createFloatBuffer(capacity):
-        return BufferUtils.extend((gl.GLfloat * capacity)())
+        return BufferUtils.extend((opengl.GLfloat * capacity)())

@@ -1,8 +1,11 @@
-from mc.CompatibilityShims import BufferUtils
+from pyglet import gl as opengl
+
 from mc import Resources
-from pyglet import gl
+from mc.CompatibilityShims import BufferUtils
+
 
 class Textures:
+
     idMap = {}
     lastId = -9999999
 
@@ -13,13 +16,13 @@ class Textures:
 
         ib = BufferUtils.createUintBuffer(1).clear()
 
-        gl.glGenTextures(1, ib)
+        opengl.glGenTextures(1, ib)
         id_ = ib.get(0)
 
         cls.bind(id_)
 
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, mode)
-        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, mode)
+        opengl.glTexParameteri(opengl.GL_TEXTURE_2D, opengl.GL_TEXTURE_MIN_FILTER, mode)
+        opengl.glTexParameteri(opengl.GL_TEXTURE_2D, opengl.GL_TEXTURE_MAG_FILTER, mode)
 
         img = Resources.textures[resourceName]
         w = img[0]
@@ -28,12 +31,12 @@ class Textures:
         pixels = BufferUtils.createIntBuffer(w * h * 4).clear()
         pixels.put(img[2], 0, len(img[2]))
 
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, pixels)
+        opengl.glTexImage2D(opengl.GL_TEXTURE_2D, 0, opengl.GL_RGBA, w, h, 0, opengl.GL_RGBA, opengl.GL_UNSIGNED_BYTE, pixels)
 
         return id_
 
     @classmethod
     def bind(cls, id_):
         if id_ != cls.lastId:
-            gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
+            opengl.glBindTexture(opengl.GL_TEXTURE_2D, id_)
             cls.lastId = id_

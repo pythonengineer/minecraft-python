@@ -1,5 +1,8 @@
+import math
+
 import pyglet
-pyglet.options['debug_gl'] = False
+from pyglet import gl as opengl
+from pyglet import window, canvas, clock, compat_platform
 
 from mc.net.minecraft.Timer import Timer
 from mc.net.minecraft.Player import Player
@@ -8,9 +11,10 @@ from mc.net.minecraft.level.Chunk import Chunk
 from mc.net.minecraft.level.Level import Level
 from mc.net.minecraft.level.LevelRenderer import LevelRenderer
 from mc.CompatibilityShims import BufferUtils, gluPerspective, getMillis
-from pyglet import window, canvas, clock, gl, compat_platform
 
-import math
+
+pyglet.options['debug_gl'] = False
+
 
 class Vec3:
 
@@ -34,16 +38,16 @@ class Minecraft(window.Window):
         fg = 0.8
         fb = 1.0
 
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glShadeModel(gl.GL_SMOOTH)
-        gl.glClearColor(fr, fg, fb, 0.0)
-        gl.glClearDepth(1.0)
-        gl.glEnable(gl.GL_DEPTH_TEST)
-        gl.glDepthFunc(gl.GL_LEQUAL)
+        opengl.glEnable(opengl.GL_TEXTURE_2D)
+        opengl.glShadeModel(opengl.GL_SMOOTH)
+        opengl.glClearColor(fr, fg, fb, 0.0)
+        opengl.glClearDepth(1.0)
+        opengl.glEnable(opengl.GL_DEPTH_TEST)
+        opengl.glDepthFunc(opengl.GL_LEQUAL)
 
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
-        gl.glMatrixMode(gl.GL_MODELVIEW)
+        opengl.glMatrixMode(opengl.GL_PROJECTION)
+        opengl.glLoadIdentity()
+        opengl.glMatrixMode(opengl.GL_MODELVIEW)
 
         self.level = Level(256, 256, 64)
         self.levelRenderer = LevelRenderer(self.level)
@@ -148,21 +152,21 @@ class Minecraft(window.Window):
         self.player.tick()
 
     def moveCameraToPlayer(self, a):
-        gl.glTranslatef(0.0, 0.0, -0.3)
-        gl.glRotatef(self.player.xRot, 1.0, 0.0, 0.0)
-        gl.glRotatef(self.player.yRot, 0.0, 1.0, 0.0)
+        opengl.glTranslatef(0.0, 0.0, -0.3)
+        opengl.glRotatef(self.player.xRot, 1.0, 0.0, 0.0)
+        opengl.glRotatef(self.player.yRot, 0.0, 1.0, 0.0)
 
         x = self.player.xo + (self.player.x - self.player.xo) * a
         y = self.player.yo + (self.player.y - self.player.yo) * a
         z = self.player.zo + (self.player.z - self.player.zo) * a
-        gl.glTranslatef(-x, -y, -z)
+        opengl.glTranslatef(-x, -y, -z)
 
     def setupCamera(self, a):
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
+        opengl.glMatrixMode(opengl.GL_PROJECTION)
+        opengl.glLoadIdentity()
         gluPerspective(70.0, self.width / self.height, 0.05, 1000.0)
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
+        opengl.glMatrixMode(opengl.GL_MODELVIEW)
+        opengl.glLoadIdentity()
         self.moveCameraToPlayer(a)
 
     def pick(self, a):
@@ -186,23 +190,23 @@ class Minecraft(window.Window):
     def render(self, a):
         self.pick(a)
 
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+        opengl.glClear(opengl.GL_COLOR_BUFFER_BIT | opengl.GL_DEPTH_BUFFER_BIT)
         self.setupCamera(a)
 
-        gl.glEnable(gl.GL_CULL_FACE)
-        gl.glEnable(gl.GL_FOG)
-        gl.glFogi(gl.GL_FOG_MODE, gl.GL_VIEWPORT_BIT)
-        gl.glFogf(gl.GL_FOG_DENSITY, 0.2)
-        gl.glFogfv(gl.GL_FOG_COLOR, (gl.GLfloat * 4)(self.fogColor[0], self.fogColor[1],
+        opengl.glEnable(opengl.GL_CULL_FACE)
+        opengl.glEnable(opengl.GL_FOG)
+        opengl.glFogi(opengl.GL_FOG_MODE, opengl.GL_VIEWPORT_BIT)
+        opengl.glFogf(opengl.GL_FOG_DENSITY, 0.2)
+        opengl.glFogfv(opengl.GL_FOG_COLOR, (opengl.GLfloat * 4)(self.fogColor[0], self.fogColor[1],
                                                      self.fogColor[2], self.fogColor[3]))
 
-        gl.glDisable(gl.GL_FOG)
+        opengl.glDisable(opengl.GL_FOG)
         self.levelRenderer.render(self.player, 0)
-        gl.glEnable(gl.GL_FOG)
+        opengl.glEnable(opengl.GL_FOG)
         self.levelRenderer.render(self.player, 1)
-        gl.glDisable(gl.GL_TEXTURE_2D)
+        opengl.glDisable(opengl.GL_TEXTURE_2D)
 
         if self.hitResult:
             self.levelRenderer.renderHit(self.hitResult)
 
-        gl.glDisable(gl.GL_FOG)
+        opengl.glDisable(opengl.GL_FOG)

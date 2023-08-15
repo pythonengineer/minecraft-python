@@ -2,11 +2,14 @@
 
 from libc.math cimport sqrt
 
+from pyglet import gl as opengl
+
 from mc.CompatibilityShims import BufferUtils
 from mc.net.minecraft.phys.AABB import AABB
-from pyglet import gl
+
 
 cdef class Frustum:
+
     RIGHT = 0
     LEFT = 1
     BOTTOM = 2
@@ -47,8 +50,8 @@ cdef class Frustum:
         self._modl.clear()
         self._clip.clear()
 
-        gl.glGetFloatv(gl.GL_PROJECTION_MATRIX, self._proj)
-        gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX, self._modl)
+        opengl.glGetFloatv(opengl.GL_PROJECTION_MATRIX, self._proj)
+        opengl.glGetFloatv(opengl.GL_MODELVIEW_MATRIX, self._modl)
 
         proj = [0.0] * 16
         modl = [0.0] * 16
