@@ -206,6 +206,3 @@ class Minecraft(window.Window):
             self.levelRenderer.renderHit(self.hitResult)
 
         gl.glDisable(gl.GL_FOG)
-
-if __name__ == '__main__':
-    Minecraft(width=1024, height=768, caption='Game', vsync=False, visible=False).run()
