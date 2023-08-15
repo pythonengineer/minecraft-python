@@ -1,6 +1,7 @@
 import ctypes
 import math
 import struct
+import textwrap
 import time
 
 from pyglet import gl as opengl
@@ -25,7 +26,7 @@ def gluPerspective(fovY, aspect, zNear, zFar):
     opengl.glFrustum(-fW, fW, -fH, fH, zNear, zFar)
 
 
-class DataInputStream:
+class DataInputStream(object):
 
     def __init__(self, stream):
         self.stream = stream
@@ -33,47 +34,23 @@ class DataInputStream:
     def close(self):
         self.stream.close()
 
-    def readFully(self, array=None):
-        data = self.stream.read()
-        if not array:
-            return data
+    def read(self, n: int = -1):
+        return self.stream.read(n)
 
-        for i, element in enumerate(data):
-            array[i] = element
-
-    def readBoolean(self):
-        return struct.unpack('?', self.stream.read(1))[0]
-
-    def readByte(self):
-        return struct.unpack('b', self.stream.read(1))[0]
-
-    def readUnsignedByte(self):
-        return struct.unpack('B', self.stream.read(1))[0]
-
-    def readChar(self):
-        return chr(struct.unpack('>H', self.stream.read(2))[0])
-
-    def readDouble(self):
-        return struct.unpack('>d', self.stream.read(8))[0]
-
-    def readFloat(self):
-        return struct.unpack('>f', self.stream.read(4))[0]
-
-    def readShort(self):
-        return struct.unpack('>h', self.stream.read(2))[0]
-
-    def readUnsignedShort(self):
-        return struct.unpack('>H', self.stream.read(2))[0]
-
-    def readLong(self):
-        return struct.unpack('>q', self.stream.read(8))[0]
-
-    def readUTF(self):
-        utfLength = struct.unpack('>H', self.stream.read(2))[0]
-        return self.stream.read(utfLength).decode('utf-8')
-
-    def readInt(self):
-        return struct.unpack('>i', self.stream.read(4))[0]
+    for name, (format, size) in {'Boolean': ('?', 1),
+                                 'Byte': ('b', 1),
+                                 'UnsignedByte': ('B', 1),
+                                 'Short': ('>h', 2),
+                                 'UnsignedShort': ('>H', 2),
+                                 'Int': ('>i', 4),
+                                 'Float': ('>f', 4),
+                                 'Long': ('>q', 8),
+                                 'Double': ('>d', 8),
+                                 }:
+        exec(textwrap.dedent(f"""
+        def read{name}():
+            return struct.unpack({format!r}, self.read({size!r}))
+        """))
 
 
 class DataOutputStream:
