@@ -6,6 +6,7 @@ __all__ = [
 
 import dataclasses
 import math
+import pyglet
 
 from pyglet import gl as opengl
 
