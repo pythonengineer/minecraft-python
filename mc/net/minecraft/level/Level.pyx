@@ -5,10 +5,11 @@ cimport cython
 from libc.stdlib cimport malloc, free
 from libc.math cimport floor, isnan
 
+import gzip
+
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.phys.AABB import AABB
 
-import gzip
 
 @cython.final
 cdef class Level:
@@ -244,4 +245,4 @@ cdef class Level:
                         z1 -= 1
 
                     if self.isTile(x1, y1, z1):
-                        return HitResult(0, x1, y1, z1, sideHit)
+                        return HitResult(x1, y1, z1, sideHit)
