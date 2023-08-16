@@ -1,3 +1,9 @@
+__all__ = [
+    'NS_PER_SECOND', 'MAX_NS_PER_UPDATE', 'MAX_TICKS_PER_UPDATE',
+    'Timer',
+]
+
+
 from mc import compat
 
 
