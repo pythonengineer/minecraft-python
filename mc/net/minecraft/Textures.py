@@ -1,3 +1,9 @@
+__all__ = [
+    'TEXTURE_ID_MAP', 'TEXTURE_ID_LAST',
+    'bind', 'load',
+]
+
+
 from pyglet import gl as opengl
 
 from mc import compat, resources
