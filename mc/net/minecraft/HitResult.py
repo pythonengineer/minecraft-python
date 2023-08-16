@@ -1,3 +1,8 @@
+__all__ = [
+    'HitResult',
+]
+
+
 class HitResult:
     def __init__(self, x, y, z, f):
         self.x = x

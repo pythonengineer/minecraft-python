@@ -1,8 +1,13 @@
+__all__ = [
+    'Vec3',
+    'Minecraft',
+]
+
+
+import dataclasses
 import math
 
-import pyglet
 from pyglet import gl as opengl
-from pyglet import window, canvas, clock, compat_platform
 
 from mc import compat
 from mc.net.minecraft.Timer import Timer
@@ -13,20 +18,24 @@ from mc.net.minecraft.level.Level import Level
 from mc.net.minecraft.level.LevelRenderer import LevelRenderer
 
 
-pyglet.options['debug_gl'] = False
+@dataclasses.dataclass
+class Vec3(object):
+    x: float
+    y: float
+    z: float
 
 
-class Vec3:
+class Minecraft(pyglet.window.Window):
 
-    def __init__(self, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-
-class Minecraft(window.Window):
     FULLSCREEN_MODE = False
     col = 920330
-    fogColor = ((col >> 16 & 0xFF) / 255.0, (col >> 8 & 0xFF) / 255.0, (col & 0xFF) / 255.0, (col & 0xFF) / 255.0, 1.0)
+    fogColor = (
+        (col >> 16 & 0xFF) / 255.0,
+        (col >> 8  & 0xFF) / 255.0,
+        (col       & 0xFF) / 255.0,
+        (col       & 0xFF) / 255.0,
+        1.0,
+        )
     timer = Timer(60.0)
     hitResult = None
     running = True
@@ -59,10 +68,11 @@ class Minecraft(window.Window):
         self.level.save()
 
     def on_mouse_press(self, x, y, button, modifiers):
-        if button == window.mouse.RIGHT:
+        if button == pyglet.window.mouse.RIGHT:
             if self.hitResult:
                 self.level.setTile(self.hitResult.x, self.hitResult.y, self.hitResult.z, 0)
-        elif button == window.mouse.LEFT:
+
+        elif button == pyglet.window.mouse.LEFT:
             if self.hitResult:
                 x = self.hitResult.x
                 y = self.hitResult.y
@@ -81,51 +91,54 @@ class Minecraft(window.Window):
 
     def on_activate(self):
         # Remove this hack when the window boundary issue is fixed upstream:
-        if compat_platform == 'win32':
+        if pyglet.compat_platform == 'win32':
             self._update_clipped_cursor()
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == window.key.R:
+        if symbol == pyglet.window.key.R:
             self.player.resetPos()
-        elif symbol in (window.key.UP, window.key.W):
+        elif symbol in (pyglet.window.key.UP, pyglet.window.key.W):
             self.player.upPressed = True
-        elif symbol in (window.key.DOWN, window.key.S):
+        elif symbol in (pyglet.window.key.DOWN, pyglet.window.key.S):
             self.player.downPressed = True
-        elif symbol in (window.key.LEFT, window.key.A):
+        elif symbol in (pyglet.window.key.LEFT, pyglet.window.key.A):
             self.player.leftPressed = True
-        elif symbol in (window.key.RIGHT, window.key.D):
+        elif symbol in (pyglet.window.key.RIGHT, pyglet.window.key.D):
             self.player.rightPressed = True
-        elif symbol in (window.key.SPACE, window.key.LWINDOWS, window.key.LMETA):
+        elif symbol in (pyglet.window.key.SPACE, pyglet.window.key.LWINDOWS, pyglet.window.key.LMETA):
             self.player.spacePressed = True
-        elif symbol == window.key.RETURN:
+        elif symbol == pyglet.window.key.RETURN:
             self.level.save()
-        elif symbol == window.key.ESCAPE:
+        elif symbol == pyglet.window.key.ESCAPE:
             self.running = False
 
     def on_key_release(self, symbol, modifiers):
-        if symbol in (window.key.UP, window.key.W):
+        if symbol in (pyglet.window.key.UP, pyglet.window.key.W):
             self.player.upPressed = False
-        elif symbol in (window.key.DOWN, window.key.S):
+        elif symbol in (pyglet.window.key.DOWN, pyglet.window.key.S):
             self.player.downPressed = False
-        elif symbol in (window.key.LEFT, window.key.A):
+        elif symbol in (pyglet.window.key.LEFT, pyglet.window.key.A):
             self.player.leftPressed = False
-        elif symbol in (window.key.RIGHT, window.key.D):
+        elif symbol in (pyglet.window.key.RIGHT, pyglet.window.key.D):
             self.player.rightPressed = False
-        elif symbol in (window.key.SPACE, window.key.LWINDOWS, window.key.LMETA):
+        elif symbol in (pyglet.window.key.SPACE, pyglet.window.key.LWINDOWS, pyglet.window.key.LMETA):
             self.player.spacePressed = False
 
     def on_draw(self):
         self.clear()
+
         self.timer.advanceTime()
         for i in range(self.timer.ticks):
             self.tick()
+
         self.render(self.timer.a)
 
     def run(self):
         self.__chunk = Chunk(None, 0, 0, 0, 0, 0, 0, True)
 
-        display = canvas.Display()
+        display = pyglet.canvas.Display()
         screen = display.get_default_screen()
+
         locationX = screen.width // 2 - self.width // 2
         locationY = screen.height // 2 - self.height // 2
         self.set_location(locationX, locationY)
@@ -133,15 +146,17 @@ class Minecraft(window.Window):
 
         lastTime = compat.getMillis()
         frames = 0
+
         while self.running:
-            clock.tick()
+            pyglet.clock.tick()
+
             self.dispatch_events()
             self.dispatch_event('on_draw')
             self.flip()
 
             frames += 1
-            while compat.getMillis() >= lastTime + 1000:
-                print(str(frames) + ' fps, ' + str(self.__chunk.updates) + ' chunk updates')
+            while compat.getMillis() >= (lastTime + 1000):
+                print(f'{frames} fps, {self.__chunk.updates} chunk updates')
                 self.__chunk.updates = 0
                 lastTime += 1000
                 frames = 0
@@ -172,19 +187,22 @@ class Minecraft(window.Window):
     def pick(self, a):
         xRot = self.player.xRotO + (self.player.xRot - self.player.xRotO) * a
         yRot = self.player.yRotO + (self.player.yRot - self.player.yRotO) * a
+
         x = self.player.xo + (self.player.x - self.player.xo) * a
         y = self.player.yo + (self.player.y - self.player.yo) * a
         z = self.player.zo + (self.player.z - self.player.zo) * a
-
         vec1 = Vec3(x, y, z)
+
         y1 = math.cos((-yRot) * math.pi / 180.0 + math.pi)
         y2 = math.sin((-yRot) * math.pi / 180.0 + math.pi)
         x1 = math.cos((-xRot) * math.pi / 180.0)
         x2 = math.sin((-xRot) * math.pi / 180.0)
+
         x = (y2 * x1) * 5.0
         y = x2 * 5.0
         z = (y1 * x1) * 5.0
         vec2 = Vec3(vec1.x + x, vec1.y + y, vec1.z + z)
+
         self.hitResult = self.level.clip(vec1, vec2)
 
     def render(self, a):
@@ -197,8 +215,7 @@ class Minecraft(window.Window):
         opengl.glEnable(opengl.GL_FOG)
         opengl.glFogi(opengl.GL_FOG_MODE, opengl.GL_VIEWPORT_BIT)
         opengl.glFogf(opengl.GL_FOG_DENSITY, 0.2)
-        opengl.glFogfv(opengl.GL_FOG_COLOR, (opengl.GLfloat * 4)(self.fogColor[0], self.fogColor[1],
-                                                     self.fogColor[2], self.fogColor[3]))
+        opengl.glFogfv(opengl.GL_FOG_COLOR, (opengl.GLfloat * 4)(self.fogColor[0], self.fogColor[1], self.fogColor[2], self.fogColor[3]))
 
         opengl.glDisable(opengl.GL_FOG)
         self.levelRenderer.render(self.player, 0)
