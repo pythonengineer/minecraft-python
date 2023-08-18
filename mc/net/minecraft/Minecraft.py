@@ -62,7 +62,7 @@ class Minecraft(window.Window):
     __active = False
     __yMouseAxis = 1
     __editMode = 0
-    screen = None
+    guiScreen = None
 
     __ticksRan = 0
 
@@ -121,12 +121,12 @@ class Minecraft(window.Window):
         self.port = port
 
     def setScreen(self, screen):
-        if not isinstance(self.screen, ErrorScreen):
+        if not isinstance(self.guiScreen, ErrorScreen):
             self.screenChanged = True
-            if self.screen:
-                self.screen.closeScreen()
+            if self.guiScreen:
+                self.guiScreen.closeScreen()
 
-            self.screen = screen
+            self.guiScreen = screen
             if screen:
                 self.__releaseMouse()
                 screenWidth = self.width * 240 // self.height
@@ -168,10 +168,10 @@ class Minecraft(window.Window):
 
     def on_mouse_press(self, x, y, button, modifiers):
         try:
-            if self.screen:
-                self.screen.updateEvents(button=button)
-                if self.screen:
-                    self.screen.tick()
+            if self.guiScreen:
+                self.guiScreen.updateEvents(button=button)
+                if self.guiScreen:
+                    self.guiScreen.tick()
                 return
 
             if not self.__mouseGrabbed:
@@ -196,7 +196,7 @@ class Minecraft(window.Window):
 
     def on_mouse_scroll(self, x, y, dx, dy):
         try:
-            if self.screen:
+            if self.guiScreen:
                 return
 
             if dy == 0:
@@ -237,10 +237,10 @@ class Minecraft(window.Window):
 
     def on_key_press(self, symbol, modifiers):
         try:
-            if self.screen:
-                self.screen.updateEvents(key=symbol)
-                if self.screen:
-                    self.screen.tick()
+            if self.guiScreen:
+                self.guiScreen.updateEvents(key=symbol)
+                if self.guiScreen:
+                    self.guiScreen.tick()
                 return
 
             self.player.setKey(symbol, True)
@@ -273,7 +273,7 @@ class Minecraft(window.Window):
 
     def on_key_release(self, symbol, modifiers):
         try:
-            if self.screen:
+            if self.guiScreen:
                 return
 
             self.player.setKey(symbol, False)
@@ -287,20 +287,20 @@ class Minecraft(window.Window):
                 self.screenChanged = False
                 return
 
-            if self.screen:
-                self.screen.updateEvents(char=text)
-                if self.screen:
-                    self.screen.tick()
+            if self.guiScreen:
+                self.guiScreen.updateEvents(char=text)
+                if self.guiScreen:
+                    self.guiScreen.tick()
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_text_motion(self, motion):
         try:
-            if self.screen:
-                self.screen.updateEvents(motion=motion)
-                if self.screen:
-                    self.screen.tick()
+            if self.guiScreen:
+                self.guiScreen.updateEvents(motion=motion)
+                if self.guiScreen:
+                    self.guiScreen.tick()
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -359,12 +359,12 @@ class Minecraft(window.Window):
                     gl.glLoadIdentity()
                     self.initGui()
 
-                if self.screen:
+                if self.guiScreen:
                     screenWidth = self.width * 240 // self.height
                     screenHeight = self.height * 240 // self.height
                     xMouse = self.mouseX * screenWidth // self.width
                     yMouse = screenHeight - self.mouseY * screenHeight // self.height - 1
-                    self.screen.render(xMouse, yMouse)
+                    self.guiScreen.render(xMouse, yMouse)
 
             self.__checkGlError('Post render')
         except Exception as e:
@@ -558,11 +558,11 @@ class Minecraft(window.Window):
                     i9 = int(self.player.xRot * 256.0 / 360.0) & 255
                     self.connectionManager.connection.sendPacket(Packets.PLAYER_TELEPORT, [-1, i10, i4, i5, i6, i9])
 
-        if self.screen:
+        if self.guiScreen:
             self.__prevFrameTime = self.__ticksRan + 10000
-            self.screen.updateEvents()
-            if self.screen:
-                self.screen.tick()
+            self.guiScreen.updateEvents()
+            if self.guiScreen:
+                self.guiScreen.tick()
         else:
             if self.msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.__mouseGrabbed:
                 self.__clickMouse()
