@@ -1,4 +1,3 @@
-from mc.net.minecraft.character.ZombieModel import ZombieModel
 from mc.net.minecraft.net.PlayerMove import PlayerMove
 from mc.net.minecraft.Entity import Entity
 from collections import deque
@@ -6,11 +5,11 @@ from pyglet import gl
 import math
 
 class NetworkPlayer(Entity):
-    __zombieModel = ZombieModel()
 
     def __init__(self, minecraft, i, name, xp, yp, zp, yRot, xRot):
         super().__init__(minecraft.level)
         self.__minecraft = minecraft
+        self.__zombieModel = minecraft.playerModel
         self.name = name
         self.__xp = xp
         self.__yp = yp
@@ -114,7 +113,7 @@ class NetworkPlayer(Entity):
         gl.glScalef(f6, f6, f6)
         gl.glTranslatef(0.0, f7, 0.0)
         gl.glRotatef(f8, 0.0, 1.0, 0.0)
-        NetworkPlayer.__zombieModel.render(f5, f3, f4)
+        self.__zombieModel.render(f5, f3, f4)
         gl.glPopMatrix()
         gl.glPushMatrix()
         gl.glTranslatef(self.xo + (self.x - self.xo) * a, self.yo + (self.y - self.yo) * a + 0.8, self.zo + (self.z - self.zo) * a)

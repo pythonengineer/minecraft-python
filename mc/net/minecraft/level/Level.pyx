@@ -11,6 +11,7 @@ from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
 
 import random
+import gc
 
 cdef class Coord:
 
@@ -134,6 +135,7 @@ cdef class Level:
 
         self.__tickList.clear()
         self.findSpawn()
+        gc.collect()
 
     cdef findSpawn(self):
         cdef int i, x, z, y

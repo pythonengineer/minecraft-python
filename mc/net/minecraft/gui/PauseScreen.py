@@ -17,6 +17,11 @@ class PauseScreen(Screen):
         if not False:#self._minecraft.user:
             self._buttons[2].enabled = False
 
+        if minecraft.connectionManager:
+            self._buttons[0].enabled = False
+            self._buttons[1].enabled = False
+            self._buttons[2].enabled = False
+
     def _buttonClicked(self, button):
         if button.id == 0:
             self._minecraft.setScreen(NewLevelScreen(self))

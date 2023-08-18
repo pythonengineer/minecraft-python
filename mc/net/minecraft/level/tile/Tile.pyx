@@ -217,7 +217,7 @@ cdef class Tile:
             t.vertexUV(x1, y0, z1, u0, v1)
 
     @staticmethod
-    def renderFaceNoTexture(player, Tesselator t, int x, int y, int z, int face):
+    def renderFaceNoTexture(entity, Tesselator t, int x, int y, int z, int face):
         cdef float x0, x1, y0, y1, z0, z1
 
         x0 = x + 0.0
@@ -227,32 +227,32 @@ cdef class Tile:
         z0 = z + 0.0
         z1 = z + 1.0
 
-        if face == 0 and y > player.y:
+        if face == 0 and y > entity.y:
             t.vertex(x0, y0, z1)
             t.vertex(x0, y0, z0)
             t.vertex(x1, y0, z0)
             t.vertex(x1, y0, z1)
-        elif face == 1 and y < player.y:
+        elif face == 1 and y < entity.y:
             t.vertex(x1, y1, z1)
             t.vertex(x1, y1, z0)
             t.vertex(x0, y1, z0)
             t.vertex(x0, y1, z1)
-        elif face == 2 and z > player.z:
+        elif face == 2 and z > entity.z:
             t.vertex(x0, y1, z0)
             t.vertex(x1, y1, z0)
             t.vertex(x1, y0, z0)
             t.vertex(x0, y0, z0)
-        elif face == 3 and z < player.z:
+        elif face == 3 and z < entity.z:
             t.vertex(x0, y1, z1)
             t.vertex(x0, y0, z1)
             t.vertex(x1, y0, z1)
             t.vertex(x1, y1, z1)
-        elif face == 4 and x > player.x:
+        elif face == 4 and x > entity.x:
             t.vertex(x0, y1, z1)
             t.vertex(x0, y1, z0)
             t.vertex(x0, y0, z0)
             t.vertex(x0, y0, z1)
-        elif face == 5 and x < player.x:
+        elif face == 5 and x < entity.x:
             t.vertex(x1, y0, z1)
             t.vertex(x1, y0, z0)
             t.vertex(x1, y1, z0)
