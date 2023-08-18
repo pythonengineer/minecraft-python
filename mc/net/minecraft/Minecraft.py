@@ -33,7 +33,7 @@ from mc.net.minecraft.renderer.Frustum import Frustum
 from mc.net.minecraft.renderer.Chunk import Chunk
 from mc.net.minecraft.User import User
 from mc.CompatibilityShims import BufferUtils, gluPerspective, getMillis, getNs
-from pyglet import window, canvas, clock, gl, compat_platform
+from pyglet import window, app, canvas, clock, gl, compat_platform
 
 import traceback
 import math
@@ -453,6 +453,7 @@ class Minecraft(window.Window):
             clock.tick()
             self.dispatch_events()
             self.dispatch_event('on_draw')
+            app.platform_event_loop.step(timeout=0.001)
             if frames >= 0 and not self.hideGui:
                 self.flip()
 
