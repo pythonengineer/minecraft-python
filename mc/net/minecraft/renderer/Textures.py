@@ -5,6 +5,8 @@ from pyglet import gl
 class Textures:
     __idMap = {}
     idBuffer = BufferUtils.createUintBuffer(1)
+    textureBuffer = BufferUtils.createByteBuffer(262144)
+    textureList = []
 
     def getTextureId(self, resourceName):
         if resourceName in self.__idMap:
@@ -35,8 +37,9 @@ class Textures:
             w = img[0]
             h = img[1]
 
+        self.textureBuffer.clear()
+
         if not isinstance(img, tuple):
-            pixels = BufferUtils.createByteBuffer(w * h << 2).clear()
             b6 = bytearray(w * h << 2)
 
             def convertPixel(c):
@@ -57,13 +60,16 @@ class Textures:
                 b6[(i << 2) + 2] = b
                 b6[(i << 2) + 3] = a
 
-            pixels.put(b6)
-            pixels.position(0).limit(len(b6))
+            self.textureBuffer.put(b6)
+            self.textureBuffer.position(0).limit(len(b6))
         else:
-            pixels = BufferUtils.createIntBuffer(w * h << 2).clear()
-            pixels.put(img[2], 0, len(img[2]))
-            pixels.position(0).limit(len(img[2]))
+            self.textureBuffer.put(img[2], 0, len(img[2]))
+            self.textureBuffer.position(0).limit(len(img[2]))
 
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, pixels)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, self.textureBuffer)
 
         return id_
+
+    def registerTextureFX(self, textureFX):
+        self.textureList.append(textureFX)
+        textureFX.onTick()

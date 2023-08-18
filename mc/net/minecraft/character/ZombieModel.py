@@ -26,15 +26,19 @@ class ZombieModel:
         self.__leg1.addBox(-2.0, 0.0, -2.0, 4, 12, 4)
         self.__leg1.setPos(2.0, 12.0, 0.0)
 
-    def render(self, a, f2, f3):
-        self.__head.yRot = f2 / 57.29578
-        self.__head.xRot = f3 / 57.29578
-        self.__arm0.xRot = math.sin(a * 0.6662 + math.pi) * 2.0
-        self.__arm0.zRot = math.sin(a * 0.2312) + 1.0
-        self.__arm1.xRot = math.sin(a * 0.6662) * 2.0
-        self.__arm1.zRot = math.sin(a * 0.2812) - 1.0
-        self.__leg0.xRot = math.sin(a * 0.6662) * 1.4
-        self.__leg1.xRot = math.sin(a * 0.6662 + math.pi) * 1.4
+    def render(self, a, f2, f3, f4, f5):
+        self.__head.yRot = f4 / 57.29578
+        self.__head.xRot = f5 / 57.29578
+        self.__arm0.xRot = math.cos(a * 0.6662 + math.pi) * 2.0 * f2
+        self.__arm0.zRot = (math.cos(a * 0.2312) + 1.0) * f2
+        self.__arm1.xRot = math.cos(a * 0.6662) * 2.0 * f2
+        self.__arm1.zRot = (math.cos(a * 0.2812) - 1.0) * f2
+        self.__leg0.xRot = math.cos(a * 0.6662) * 1.4 * f2
+        self.__leg1.xRot = math.cos(a * 0.6662 + math.pi) * 1.4 * f2
+        self.__arm0.zRot += math.cos(f3 * 0.09) * 0.05 + 0.05
+        self.__arm1.zRot -= math.cos(f3 * 0.09) * 0.05 + 0.05
+        self.__arm0.xRot += math.sin(f3 * 0.067) * 0.05
+        self.__arm1.xRot -= math.sin(f3 * 0.067) * 0.05
         self.__head.render()
         self.__body.render()
         self.__arm0.render()

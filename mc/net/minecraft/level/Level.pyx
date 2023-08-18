@@ -228,14 +228,19 @@ cdef class Level:
 
     def swap(self, int x0, int y0, int z0, int x1, int y1, int z1):
         cdef int i7, i8
-        i7 = self.getTile(x0, y0, z0)
-        i8 = self.getTile(x1, y1, z1)
-        self.setTileNoNeighborChange(x0, y0, z0, i8)
-        self.setTileNoNeighborChange(x1, y1, z1, i7)
-        self.__updateNeighborAt(x0, y0, z0, i8)
-        self.__updateNeighborAt(x1, y1, z1, i7)
 
-    cdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_):
+        if not self.__networkMode:
+            i7 = self.getTile(x0, y0, z0)
+            i8 = self.getTile(x1, y1, z1)
+            self.setTileNoNeighborChange(x0, y0, z0, i8)
+            self.setTileNoNeighborChange(x1, y1, z1, i7)
+            self.updateNeighborsAt(x0, y0, z0, i8)
+            self.updateNeighborsAt(x1, y1, z1, i7)
+
+    cpdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_):
+        return False if self.__networkMode else self.netSetTileNoNeighborChange(x, y, z, type_)
+
+    cdef bint netSetTileNoNeighborChange(self, int x, int y, int z, int type_):
         if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.depth or z >= self.height:
             return False
         if type_ == self.__blocks[(y * self.height + z) * self.width + x]:
@@ -245,7 +250,14 @@ cdef class Level:
            y >= self.getGroundLevel() and y < self.getWaterLevel():
             type_ = tiles.water.id
 
+        cdef char b5 = self.__blocks[(y * self.height + z) * self.width + x]
         self.__blocks[(y * self.height + z) * self.width + x] = type_
+        if b5 != 0:
+            tiles.tiles[b5].onTileRemoved(self, x, y, z)
+
+        if type_ != 0:
+            tiles.tiles[type_].onTileAdded(self, x, y, z)
+
         self.calcLightDepths(x, z, 1, 1)
 
         for levelListener in self.__levelListeners:
@@ -254,13 +266,22 @@ cdef class Level:
         return True
 
     cpdef bint setTile(self, int x, int y, int z, int type_):
-        if self.setTileNoNeighborChange(x, y, z, type_):
-            self.__updateNeighborAt(x, y, z, type_)
+        if self.__networkMode:
+            return False
+        elif self.setTileNoNeighborChange(x, y, z, type_):
+            self.updateNeighborsAt(x, y, z, type_)
             return True
         else:
             return False
 
-    cdef __updateNeighborAt(self, int x, int y, int z, int type_):
+    def netSetTile(self, int x, int y, int z, int type_):
+        if self.netSetTileNoNeighborChange(x, y, z, type_):
+            self.updateNeighborsAt(x, y, z, type_)
+            return True
+        else:
+            return False
+
+    cpdef updateNeighborsAt(self, int x, int y, int z, int type_):
         self.__neighborChanged(x - 1, y, z, type_)
         self.__neighborChanged(x + 1, y, z, type_)
         self.__neighborChanged(x, y - 1, z, type_)
@@ -290,7 +311,7 @@ cdef class Level:
 
     cpdef inline int getTile(self, int x, int y, int z) except *:
         if x >= 0 and y >= 0 and z >= 0 and x < self.width and y < self.depth and z < self.height:
-            return self.__blocks[(y * self.height + z) * self.width + x]
+            return self.__blocks[(y * self.height + z) * self.width + x] & 255
         else:
             return 0
 
@@ -415,13 +436,15 @@ cdef class Level:
 
     cpdef inline addToTickNextTick(self, int x, int y, int z, int type_):
         cdef int tickDelay
+        cdef Coord coord
 
-        cdef Coord coord = Coord(x, y, z, type_)
-        if type_ > 0:
-            tickDelay = (<Tile>tiles.tiles[type_]).getTickDelay()
-            coord.scheduledTime = tickDelay
+        if not self.__networkMode:
+            coord = Coord(x, y, z, type_)
+            if type_ > 0:
+                tickDelay = (<Tile>tiles.tiles[type_]).getTickDelay()
+                coord.scheduledTime = tickDelay
 
-        self.__tickList.add(coord)
+            self.__tickList.add(coord)
 
     cpdef bint isFree(self, aabb):
         for entity in self.entities:
@@ -468,6 +491,13 @@ cdef class Level:
 
     cpdef inline float getBrightness(self, int x, int y, int z):
         return 1.0 if self.isLit(x, y, z) else 0.6
+
+    cpdef inline bint isWater(self, int x, int y, int z):
+        cdef int tile = self.getTile(x, y, z)
+        return tile > 0 and (<Tile>tiles.tiles[tile]).getLiquidType() == Liquid.water
+
+    def setNetworkMode(self, bint mode):
+        self.__networkMode = mode
 
     def clip(self, vec1, vec2):
         cdef int x0, y0, z0, x1, y1, z1

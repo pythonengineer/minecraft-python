@@ -21,7 +21,10 @@ from mc.net.minecraft.gui.Font import Font
 from mc.net.minecraft.gui.ChatScreen import ChatScreen
 from mc.net.minecraft.gui.ErrorScreen import ErrorScreen
 from mc.net.minecraft.gui.PauseScreen import PauseScreen
+from mc.net.minecraft.gui.InGameHud import InGameHud
 from mc.net.minecraft.particle.ParticleEngine import ParticleEngine
+from mc.net.minecraft.renderer.texture.TextureWaterFX import TextureWaterFX
+from mc.net.minecraft.renderer.texture.TextureLavaFX import TextureLavaFX
 from mc.net.minecraft.renderer.DirtyChunkSorter import DirtyChunkSorter
 from mc.net.minecraft.renderer.LevelRenderer import LevelRenderer
 from mc.net.minecraft.renderer.Tesselator import tesselator
@@ -45,12 +48,12 @@ class StopGameException(Exception):
     pass
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.0.18a_02'
+    VERSION_STRING = '0.0.19a_06'
     __timer = Timer(20.0)
     level = None
     __levelRenderer = None
     player = None
-    __paintTexture = 1
+    paintTexture = 1
     __particleEngine = None
 
     user = None
@@ -59,15 +62,15 @@ class Minecraft(window.Window):
     __active = False
     __yMouseAxis = 1
     __editMode = 0
-    __screen = None
+    screen = None
 
     __ticksRan = 0
 
     loadMapUser = ''
-    loadMapID = 0
+    loadMapId = 0
 
+    __hud = None
     connectionManager = None
-    __chatMessages = []
 
     server = ''
     port = 0
@@ -77,10 +80,10 @@ class Minecraft(window.Window):
     __fogColorBlue = 1.0
 
     running = True
-    __fpsString = ''
+    fpsString = ''
 
-    __ksh = window.key.KeyStateHandler()
-    __msh = window.mouse.MouseStateHandler()
+    ksh = window.key.KeyStateHandler()
+    msh = window.mouse.MouseStateHandler()
     __mouseGrabbed = False
     mouseX = 0
     mouseY = 0
@@ -98,7 +101,7 @@ class Minecraft(window.Window):
 
     __title = ''
     __text = ''
-    __screenChanged = False
+    screenChanged = False
     hideGui = False
     playerModel = ZombieModel()
 
@@ -106,22 +109,24 @@ class Minecraft(window.Window):
         super().__init__(*args, **kwargs)
 
         self.__fullscreen = fullscreen
-        self.__textures = Textures()
+        self.textures = Textures()
+        self.textures.registerTextureFX(TextureLavaFX())
+        self.textures.registerTextureFX(TextureWaterFX())
 
-        self.push_handlers(self.__ksh)
-        self.push_handlers(self.__msh)
+        self.push_handlers(self.ksh)
+        self.push_handlers(self.msh)
 
     def setServer(self, server, port):
         self.server = server
         self.port = port
 
     def setScreen(self, screen):
-        if not isinstance(self.__screen, ErrorScreen):
-            self.__screenChanged = True
-            if self.__screen:
-                self.__screen.closeScreen()
+        if not isinstance(self.screen, ErrorScreen):
+            self.screenChanged = True
+            if self.screen:
+                self.screen.closeScreen()
 
-            self.__screen = screen
+            self.screen = screen
             if screen:
                 self.__releaseMouse()
                 screenWidth = self.width * 240 // self.height
@@ -163,10 +168,10 @@ class Minecraft(window.Window):
 
     def on_mouse_press(self, x, y, button, modifiers):
         try:
-            if self.__screen:
-                self.__screen.updateEvents(button=button)
-                if self.__screen:
-                    self.__screen.tick()
+            if self.screen:
+                self.screen.updateEvents(button=button)
+                if self.screen:
+                    self.screen.tick()
                 return
 
             if not self.__mouseGrabbed:
@@ -184,14 +189,14 @@ class Minecraft(window.Window):
 
                     for t in User.creativeTiles:
                         if tile == t:
-                            self.__paintTexture = t
+                            self.paintTexture = t
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_mouse_scroll(self, x, y, dx, dy):
         try:
-            if self.__screen:
+            if self.screen:
                 return
 
             if dy == 0:
@@ -204,7 +209,7 @@ class Minecraft(window.Window):
             i3 = 0
 
             for i, tile in enumerate(User.creativeTiles):
-                if tile == self.__paintTexture:
+                if tile == self.paintTexture:
                     i3 = i
 
             i3 += dy
@@ -214,7 +219,7 @@ class Minecraft(window.Window):
             while i3 >= len(User.creativeTiles):
                 i3 -= len(User.creativeTiles)
 
-            self.__paintTexture = User.creativeTiles[i3]
+            self.paintTexture = User.creativeTiles[i3]
         except Exception as e:
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
@@ -232,10 +237,10 @@ class Minecraft(window.Window):
 
     def on_key_press(self, symbol, modifiers):
         try:
-            if self.__screen:
-                self.__screen.updateEvents(key=symbol)
-                if self.__screen:
-                    self.__screen.tick()
+            if self.screen:
+                self.screen.updateEvents(key=symbol)
+                if self.screen:
+                    self.screen.tick()
                 return
 
             self.player.setKey(symbol, True)
@@ -250,7 +255,7 @@ class Minecraft(window.Window):
 
             for i in range(9):
                 if symbol == getattr(window.key, '_' + str(i + 1)):
-                    self.__paintTexture = User.creativeTiles[i]
+                    self.paintTexture = User.creativeTiles[i]
 
             if symbol == window.key.Y:
                 self.__yMouseAxis = -self.__yMouseAxis
@@ -268,7 +273,7 @@ class Minecraft(window.Window):
 
     def on_key_release(self, symbol, modifiers):
         try:
-            if self.__screen:
+            if self.screen:
                 return
 
             self.player.setKey(symbol, False)
@@ -278,42 +283,52 @@ class Minecraft(window.Window):
 
     def on_text(self, text):
         try:
-            if self.__screenChanged:
-                self.__screenChanged = False
+            if self.screenChanged:
+                self.screenChanged = False
                 return
 
-            if self.__screen:
-                self.__screen.updateEvents(char=text)
-                if self.__screen:
-                    self.__screen.tick()
+            if self.screen:
+                self.screen.updateEvents(char=text)
+                if self.screen:
+                    self.screen.tick()
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_text_motion(self, motion):
         try:
-            if self.__screen:
-                self.__screen.updateEvents(motion=motion)
-                if self.__screen:
-                    self.__screen.tick()
+            if self.screen:
+                self.screen.updateEvents(motion=motion)
+                if self.screen:
+                    self.screen.tick()
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_draw(self):
         try:
-            now = getNs()
-            passedNs = now - self.__timer.lastTime
-            self.__timer.lastTime = now
+            now = getMillis()
+            passedMs = now - self.__timer.lastSyncSysClock
+            j11 = getNs() // self.__timer.NS_PER_SECOND
+            if passedMs > 1000:
+                j13 = j11 - self.__timer.lastSyncHRClock
+                d15 = passedMs / j13
+                self.__timer.timeSyncAdjustment += (d15 - self.__timer.timeSyncAdjustment) * 0.2
+                self.__timer.lastSyncSysClock = now
+                self.__timer.lastSyncHRClock = j11
+            elif passedMs < 0:
+                self.__timer.lastSyncSysClock = now
+                self.__timer.lastSyncHRClock = j11
 
-            if passedNs < 0:
-                passedNs = 1
-            elif passedNs > self.__timer.MAX_NS_PER_UPDATE:
-                passedNs = self.__timer.MAX_NS_PER_UPDATE
-            elif passedNs == 0:
-                passedNs = 1
+            d48 = j11 / 1000.0
+            d15 = (d48 - self.__timer.lastHRTime) * self.__timer.timeSyncAdjustment
+            self.__timer.lastHRTime = d48
+            if d15 < 0.0:
+                d15 = 0.0
+            elif d15 > 1.0:
+                d15 = 1.0
 
-            self.__timer.fps += passedNs * self.__timer.timeScale * self.__timer.ticksPerSecond / self.__timer.MAX_NS_PER_UPDATE
+            self.__timer.fps += d15 * self.__timer.timeScale * self.__timer.ticksPerSecond
             self.__timer.ticks = int(self.__timer.fps)
             if self.__timer.ticks > self.__timer.MAX_TICKS_PER_UPDATE:
                 self.__timer.ticks = self.__timer.MAX_TICKS_PER_UPDATE
@@ -332,7 +347,7 @@ class Minecraft(window.Window):
             if not self.hideGui:
                 if self.level:
                     self.__render(self.__timer.a)
-                    self.__renderGui()
+                    self.__hud.render()
                     self.__checkGlError('Rendered gui')
                 else:
                     #gl.glViewport(0, 0, self.width, self.height)
@@ -342,14 +357,14 @@ class Minecraft(window.Window):
                     gl.glLoadIdentity()
                     gl.glMatrixMode(gl.GL_MODELVIEW)
                     gl.glLoadIdentity()
-                    self.__initGui()
+                    self.initGui()
 
-                if self.__screen:
+                if self.screen:
                     screenWidth = self.width * 240 // self.height
                     screenHeight = self.height * 240 // self.height
                     xMouse = self.mouseX * screenWidth // self.width
                     yMouse = screenHeight - self.mouseY * screenHeight // self.height - 1
-                    self.__screen.render(xMouse, yMouse)
+                    self.screen.render(xMouse, yMouse)
 
             self.__checkGlError('Post render')
         except Exception as e:
@@ -388,7 +403,7 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         self.__checkGlError('Startup')
 
-        self.font = Font('default.png', self.__textures)
+        self.font = Font('default.png', self.textures)
 
         imgData = BufferUtils.createIntBuffer(256)
         imgData.clear().limit(256)
@@ -406,7 +421,7 @@ class Minecraft(window.Window):
 
             try:
                 if self.loadMapUser:
-                    success = self.loadLevel(self.loadMapUser, self.loadMapID)
+                    success = self.loadLevel(self.loadMapUser, self.loadMapId)
                 else:
                     level = self.levelIo.load(self.level, gzip.open('level.dat', 'rb'))
                     success = level != None
@@ -422,14 +437,15 @@ class Minecraft(window.Window):
             if not success:
                 self.generateLevel(1)
 
-        self.__levelRenderer = LevelRenderer(self.__textures)
-        self.__particleEngine = ParticleEngine(self.level, self.__textures)
+        self.__levelRenderer = LevelRenderer(self.textures)
+        self.__particleEngine = ParticleEngine(self.level, self.textures)
         self.player = Player(self.level, MovementInputFromOptions())
         self.player.resetPos()
         if self.level:
             self.setLevel(self.level)
 
         self.__checkGlError('Post startup')
+        self.__hud = InGameHud(self, self.width, self.height)
 
         lastTime = getMillis()
         frames = -2
@@ -442,7 +458,7 @@ class Minecraft(window.Window):
 
             frames += 1
             while getMillis() >= lastTime + 1000:
-                self.__fpsString = str(frames) + ' fps, ' + str(self.__dummyChunk.updates) + ' chunk updates'
+                self.fpsString = str(frames) + ' fps, ' + str(self.__dummyChunk.updates) + ' chunk updates'
                 self.__dummyChunk.updates = 0
                 lastTime += 1000
                 frames = 0
@@ -485,28 +501,38 @@ class Minecraft(window.Window):
 
             if self.__editMode == 0:
                 oldTile = tiles.tiles[self.level.getTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z)]
-                changed = self.level.setTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, 0)
+                changed = self.level.netSetTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, 0)
                 if oldTile and changed:
                     if self.__isMultiplayer():
-                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.__paintTexture)
+                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.paintTexture)
 
                     oldTile.destroy(self.level, self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, self.__particleEngine)
             else:
                 tile = tiles.tiles[self.level.getTile(x, y, z)]
-                aabb = tiles.tiles[self.__paintTexture].getAABB(x, y, z)
+                aabb = tiles.tiles[self.paintTexture].getAABB(x, y, z)
                 if (tile is None or tile == tiles.water or tile == tiles.calmWater or tile == tiles.lava or tile == tiles.calmLava) and \
                    (aabb is None or (False if self.player.bb.intersects(aabb) else self.level.isFree(aabb))):
                     if self.__isMultiplayer():
-                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.__paintTexture)
+                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.paintTexture)
 
-                    self.level.setTile(x, y, z, self.__paintTexture)
-                    tiles.tiles[self.__paintTexture].onBlockAdded(self.level, x, y, z)
+                    self.level.netSetTile(x, y, z, self.paintTexture)
+                    tiles.tiles[self.paintTexture].onBlockAdded(self.level, x, y, z)
 
     def __tick(self):
-        for message in self.__chatMessages.copy():
+        for message in self.__hud.messages.copy():
             message.counter += 1
-            if message.counter >= self.__timer.ticksPerSecond * 10.0:
-                self.__chatMessages.remove(message)
+
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.getTextureId('terrain.png'))
+
+        for texture in self.textures.textureList:
+            texture.onTick()
+            self.textures.textureBuffer.clear()
+            self.textures.textureBuffer.put(texture.imageData)
+            self.textures.textureBuffer.position(0).limit(len(texture.imageData))
+            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, texture.iconIndex % 16 << 4,
+                               texture.iconIndex // 16 << 4, 16, 16,
+                               gl.GL_RGBA, gl.GL_UNSIGNED_BYTE,
+                               self.textures.textureBuffer)
 
         if self.connectionManager:
             if not self.connectionManager.isConnected():
@@ -524,7 +550,7 @@ class Minecraft(window.Window):
                             self.connectionManager.connection.disconnect()
                             self.connectionManager = None
 
-                if self.connectionManager.connection._loggedIn:
+                if self.connectionManager.connection.connected:
                     i10 = int(self.player.x * 32.0)
                     i4 = int(self.player.y * 32.0)
                     i5 = int(self.player.z * 32.0)
@@ -532,13 +558,13 @@ class Minecraft(window.Window):
                     i9 = int(self.player.xRot * 256.0 / 360.0) & 255
                     self.connectionManager.connection.sendPacket(Packets.PLAYER_TELEPORT, [-1, i10, i4, i5, i6, i9])
 
-        if self.__screen:
+        if self.screen:
             self.__prevFrameTime = self.__ticksRan + 10000
-            self.__screen.updateEvents()
-            if self.__screen:
-                self.__screen.tick()
+            self.screen.updateEvents()
+            if self.screen:
+                self.screen.tick()
         else:
-            if self.__msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.__mouseGrabbed:
+            if self.msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.__mouseGrabbed:
                 self.__clickMouse()
                 self.__prevFrameTime = self.__ticksRan
 
@@ -571,7 +597,7 @@ class Minecraft(window.Window):
     def __setupCamera(self, a):
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gluPerspective(70.0, self.width / self.height, 0.05, self.__renderDistance)
+        gluPerspective(70.0, self.width / self.height, 0.2, self.__renderDistance)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
         self.__orientCamera(a)
@@ -668,7 +694,7 @@ class Minecraft(window.Window):
         if self.__hitResult:
             gl.glDisable(gl.GL_LIGHTING)
             gl.glDisable(gl.GL_ALPHA_TEST)
-            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.__paintTexture)
+            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.paintTexture)
             LevelRenderer.renderHitOutline(self.__hitResult, self.__editMode)
             gl.glEnable(gl.GL_ALPHA_TEST)
             gl.glEnable(gl.GL_LIGHTING)
@@ -687,6 +713,7 @@ class Minecraft(window.Window):
             gl.glCallLists(self.__levelRenderer.dummyBuffer.capacity(), gl.GL_INT, self.__levelRenderer.dummyBuffer)
             gl.glDisable(gl.GL_TEXTURE_2D)
 
+        gl.glDepthMask(True)
         gl.glDisable(gl.GL_BLEND)
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_FOG)
@@ -694,12 +721,12 @@ class Minecraft(window.Window):
         if self.__hitResult:
             gl.glDepthFunc(gl.GL_LESS)
             gl.glDisable(gl.GL_ALPHA_TEST)
-            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.__paintTexture)
+            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.paintTexture)
             LevelRenderer.renderHitOutline(self.__hitResult, self.__editMode)
             gl.glEnable(gl.GL_ALPHA_TEST)
             gl.glDepthFunc(gl.GL_LEQUAL)
 
-    def __initGui(self):
+    def initGui(self):
         screenWidth = self.width * 240 // self.height
         screenHeight = self.height * 240 // self.height
 
@@ -713,90 +740,6 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
         gl.glTranslatef(0.0, 0.0, -200.0)
-
-    def __renderGui(self):
-        screenWidth = self.width * 240 // self.height
-        screenHeight = self.height * 240 // self.height
-        self.__initGui()
-        self.__checkGlError('GUI: Init')
-
-        gl.glPushMatrix()
-        gl.glTranslatef(screenWidth - 16, 16.0, -50.0)
-        t = tesselator
-        gl.glScalef(16.0, 16.0, 16.0)
-        gl.glRotatef(-30.0, 1.0, 0.0, 0.0)
-        gl.glRotatef(45.0, 0.0, 1.0, 0.0)
-        gl.glTranslatef(-1.5, 0.5, 0.5)
-        gl.glScalef(-1.0, -1.0, -1.0)
-
-        id_ = self.__textures.getTextureId('terrain.png')
-        gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        t.begin()
-        tiles.tiles[self.__paintTexture].render(t, self.level, 0, -2, 0, 0)
-        t.end()
-        gl.glDisable(gl.GL_TEXTURE_2D)
-        gl.glPopMatrix()
-
-        self.__checkGlError('GUI: Draw selected')
-
-        self.font.drawShadow(self.VERSION_STRING, 2, 2, 16777215)
-        self.font.drawShadow(self.__fpsString, 2, 12, 16777215)
-
-        b13 = 10
-        z5 = False
-        if isinstance(self.__screen, ChatScreen):
-            b13 = 20
-            z5 = True
-
-        for i, message in enumerate(self.__chatMessages):
-            if i >= b13:
-                break
-
-            if message.counter < 200 or z5:
-                self.font.drawShadow(message.message, 2, screenHeight - 8 - (i << 3) - 16, 0xFFFFFF)
-
-        self.__checkGlError('GUI: Draw text')
-        screenWidth //= 2
-        screenHeight //= 2
-        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        t.begin()
-        t.vertex(screenWidth + 1, screenHeight - 4, 0.0)
-        t.vertex(screenWidth - 0, screenHeight - 4, 0.0)
-        t.vertex(screenWidth - 0, screenHeight + 5, 0.0)
-        t.vertex(screenWidth + 1, screenHeight + 5, 0.0)
-
-        t.vertex(screenWidth + 5, screenHeight - 0, 0.0)
-        t.vertex(screenWidth - 4, screenHeight - 0, 0.0)
-        t.vertex(screenWidth - 4, screenHeight + 1, 0.0)
-        t.vertex(screenWidth + 5, screenHeight + 1, 0.0)
-        t.end()
-
-        self.__checkGlError('GUI: Draw crosshair')
-        if self.__ksh[window.key.TAB] and self.connectionManager and self.connectionManager.isConnected():
-            players = []
-            players.append(self.user.name)
-            for player in self.connectionManager.players.values():
-                players.append(player.name)
-
-            gl.glEnable(gl.GL_BLEND)
-            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-            gl.glBegin(gl.GL_QUADS)
-            gl.glColor4f(0.0, 0.0, 0.0, 0.7)
-            gl.glVertex2f(screenWidth + 128, screenHeight - 68 - 12)
-            gl.glVertex2f(screenWidth - 128, screenHeight - 68 - 12)
-            gl.glColor4f(0.2, 0.2, 0.2, 0.8)
-            gl.glVertex2f(screenWidth - 128, screenHeight + 68)
-            gl.glVertex2f(screenWidth + 128, screenHeight + 68)
-            gl.glEnd()
-            gl.glDisable(gl.GL_BLEND)
-            string = 'Connected players:'
-            self.font.drawShadow(string, screenWidth - self.font.width(string) // 2, screenHeight - 64 - 12, 0xFFFFFF)
-
-            for i, name in enumerate(players):
-                i4 = screenWidth + i % 2 * 120 - 120
-                i15 = screenHeight - 64 + (i // 2 << 3)
-                self.font.draw(name, i4, i15, 0xFFFFFF)
 
     def __setupFog(self):
         gl.glFogfv(gl.GL_FOG_COLOR, self.__getBuffer(self.__fogColorRed, self.__fogColorGreen, self.__fogColorBlue, 1.0))
@@ -860,7 +803,7 @@ class Minecraft(window.Window):
 
             t = tesselator
             gl.glEnable(gl.GL_TEXTURE_2D)
-            id_ = self.__textures.getTextureId('dirt.png')
+            id_ = self.textures.getTextureId('dirt.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
             s = 32.0
             t.begin()
@@ -906,10 +849,10 @@ class Minecraft(window.Window):
         gc.collect()
 
     def addChatMessage(self, string):
-        self.__chatMessages.insert(0, ChatLine(string))
+        self.__hud.messages.insert(0, ChatLine(string))
 
-        while len(self.__chatMessages) > 50:
-            self.__chatMessages.pop(len(self.__chatMessage) - 1)
+        while len(self.__hud.messages) > 50:
+            self.__chatMessages.pop(len(self.__hud.messages) - 1)
 
 if __name__ == '__main__':
     fullScreen = False
@@ -927,7 +870,7 @@ if __name__ == '__main__':
         elif arg == '-mppass':
             mpPass = sys.argv[i + 1]
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.18a_02')
+    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.19a_06')
     game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))

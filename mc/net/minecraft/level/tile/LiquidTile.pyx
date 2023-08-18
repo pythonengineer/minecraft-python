@@ -1,9 +1,9 @@
 # cython: language_level=3
 
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
-from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.liquid.Liquid import Liquid
+from mc.net.minecraft.level.Level cimport Level
 
 cdef class LiquidTile(Tile):
 
@@ -19,13 +19,14 @@ cdef class LiquidTile(Tile):
         self._tileId = id_
         self._calmTileId = id_ + 1
 
+        f4 = 0.01
         dd = 0.1
-        self._setShape(0.0, 0.0 - dd, 0.0, 1.0, 1.0 - dd, 1.0)
+        self._setShape(0.0 - f4, 0.0 - dd - f4, 0.0 - f4, f4 + 1.0, 1.0 - dd + f4, f4 + 1.0)
         self._setTicking(True)
         if liquid == Liquid.lava:
             self.setTickSpeed(16)
 
-    def onBlockAdded(self, level, int x, int y, int z):
+    def onBlockAdded(self, Level level, int x, int y, int z):
         level.addToTickNextTick(x, y, z, self._tileId)
 
     cpdef void tick(self, Level level, int x, int y, int z, random) except *:
@@ -33,7 +34,7 @@ cdef class LiquidTile(Tile):
         hasChanged = False
         while True:
             y -= 1
-            if level.getTile(x, y, z) != 0:
+            if level.getTile(x, y, z) != 0 or not self.__checkSponge(level, x, y, z):
                 break
 
             change = level.setTile(x, y, z, self._tileId)
@@ -55,16 +56,32 @@ cdef class LiquidTile(Tile):
         else:
             level.setTileNoUpdate(x, y, z, self._calmTileId)
 
+    cdef bint __checkSponge(self, Level level, int x, int y, int z):
+        cdef int xx, yy, zz
+
+        if self._liquid == Liquid.water:
+            for xx in range(x - 2, x + 3):
+                for yy in range(y - 2, y + 3):
+                    for zz in range(z - 2, z + 3):
+                        if level.getTile(xx, yy, zz) == self.tiles.sponge.id:
+                            return False
+
+        return True
+
     cdef bint __checkWater(self, Level level, int x, int y, int z):
-        if level.getTile(x, y, z) == 0 and level.setTile(x, y, z, self._tileId):
-            level.addToTickNextTick(x, y, z, self._tileId)
+        if level.getTile(x, y, z) == 0:
+            if not self.__checkSponge(level, x, y, z):
+                return False
+
+            if level.setTile(x, y, z, self._tileId):
+                level.addToTickNextTick(x, y, z, self._tileId)
 
         return False
 
     cdef float _getBrightness(self, Level level, int x, int y, int z):
         return 100.0 if self._liquid == Liquid.lava else level.getBrightness(x, y, z)
 
-    cdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
+    cpdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
         cdef int tile
 
         if x >= 0 and y >= 0 and z >= 0 and x < level.width and z < level.height:

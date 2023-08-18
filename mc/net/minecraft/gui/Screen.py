@@ -31,8 +31,8 @@ class Screen:
 
     def init(self, minecraft, width, height):
         self._minecraft = minecraft
-        self._y = width
-        self._w = height
+        self._width = width
+        self._height = height
         self._buttons = []
 
     def _fill(self, x0, y0, x1, y1, col):
@@ -81,13 +81,13 @@ class Screen:
 
     def updateEvents(self, button=None, key=None, char=None, motion=None):
         if button:
-            xm = self._minecraft.mouseX * self._y // self._minecraft.width
-            ym = self._w - self._minecraft.mouseY * self._w // self._minecraft.height - 1
+            xm = self._minecraft.mouseX * self._width // self._minecraft.width
+            ym = self._height - self._minecraft.mouseY * self._height // self._minecraft.height - 1
             if button != window.mouse.LEFT:
                 return
 
             for button in self._buttons:
-                if xm >= button.x and ym >= button.y and xm < button.x + button.w and ym < button.y + button.h:
+                if button.enabled and xm >= button.x and ym >= button.y and xm < button.x + button.w and ym < button.y + button.h:
                     self._buttonClicked(button)
         elif key or char or motion:
             self._keyPressed(key, char, motion)

@@ -12,9 +12,10 @@ cdef class LiquidTile(Tile):
         public int _tileId
 
     cpdef void tick(self, Level level, int x, int y, int z, random) except *
+    cdef bint __checkSponge(self, Level level, int x, int y, int z)
     cdef bint __checkWater(self, Level level, int x, int y, int z)
     cdef float _getBrightness(self, Level level, int x, int y, int z)
-    cdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face)
+    cpdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face)
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face)
     cdef bint mayPick(self)
     cpdef bint blocksLight(self)

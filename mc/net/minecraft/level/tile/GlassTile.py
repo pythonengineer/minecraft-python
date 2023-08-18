@@ -1,9 +1,9 @@
 from mc.net.minecraft.level.tile.Tile import Tile
 
-class LeafTile(Tile):
+class GlassTile(Tile):
 
     def __init__(self, tiles, id_, tex, z3):
-        super().__init__(tiles, 18, 22)
+        super().__init__(tiles, 20, 49)
         self.__renderAdjacentFaces = True
 
     def isSolid(self):
