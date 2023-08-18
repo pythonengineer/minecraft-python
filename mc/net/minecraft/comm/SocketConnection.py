@@ -75,6 +75,7 @@ class SocketConnection:
                 if packet == Packets.LOGIN:
                     self.manager.minecraft.beginLevelLoading(data[1].decode())
                     self.manager.minecraft.levelLoadUpdate(data[2].decode())
+                    self.manager.minecraft.player.userType = data[3]
                 elif packet == Packets.LEVEL_INITIALIZE:
                     self.manager.minecraft.setLevel(None)
                     self.manager.levelBuffer = ByteArrayOutputStream()

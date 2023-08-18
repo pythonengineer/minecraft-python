@@ -1,5 +1,6 @@
 from mc.net.minecraft.character.Polygon import Polygon
 from mc.net.minecraft.character.Vertex import Vertex
+from mc.net.minecraft.character.Vec3 import Vec3
 from pyglet import gl
 
 class Cube:
@@ -59,23 +60,30 @@ class Cube:
         self.__y = y
         self.__z = 0.0
 
-    def render(self):
+    def render(self, a):
         if not self.__compiled:
             self.__list = gl.glGenLists(1)
             gl.glNewList(self.__list, gl.GL_COMPILE)
             gl.glBegin(gl.GL_QUADS)
             for polygon in self.__polygons:
+                vec37 = polygon.vertices[1].pos.subtract(polygon.vertices[0].pos).normalize()
+                vec38 = polygon.vertices[1].pos.subtract(polygon.vertices[2].pos).normalize()
+                vec37 = Vec3(vec37.y * vec38.z - vec37.z * vec38.y,
+                             vec37.z * vec38.x - vec37.x * vec38.z,
+                             vec37.x * vec38.y - vec37.y * vec38.x).normalize()
+                gl.glNormal3f(vec37.x, vec37.y, vec37.z)
+
                 for i in range(4):
                     v = polygon.vertices[i]
                     gl.glTexCoord2f(v.u / 64.0, v.v / 32.0)
-                    gl.glVertex3f(v.pos.x, v.pos.y, v.pos.z)
+                    gl.glVertex3f(v.pos.x * a, v.pos.y * a, v.pos.z * a)
             gl.glEnd()
             gl.glEndList()
             self.__compiled = True
 
         c = 57.29578
         gl.glPushMatrix()
-        gl.glTranslatef(self.__x, self.__y, self.__z)
+        gl.glTranslatef(self.__x * a, self.__y * a, self.__z * a)
         gl.glRotatef(self.zRot * c, 0.0, 0.0, 1.0)
         gl.glRotatef(self.yRot * c, 0.0, 1.0, 0.0)
         gl.glRotatef(self.xRot * c, 1.0, 0.0, 0.0)

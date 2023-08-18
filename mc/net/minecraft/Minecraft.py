@@ -21,6 +21,7 @@ from mc.net.minecraft.gui.Font import Font
 from mc.net.minecraft.gui.ChatScreen import ChatScreen
 from mc.net.minecraft.gui.ErrorScreen import ErrorScreen
 from mc.net.minecraft.gui.PauseScreen import PauseScreen
+from mc.net.minecraft.gui.InventoryScreen import InventoryScreen
 from mc.net.minecraft.gui.InGameHud import InGameHud
 from mc.net.minecraft.particle.ParticleEngine import ParticleEngine
 from mc.net.minecraft.renderer.texture.TextureWaterFX import TextureWaterFX
@@ -48,12 +49,11 @@ class StopGameException(Exception):
     pass
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.0.19a_06'
+    VERSION_STRING = '0.0.20a_01'
     __timer = Timer(20.0)
     level = None
     __levelRenderer = None
     player = None
-    paintTexture = 1
     __particleEngine = None
 
     user = None
@@ -181,15 +181,16 @@ class Minecraft(window.Window):
                 self.__prevFrameTime = self.__ticksRan
             elif button == window.mouse.RIGHT:
                 self.__editMode = (self.__editMode + 1) % 2
-            elif button == window.mouse.MIDDLE:
-                if self.__hitResult:
-                    tile = self.level.getTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z)
-                    if tile == tiles.grass.id:
-                        tile = tiles.dirt.id
+            elif button == window.mouse.MIDDLE and self.__hitResult:
+                tile = self.level.getTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z)
+                if tile == tiles.grass.id:
+                    tile = tiles.dirt.id
 
-                    for t in User.creativeTiles:
-                        if tile == t:
-                            self.paintTexture = t
+                slot = self.player.inventory.getSlotContainsID(tile)
+                if slot >= 0:
+                    self.player.inventory.selectedSlot = slot
+                elif tile > 0 and tiles.tiles[tile] in User.creativeTiles:
+                    self.player.inventory.getSlotContainsTile(tiles.tiles[tile])
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -208,18 +209,12 @@ class Minecraft(window.Window):
 
             i3 = 0
 
-            for i, tile in enumerate(User.creativeTiles):
-                if tile == self.paintTexture:
-                    i3 = i
+            self.player.inventory.selectedSlot -= dy
+            while self.player.inventory.selectedSlot < 0:
+                self.player.inventory.selectedSlot += len(self.player.inventory.slots)
 
-            i3 += dy
-            while i3 < 0:
-                i3 += len(User.creativeTiles)
-
-            while i3 >= len(User.creativeTiles):
-                i3 -= len(User.creativeTiles)
-
-            self.paintTexture = User.creativeTiles[i3]
+            while self.player.inventory.selectedSlot >= len(self.player.inventory.slots):
+                self.player.inventory.selectedSlot -= len(self.player.inventory.slots)
         except Exception as e:
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
@@ -255,7 +250,7 @@ class Minecraft(window.Window):
 
             for i in range(9):
                 if symbol == getattr(window.key, '_' + str(i + 1)):
-                    self.paintTexture = User.creativeTiles[i]
+                    self.player.inventory.selectedSlot = i
 
             if symbol == window.key.Y:
                 self.__yMouseAxis = -self.__yMouseAxis
@@ -264,6 +259,8 @@ class Minecraft(window.Window):
             elif symbol == window.key.F:
                 z15 = modifiers & window.key.MOD_SHIFT
                 self.__levelRenderer.drawDistance = self.__levelRenderer.drawDistance + (-1 if z15 else 1) & 3
+            elif symbol == window.key.B:
+                self.setScreen(InventoryScreen())
             elif symbol == window.key.T and self.connectionManager and self.connectionManager.isConnected():
                 self.player.releaseAllKeys()
                 self.setScreen(ChatScreen())
@@ -486,7 +483,8 @@ class Minecraft(window.Window):
         self.set_mouse_position(self.width // 2, self.height // 2)
 
     def __pauseGame(self):
-        self.setScreen(PauseScreen())
+        if not isinstance(self.guiScreen, PauseScreen):
+            self.setScreen(PauseScreen())
 
     def __clickMouse(self):
         if self.__hitResult:
@@ -501,24 +499,26 @@ class Minecraft(window.Window):
                 if self.__hitResult.f == 4: x -= 1
                 if self.__hitResult.f == 5: x += 1
 
+            oldTile = tiles.tiles[self.level.getTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z)]
             if self.__editMode == 0:
-                oldTile = tiles.tiles[self.level.getTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z)]
-                changed = self.level.netSetTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, 0)
-                if oldTile and changed:
-                    if self.__isMultiplayer():
-                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.paintTexture)
+                if oldTile != tiles.unbreakable or self.player.userType >= 100:
+                    changed = self.level.netSetTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, 0)
+                    if oldTile and changed:
+                        if self.__isMultiplayer():
+                            self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.player.inventory.getSelected())
 
-                    oldTile.destroy(self.level, self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, self.__particleEngine)
+                        oldTile.destroy(self.level, self.__hitResult.x, self.__hitResult.y, self.__hitResult.z, self.__particleEngine)
             else:
                 tile = tiles.tiles[self.level.getTile(x, y, z)]
-                aabb = tiles.tiles[self.paintTexture].getAABB(x, y, z)
+                texture = self.player.inventory.getSelected()
+                aabb = tiles.tiles[texture].getAABB(x, y, z)
                 if (tile is None or tile == tiles.water or tile == tiles.calmWater or tile == tiles.lava or tile == tiles.calmLava) and \
                    (aabb is None or (False if self.player.bb.intersects(aabb) else self.level.isFree(aabb))):
                     if self.__isMultiplayer():
-                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, self.paintTexture)
+                        self.connectionManager.sendBlockChange(x, y, z, self.__editMode, texture)
 
-                    self.level.netSetTile(x, y, z, self.paintTexture)
-                    tiles.tiles[self.paintTexture].onBlockAdded(self.level, x, y, z)
+                    self.level.netSetTile(x, y, z, self.player.inventory.getSelected())
+                    tiles.tiles[texture].onBlockAdded(self.level, x, y, z)
 
     def __tick(self):
         for message in self.__hud.messages.copy():
@@ -682,7 +682,10 @@ class Minecraft(window.Window):
                         self.__levelRenderer.render(xx, yy, zz)
 
         self.__checkGlError('Rendered level')
+        self.__toggleLight(True)
         self.__levelRenderer.renderEntities(self.__frustum, a)
+        self.__toggleLight(False)
+        self.__setupFog()
         self.__checkGlError('Rendered entities')
         self.__particleEngine.render(self.player, a)
         self.__checkGlError('Rendered particles')
@@ -696,7 +699,7 @@ class Minecraft(window.Window):
         if self.__hitResult:
             gl.glDisable(gl.GL_LIGHTING)
             gl.glDisable(gl.GL_ALPHA_TEST)
-            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.paintTexture)
+            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.player.inventory.getSelected())
             LevelRenderer.renderHitOutline(self.__hitResult, self.__editMode)
             gl.glEnable(gl.GL_ALPHA_TEST)
             gl.glEnable(gl.GL_LIGHTING)
@@ -723,10 +726,27 @@ class Minecraft(window.Window):
         if self.__hitResult:
             gl.glDepthFunc(gl.GL_LESS)
             gl.glDisable(gl.GL_ALPHA_TEST)
-            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.paintTexture)
+            self.__levelRenderer.renderHit(self.player, self.__hitResult, self.__editMode, self.player.inventory.getSelected())
             LevelRenderer.renderHitOutline(self.__hitResult, self.__editMode)
             gl.glEnable(gl.GL_ALPHA_TEST)
             gl.glDepthFunc(gl.GL_LEQUAL)
+
+    def __toggleLight(self, z1):
+        if not z1:
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glDisable(gl.GL_LIGHT0)
+        else:
+            gl.glEnable(gl.GL_LIGHTING)
+            gl.glEnable(gl.GL_LIGHT0)
+            gl.glEnable(gl.GL_COLOR_MATERIAL)
+            gl.glColorMaterial(gl.GL_FRONT_AND_BACK, gl.GL_AMBIENT_AND_DIFFUSE)
+            f4 = 0.7
+            f2 = 0.3
+            vec = Vec3(0.0, -1.0, 0.5).normalize()
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_POSITION, self.__getBuffer(vec.x, vec.y, vec.z, 0.0))
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE, self.__getBuffer(f2, f2, f2, 1.0))
+            gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, self.__getBuffer(0.0, 0.0, 0.0, 1.0))
+            gl.glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT, self.__getBuffer(f4, f4, f4, 1.0))
 
     def initGui(self):
         screenWidth = self.width * 240 // self.height
@@ -767,7 +787,7 @@ class Minecraft(window.Window):
 
     def __getBuffer(self, a, b, c, d):
         self.__lb.clear()
-        self.__lb.put(a).put(b).put(c).put(1.0)
+        self.__lb.put(a).put(b).put(c).put(d)
         self.__lb.flip()
         return self.__lb
 
@@ -872,7 +892,7 @@ if __name__ == '__main__':
         elif arg == '-mppass':
             mpPass = sys.argv[i + 1]
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.19a_06')
+    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.20a_01')
     game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))

@@ -19,43 +19,29 @@ class InGameHud:
         t = tesselator
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glEnable(gl.GL_BLEND)
-        self.__blit(self.__scaledWidth // 2 - 91, self.__scaledHeight - 22, 0, 0, 182, 22)
-        i10000 = self.__scaledWidth // 2 - 91 - 1
-        i5 = 0
-
-        i10001 = 0
-        while True:
-            if i5 >= len(User.creativeTiles):
-                i10001 = 0
-                break
-
-            if User.creativeTiles[i5] == self.__minecraft.paintTexture:
-                i10001 = i5
-                break
-
-            i5 += 1
-
-        self.__blit(i10000 + i10001 * 20, self.__scaledHeight - 22 - 1, 0, 22, 24, 22)
+        self.__blit(self.__scaledWidth / 2 - 91, self.__scaledHeight - 22, 0, 0, 182, 22)
+        self.__blit(self.__scaledWidth / 2 - 91 - 1 + self.__minecraft.player.inventory.selectedSlot * 20, self.__scaledHeight - 22 - 1, 0, 22, 24, 22)
         gl.glDisable(gl.GL_BLEND)
 
-        for i13 in range(9):
-            i5 = User.creativeTiles[i13]
-            gl.glPushMatrix()
-            gl.glTranslatef(self.__scaledWidth / 2 - 90 + i13 * 20, self.__scaledHeight - 16, -50.0)
-            gl.glScalef(10.0, 10.0, 10.0)
-            gl.glTranslatef(1.0, 0.5, 0.0)
-            gl.glRotatef(-30.0, 1.0, 0.0, 0.0)
-            gl.glRotatef(45.0, 0.0, 1.0, 0.0)
-            gl.glTranslatef(-1.5, 0.5, 0.5)
-            gl.glScalef(-1.0, -1.0, -1.0)
-            i6 = self.__minecraft.textures.getTextureId('terrain.png')
-            gl.glBindTexture(gl.GL_TEXTURE_2D, i6)
-            gl.glEnable(gl.GL_TEXTURE_2D)
-            t.begin()
-            tiles.tiles[i5].render(t, self.__minecraft.level, 0, -2, 0, 0)
-            t.end()
-            gl.glDisable(gl.GL_TEXTURE_2D)
-            gl.glPopMatrix()
+        for i in range(len(self.__minecraft.player.inventory.slots)):
+            i6 = self.__minecraft.player.inventory.slots[i]
+            if i6 > 0:
+                gl.glPushMatrix()
+                gl.glTranslatef(self.__scaledWidth / 2 - 90 + i * 20, self.__scaledHeight - 16, -50.0)
+                gl.glScalef(10.0, 10.0, 10.0)
+                gl.glTranslatef(1.0, 0.5, 0.0)
+                gl.glRotatef(-30.0, 1.0, 0.0, 0.0)
+                gl.glRotatef(45.0, 0.0, 1.0, 0.0)
+                gl.glTranslatef(-1.5, 0.5, 0.5)
+                gl.glScalef(-1.0, -1.0, -1.0)
+                i7 = self.__minecraft.textures.getTextureId('terrain.png')
+                gl.glBindTexture(gl.GL_TEXTURE_2D, i7)
+                gl.glEnable(gl.GL_TEXTURE_2D)
+                t.begin()
+                tiles.tiles[i6].render(t, self.__minecraft.level, 0, -2, 0, 0)
+                t.end()
+                gl.glDisable(gl.GL_TEXTURE_2D)
+                gl.glPopMatrix()
 
         self.__minecraft.font.drawShadow(self.__minecraft.VERSION_STRING, 2, 2, 16777215)
         self.__minecraft.font.drawShadow(self.__minecraft.fpsString, 2, 12, 16777215)

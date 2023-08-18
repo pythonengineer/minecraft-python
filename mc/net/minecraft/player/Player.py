@@ -1,3 +1,4 @@
+from mc.net.minecraft.player.Inventory import Inventory
 from mc.net.minecraft.Entity import Entity
 
 class Player(Entity):
@@ -6,6 +7,8 @@ class Player(Entity):
         super().__init__(level)
         self.heightOffset = 1.62
         self.__input = movementInput
+        self.inventory = Inventory()
+        self.userType = 0
 
     def tick(self):
         super().tick()

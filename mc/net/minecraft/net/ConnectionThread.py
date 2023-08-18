@@ -19,7 +19,7 @@ class ConnectionThread(Thread):
             connection = SocketConnection(self.__ip, self.__port)
             self.__connectionManager.connection = connection
             connection.manager = self.__connectionManager
-            connection.sendPacket(Packets.LOGIN, [5, self.__username, self.__mpPass])
+            connection.sendPacket(Packets.LOGIN, [6, self.__username, self.__mpPass, 0])
             self.__connectionManager.processData = True
         except ConnectionRefusedError:
             self.__minecraft.hideGui = False

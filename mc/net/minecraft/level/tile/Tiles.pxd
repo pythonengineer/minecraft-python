@@ -11,6 +11,7 @@ cdef class Tiles:
         public Tile rock
         public Tile grass
         public Tile dirt
+        public Tile stoneBrick
         public Tile wood
         public Tile bush
         public Tile unbreakable
@@ -27,3 +28,24 @@ cdef class Tiles:
         public Tile leaf
         public Tile sponge
         public Tile glass
+        public Tile clothRed
+        public Tile clothOrange
+        public Tile clothYellow
+        public Tile clothChartreuse
+        public Tile clothGreen
+        public Tile clothSpringGreen
+        public Tile clothCyan
+        public Tile clothCapri
+        public Tile clothUltramarine
+        public Tile clothViolet
+        public Tile clothPurple
+        public Tile clothMagenta
+        public Tile clothRose
+        public Tile clothDarkGray
+        public Tile clothGray
+        public Tile clothWhite
+        public Tile plantYellow
+        public Tile plantRed
+        public Tile mushroomBrown
+        public Tile mushroomRed
+        public Tile blockGold

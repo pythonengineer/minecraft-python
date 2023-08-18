@@ -26,7 +26,7 @@ class ZombieModel:
         self.__leg1.addBox(-2.0, 0.0, -2.0, 4, 12, 4)
         self.__leg1.setPos(2.0, 12.0, 0.0)
 
-    def render(self, a, f2, f3, f4, f5):
+    def render(self, a, f2, f3, f4, f5, f6):
         self.__head.yRot = f4 / 57.29578
         self.__head.xRot = f5 / 57.29578
         self.__arm0.xRot = math.cos(a * 0.6662 + math.pi) * 2.0 * f2
@@ -39,9 +39,9 @@ class ZombieModel:
         self.__arm1.zRot -= math.cos(f3 * 0.09) * 0.05 + 0.05
         self.__arm0.xRot += math.sin(f3 * 0.067) * 0.05
         self.__arm1.xRot -= math.sin(f3 * 0.067) * 0.05
-        self.__head.render()
-        self.__body.render()
-        self.__arm0.render()
-        self.__arm1.render()
-        self.__leg0.render()
-        self.__leg1.render()
+        self.__head.render(f6)
+        self.__body.render(f6)
+        self.__arm0.render(f6)
+        self.__arm1.render(f6)
+        self.__leg0.render(f6)
+        self.__leg1.render(f6)

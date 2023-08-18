@@ -19,10 +19,30 @@ Ingame, ops can use the following commands:
 /banip <name>      Bans a player by ip number. Cannot be undone ingame, you must manually change banned-ip.txt
 /say <message>     Broadcasts <message> across the entire server.
 /setspawn          Sets the current location as the default spawn location for new players
+/tp <name>         Teleports to a player.   
+/solid             Switches between placing normal and placing unbreakable stone
 
 
 
 ## Changelog:
+
+Version 1.8.2:
+
++ Ooops, everyone could build unbreakable blocks! Fixed!
+
+Version 1.8.1:
+
++ Fixed a protocol error.
+
+Version 1.8:
+
++ Added a whole bunch of new tile types
++ Players can no longer destroy unbreakable stone. Admins can, though!
++ Added /solid command to toggle stone tile type between normal and unbreakable
+
+Version 1.7:
+
++ Added /tp as an alias for teleport
 
 Version 1.6:
 

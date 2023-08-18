@@ -1,6 +1,6 @@
 from mc.net.minecraft.net.Packet import Packet, DataTypes
 
-LOGIN = Packet((DataTypes.Byte, DataTypes.String, DataTypes.String))
+LOGIN = Packet((DataTypes.Byte, DataTypes.String, DataTypes.String, DataTypes.Byte))
 Packet(())
 LEVEL_INITIALIZE = Packet(())
 LEVEL_DATA_CHUNK = Packet((DataTypes.Short, DataTypes.Bytes, DataTypes.Byte))

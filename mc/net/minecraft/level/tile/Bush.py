@@ -4,9 +4,9 @@ import math
 
 class Bush(Tile):
 
-    def __init__(self, tiles, id_):
-        super().__init__(tiles, id_)
-        self.tex = 15
+    def __init__(self, tiles, id_, tex):
+        super().__init__(tiles, id_, tex)
+        self.tex = tex
         self._setTicking(True)
 
     def tick(self, level, x, y, z, random):

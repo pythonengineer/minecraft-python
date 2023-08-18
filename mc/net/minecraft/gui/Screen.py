@@ -26,7 +26,13 @@ class Screen:
             self._minecraft.setScreen(None)
             self._minecraft.grabMouse()
 
-    def _mouseClicked(self, button):
+    def _mousePressed(self, xm, ym, button):
+        if button == window.mouse.LEFT:
+            for button in self._buttons:
+                if button.enabled and xm >= button.x and ym >= button.y and xm < button.x + button.w and ym < button.y + button.h:
+                    self._buttonClicked(button)
+
+    def _buttonClicked(self, button):
         pass
 
     def init(self, minecraft, width, height):
@@ -83,12 +89,7 @@ class Screen:
         if button:
             xm = self._minecraft.mouseX * self._width // self._minecraft.width
             ym = self._height - self._minecraft.mouseY * self._height // self._minecraft.height - 1
-            if button != window.mouse.LEFT:
-                return
-
-            for button in self._buttons:
-                if button.enabled and xm >= button.x and ym >= button.y and xm < button.x + button.w and ym < button.y + button.h:
-                    self._buttonClicked(button)
+            self._mousePressed(xm, ym, button)
         elif key or char or motion:
             self._keyPressed(key, char, motion)
 
