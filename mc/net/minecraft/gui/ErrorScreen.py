@@ -10,9 +10,9 @@ class ErrorScreen(Screen):
         super().init(minecraft, width, height)
 
     def render(self, xm, ym):
-        self._fillGradient(0, 0, self._y, self._w, -12574688, -11530224)
-        self.drawCenteredString(self.__title, self._y // 2, 90, 0xFFFFFF)
-        self.drawCenteredString(self.__desc, self._y // 2, 110, 0xFFFFFF)
+        self._fillGradient(0, 0, self._width, self._height, -12574688, -11530224)
+        self.drawCenteredString(self.__title, self._width // 2, 90, 0xFFFFFF)
+        self.drawCenteredString(self.__desc, self._width // 2, 110, 0xFFFFFF)
         super().render(xm, ym)
 
     def _keyPressed(self, key, char, motion):

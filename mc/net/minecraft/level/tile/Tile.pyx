@@ -46,12 +46,12 @@ cdef class Tile:
         self.shouldTick[self.id] = tick
 
     def _setShape(self, float x0, float y0, float z0, float x1, float y1, float z1):
-        self.__xx0 = 0.0
+        self.__xx0 = x0
         self.__yy0 = y0
-        self.__zz0 = 0.0
-        self.__xx1 = 1.0
+        self.__zz0 = z0
+        self.__xx1 = x1
         self.__yy1 = y1
-        self.__zz1 = 1.0
+        self.__zz1 = z1
 
     cdef setTickSpeed(self, int speed):
         self.tickSpeed[self.id] = 16
@@ -61,11 +61,10 @@ cdef class Tile:
         cdef bint layerOk
 
         layerOk = False
-        f8 = 0.0
+        f8 = 0.5
         f9 = 0.8
         f10 = 0.6
         if self._shouldRenderFace(level, x, y - 1, z, layer, 0):
-            f8 = 0.5
             f11 = self._getBrightness(level, x, y - 1, z)
             t.colorFloat(f8 * f11, f8 * f11, f8 * f11)
             self.renderFace(t, x, y, z, 0)
@@ -112,7 +111,7 @@ cdef class Tile:
 
         return not level.isSolidTile(x, y, z)
 
-    cdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
+    cpdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
         return False if layer == 1 else not level.isSolidTile(x, y, z)
 
     cpdef int _getTexture(self, int face):
@@ -303,3 +302,9 @@ cdef class Tile:
 
     cdef int getTickDelay(self):
         return 0
+
+    def onTileAdded(self, Level level, int x, int y, int z):
+        pass
+
+    def onTileRemoved(self, Level level, int x, int y, int z):
+        pass

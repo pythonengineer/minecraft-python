@@ -71,12 +71,6 @@ class Entity:
         self.bb = AABB(x - w, y - h, z - w, x + w, y + h, z + w)
 
     def _setRot(self, yRot, xRot):
-        while self.yRotO - yRot < -180.0:
-            self.yRotO += 360.0
-
-        while self.yRotO - yRot >= 180.0:
-            self.yRotO -= 360.0
-
         self.yRot = yRot
         self.xRot = xRot
 

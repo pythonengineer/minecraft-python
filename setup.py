@@ -12,6 +12,12 @@ extensions = [
               sources=['mc/net/minecraft/renderer/Chunk.pyx']),
     Extension(name='mc.net.minecraft.renderer.Tesselator',
               sources=['mc/net/minecraft/renderer/Tesselator.pyx']),
+    Extension(name='mc.net.minecraft.renderer.texture.TextureFX',
+              sources=['mc/net/minecraft/renderer/texture/TextureFX.pyx']),
+    Extension(name='mc.net.minecraft.renderer.texture.TextureLavaFX',
+              sources=['mc/net/minecraft/renderer/texture/TextureLavaFX.pyx']),
+    Extension(name='mc.net.minecraft.renderer.texture.TextureWaterFX',
+              sources=['mc/net/minecraft/renderer/texture/TextureWaterFX.pyx']),
     Extension(name='mc.net.minecraft.level.Level',
               sources=['mc/net/minecraft/level/Level.pyx']),
     Extension(name='mc.net.minecraft.level.levelgen.LevelGen',
@@ -34,7 +40,7 @@ extensions = [
 
 setup(
     name='minecraft-python',
-    version='0.0.18a_02',
+    version='0.0.19a_06',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

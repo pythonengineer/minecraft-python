@@ -11,7 +11,6 @@ cdef class Tiles:
         public Tile rock
         public Tile grass
         public Tile dirt
-        public Tile stoneBrick
         public Tile wood
         public Tile bush
         public Tile unbreakable
@@ -26,3 +25,5 @@ cdef class Tiles:
         public Tile oreCoal
         public Tile log
         public Tile leaf
+        public Tile sponge
+        public Tile glass

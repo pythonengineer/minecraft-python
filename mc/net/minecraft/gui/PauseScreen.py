@@ -10,10 +10,10 @@ class PauseScreen(Screen):
     def init(self, minecraft, width, height):
         super().init(minecraft, width, height)
         self._buttons.clear()
-        self._buttons.append(Button(0, self._y // 2 - 100, self._w // 3, 200, 20, 'Generate new level...'))
-        self._buttons.append(Button(1, self._y // 2 - 100, self._w // 3 + 32, 200, 20, 'Save level..'))
-        self._buttons.append(Button(2, self._y // 2 - 100, self._w // 3 + 64, 200, 20, 'Load level..'))
-        self._buttons.append(Button(3, self._y // 2 - 100, self._w // 3 + 96, 200, 20, 'Back to game'))
+        self._buttons.append(Button(0, self._width // 2 - 100, self._height // 3, 200, 20, 'Generate new level...'))
+        self._buttons.append(Button(1, self._width // 2 - 100, self._height // 3 + 32, 200, 20, 'Save level..'))
+        self._buttons.append(Button(2, self._width // 2 - 100, self._height // 3 + 64, 200, 20, 'Load level..'))
+        self._buttons.append(Button(3, self._width // 2 - 100, self._height // 3 + 96, 200, 20, 'Back to game'))
         if not False:#self._minecraft.user:
             self._buttons[2].enabled = False
 
@@ -39,6 +39,6 @@ class PauseScreen(Screen):
             self._minecraft.grabMouse()
 
     def render(self, xm, ym):
-        self._fillGradient(0, 0, self._y, self._w, 1610941696, -1607454624)
-        self.drawCenteredString('Game menu', self._y // 2, 40, 0xFFFFFF)
+        self._fillGradient(0, 0, self._width, self._height, 1610941696, -1607454624)
+        self.drawCenteredString('Game menu', self._width // 2, 40, 0xFFFFFF)
         super().render(xm, ym)

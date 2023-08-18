@@ -12,6 +12,7 @@ class NetworkPlayer(Entity):
         self.__minecraft = minecraft
         self.__zombieModel = minecraft.playerModel
         self.name = name
+        self.tickCount = 0
         self.__xp = xp
         self.__yp = yp
         self.__zp = zp
@@ -34,6 +35,10 @@ class NetworkPlayer(Entity):
     def tick(self):
         super().tick()
         self.__animStepO = self.__animStep
+        self.__yBodyRotO = self.__yBodyRot
+        self.yRotO = self.yRot
+        self.xRotO = self.xRot
+        self.tickCount += 1
         i1 = 5
 
         while True:
@@ -45,30 +50,19 @@ class NetworkPlayer(Entity):
 
         f6 = self.x - self.xo
         f2 = self.z - self.zo
-        self.__yBodyRotO = self.__yBodyRot
         f3 = math.sqrt(f6 * f6 + f2 * f2)
         f4 = self.__yBodyRot
         f5 = 0.0
         self.__oRun = self.__run
         f7 = 0.0
-        if f3 == 0.0:
-            self.__animStep = 0.0
-        else:
+        if f3 != 0.0:
             f7 = 1.0
             f5 = f3 * 3.0
             f4 = -(math.atan2(f2, f6) * 180.0 / math.pi + 90.0)
 
-        self.__run += (f7 - self.__run) * 0.1
+        self.__run += (f7 - self.__run) * 0.3
 
         f6 = f4 - self.__yBodyRot
-        while f6 < -180.0:
-            f6 += 360.0
-
-        while f6 >= 180.0:
-            f6 -= 360.0
-
-        self.__yBodyRot += f6 * 0.1
-        f6 = self.yRot - self.__yBodyRot
         while f6 < -180.0:
             f6 += 360.0
 
@@ -91,6 +85,7 @@ class NetworkPlayer(Entity):
             f6 = 75.0
 
         self.__yBodyRot = self.yRot - f6
+        self.__yBodyRot += f6 * 0.1
         if z7:
             f5 = -f5
 
@@ -116,6 +111,7 @@ class NetworkPlayer(Entity):
 
     def render(self, textures, a):
         self.__textures = textures
+        f3 = self.__oRun + (self.__run - self.__oRun) * a
         gl.glEnable(gl.GL_TEXTURE_2D)
         if self.newTexture:
             self.__skin = self.__textures.addTexture(self.newTexture)
@@ -126,23 +122,42 @@ class NetworkPlayer(Entity):
         else:
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__skin)
 
-        f8 = self.__yBodyRotO + (self.__yBodyRot - self.__yBodyRotO) * a
-        f3 = self.yRotO + (self.yRot - self.yRotO) * a
-        f4 = self.xRotO + (self.xRot - self.xRotO) * a
-        f3 -= f8
+        while self.__yBodyRotO - self.__yBodyRot < -180.0:
+            self.__yBodyRotO += 360.0
+
+        while self.__yBodyRotO - self.__yBodyRot >= 180.0:
+            self.__yBodyRotO -= 360.0
+
+        f9 = self.__yBodyRotO + (self.__yBodyRot - self.__yBodyRotO) * a
+        while self.xRotO - self.xRot < -180.0:
+            self.xRotO += 360.0
+
+        while self.xRotO - self.xRot >= 180.0:
+            self.xRotO -= 360.0
+
+        while self.yRotO - self.yRot < -180.0:
+            self.yRotO += 360.0
+
+        while self.yRotO - self.yRot >= 180.0:
+            self.yRotO -= 360.0
+
+        f4 = self.yRotO + (self.yRot - self.yRotO) * a
+        f5 = self.xRotO + (self.xRot - self.xRotO) * a
+        f4 = -(f4 - f9)
         gl.glPushMatrix()
-        f5 = self.__animStepO + (self.__animStep - self.__animStepO) * a
-        f6 = self.getBrightness()
-        gl.glColor3f(f6, f6, f6)
-        f6 = 0.0625
-        f7 = -abs(math.sin(f5 * 0.6662)) * 5.0 - 23.0
+        f6 = self.__animStepO + (self.__animStep - self.__animStepO) * a
+        f7 = self.getBrightness()
+        gl.glColor3f(f7, f7, f7)
+        f7 = 0.0625
+        f8 = -abs(math.cos(f6 * 0.6662)) * 5.0 * f3 - 23.0
         gl.glTranslatef(self.xo + (self.x - self.xo) * a, self.yo + (self.y - self.yo) * a - self.heightOffset, self.zo + (self.z - self.zo) * a)
         gl.glScalef(1.0, -1.0, 1.0)
-        gl.glScalef(f6, f6, f6)
-        gl.glTranslatef(0.0, f7, 0.0)
-        gl.glRotatef(f8, 0.0, 1.0, 0.0)
+        gl.glScalef(f7, f7, f7)
+        gl.glTranslatef(0.0, f8, 0.0)
+        gl.glRotatef(f9, 0.0, 1.0, 0.0)
         gl.glDisable(gl.GL_ALPHA_TEST)
-        self.__zombieModel.render(f5, f3, f4)
+        gl.glScalef(-1.0, 1.0, 1.0)
+        self.__zombieModel.render(f6, f3, self.tickCount + a, f4, f5)
         gl.glEnable(gl.GL_ALPHA_TEST)
         gl.glPopMatrix()
         gl.glPushMatrix()
@@ -165,7 +180,23 @@ class NetworkPlayer(Entity):
         if b3 is None:
             f1 = b1
             f2 = b2
-            self.__moveQueue.append(PlayerMove((self.yRot + f1) / 2.0, (self.xRot + f2) / 2.0))
+            f3 = f1 - self.yRot
+            f4 = f2 - self.xRot
+            while f3 >= 180.0:
+                f3 -= 360.0
+
+            while f3 < -180.0:
+                f3 += 360.0
+
+            while f4 >= 180.0:
+                f4 -= 360.0
+
+            while f4 < -180.0:
+                f4 += 360.0
+
+            f3 = self.yRot + f3 * 0.5
+            f4 = self.xRot + f4 * 0.5
+            self.__moveQueue.append(PlayerMove(f3, f4))
             self.__moveQueue.append(PlayerMove(f1, f2))
         elif f4 is None:
             self.__moveQueue.append(PlayerMove((self.__xp + b1 / 2.0) / 32.0,
@@ -178,11 +209,25 @@ class NetworkPlayer(Entity):
                                                self.__yp / 32.0,
                                                self.__zp / 32.0))
         else:
+            f6 = f4 - self.yRot
+            f7 = f5 - self.xRot
+            while f6 >= 180.0:
+                f6 -= 360.0
+
+            while f6 < -180.0:
+                f6 += 360.0
+
+            while f7 >= 180.0:
+                f7 -= 360.0
+
+            while f7 < -180.0:
+                f7 += 360.0
+
+            f6 = self.yRot + f6 * 0.5
+            f7 = self.xRot + f7 * 0.5
             self.__moveQueue.append(PlayerMove((self.__xp + b1 / 2.0) / 32.0,
                                                (self.__yp + b2 / 2.0) / 32.0,
-                                               (self.__zp + b3 / 2.0) / 32.0,
-                                               (self.yRot + f4) / 2.0,
-                                               (self.xRot + f5) / 2.0))
+                                               (self.__zp + b3 / 2.0) / 32.0, f6, f7))
             self.__xp += b1
             self.__yp += b2
             self.__zp += b3
@@ -191,11 +236,25 @@ class NetworkPlayer(Entity):
                                                self.__zp / 32.0, f4, f5))
 
     def teleport(self, s1, s2, s3, f4, f5):
+        f6 = f4 - self.yRot
+        f7 = f5 - self.xRot
+        while f6 >= 180.0:
+            f6 -= 360.0
+
+        while f6 < -180.0:
+            f6 += 360.0
+
+        while f7 >= 180.0:
+            f7 -= 360.0
+
+        while f7 < -180.0:
+            f7 += 360.0
+
+        f6 = self.yRot + f6 * 0.5
+        f7 = self.xRot + f7 * 0.5
         self.__moveQueue.append(PlayerMove((self.__xp + s1) / 64.0,
                                            (self.__yp + s2) / 64.0,
-                                           (self.__zp + s3) / 64.0,
-                                           (self.yRot + f4) / 2.0,
-                                           (self.xRot + f5) / 2.0))
+                                           (self.__zp + s3) / 64.0, f6, f7))
         self.__xp = s1
         self.__yp = s2
         self.__zp = s3

@@ -66,7 +66,7 @@ cdef class LevelGen:
 
                 d21 = max(d14, d16) / 2.0
                 if d21 < 0.0:
-                    d21 /= 2.0
+                    d21 *= 0.8
 
                 heightmap[i + i13 * self.__width] = <int>d21
 
@@ -136,19 +136,23 @@ cdef class LevelGen:
                 dira2 *= 0.9
                 dira2 += self.__random.randFloat() - self.__random.randFloat()
 
-                size = sin(l * pi / length) * 2.5 + 1.0
+                if self.__random.randFloat() >= 0.3:
+                    x = x + self.__random.randFloat() * 4.0 - 2.0
+                    y = y + self.__random.randFloat() * 4.0 - 2.0
+                    z = z + self.__random.randFloat() * 4.0 - 2.0
+                    size = sin(l * pi / length) * 2.5 + 1.0
 
-                for xx in range(<int>(x - size), <int>(x + size) + 1):
-                    for yy in range(<int>(y - size), <int>(y + size) + 1):
-                        for zz in range(<int>(z - size), <int>(z + size) + 1):
-                            xd = xx - x
-                            yd = yy - y
-                            zd = zz - z
-                            dd = xd * xd + yd * yd * 2.0 + zd * zd
-                            if dd < size * size and xx >= 1 and yy >= 1 and zz >= 1 and xx < self.__width - 1 and yy < self.__depth - 1 and zz < self.__height - 1:
-                                ii = (yy * self.__height + zz) * self.__width + xx
-                                if self.__blocks[ii] == rock:
-                                    self.__blocks[ii] = 0
+                    for xx in range(<int>(x - size), <int>(x + size) + 1):
+                        for yy in range(<int>(y - size), <int>(y + size) + 1):
+                            for zz in range(<int>(z - size), <int>(z + size) + 1):
+                                xd = xx - x
+                                yd = yy - y
+                                zd = zz - z
+                                dd = xd * xd + yd * yd * 2.0 + zd * zd
+                                if dd < size * size and xx >= 1 and yy >= 1 and zz >= 1 and xx < self.__width - 1 and yy < self.__depth - 1 and zz < self.__height - 1:
+                                    ii = (yy * self.__height + zz) * self.__width + xx
+                                    if self.__blocks[ii] == rock:
+                                        self.__blocks[ii] = 0
 
         self.__carveTunnels(tiles.oreCoal.id, 90, 1, 4)
         self.__carveTunnels(tiles.oreIron.id, 70, 2, 4)

@@ -8,6 +8,7 @@ class ConnectionManager:
     levelBuffer = None
     connection = None
     processData = False
+    connected = False
     players = {}
 
     def __init__(self, minecraft, ip, port, username, mpPass):

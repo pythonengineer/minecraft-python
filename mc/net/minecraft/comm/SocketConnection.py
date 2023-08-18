@@ -13,7 +13,6 @@ class SocketConnection:
     readBuffer = BufferUtils.createByteBuffer(1048576)
     writeBuffer = BufferUtils.createByteBuffer(1048576)
     manager = None
-    _loggedIn = False
     __initialized = False
     __stringPacket = bytearray(64)
 
@@ -74,7 +73,6 @@ class SocketConnection:
 
             if self.manager.processData:
                 if packet == Packets.LOGIN:
-                    self._loggedIn = True
                     self.manager.minecraft.beginLevelLoading(data[1].decode())
                     self.manager.minecraft.levelLoadUpdate(data[2].decode())
                 elif packet == Packets.LEVEL_INITIALIZE:
@@ -98,13 +96,15 @@ class SocketConnection:
                     s21 = data[1]
                     s17 = data[2]
                     level = Level()
+                    level.setNetworkMode(True)
                     level.setDataLegacy(s18, s21, s17, b14)
                     self.manager.minecraft.setLevel(level)
                     self.manager.minecraft.hideGui = False
+                    self.manager.connected = True
                 elif packet == Packets.SET_TILE:
                     if self.manager.minecraft.level:
-                        self.manager.minecraft.level.setTile(int(data[0]), int(data[1]),
-                                                             int(data[2]), data[3])
+                        self.manager.minecraft.level.netSetTile(int(data[0]), int(data[1]),
+                                                                int(data[2]), data[3])
                 elif packet == Packets.PLAYER_JOIN:
                     b15 = data[0]
                     string19 = data[1].decode()

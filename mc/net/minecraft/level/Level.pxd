@@ -21,6 +21,8 @@ cdef class Level:
 
         public set entities
 
+        bint __networkMode
+
         public int unprocessed
         int __tickCount
 
@@ -42,9 +44,10 @@ cdef class Level:
     cdef findSpawn(self)
     cdef void calcLightDepths(self, int x0, int y0, int x1, int y1) except *
     cdef inline bint isLightBlocker(self, int x, int y, int z) except *
-    cdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_)
+    cpdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_)
+    cdef bint netSetTileNoNeighborChange(self, int x, int y, int z, int type_)
     cpdef bint setTile(self, int x, int y, int z, int type_)
-    cdef __updateNeighborAt(self, int x, int y, int z, int type_)
+    cpdef updateNeighborsAt(self, int x, int y, int z, int type_)
     cpdef inline bint setTileNoUpdate(self, int x, int y, int z, int type_)
     cdef __neighborChanged(self, int x, int y, int z, int type_)
     cpdef inline bint isLit(self, int x, int y, int z)
@@ -64,3 +67,4 @@ cdef class Level:
     cdef int getHighestTile(self, int x, int z)
     cpdef setSpawnPos(self, int x, int y, int z, float yRot)
     cpdef inline float getBrightness(self, int x, int y, int z)
+    cpdef inline bint isWater(self, int x, int y, int z)

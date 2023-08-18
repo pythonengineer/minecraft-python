@@ -21,7 +21,7 @@ cdef class Tile:
     cdef setTickSpeed(self, int speed)
     cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *
     cdef float _getBrightness(self, Level level, int x, int y, int z)
-    cdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face)
+    cpdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face)
     cpdef int _getTexture(self, int face)
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face)
     cdef renderBackFace(self, Tesselator t, int x, int y, int z, int face)

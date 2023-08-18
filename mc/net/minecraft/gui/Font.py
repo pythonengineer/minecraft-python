@@ -6,8 +6,8 @@ class Font:
 
     def __init__(self, name, textures):
         self.__charWidths = [0] * 256
-        self.__fontTexture = textures.getTextureId(name)
-        texture = Resources.textures[name]
+        self.__fontTexture = textures.getTextureId(name + '2')
+        texture = Resources.textures[name + '1']
         w = texture[0]
         h = texture[1]
         rawPixels = texture[2]
@@ -49,8 +49,11 @@ class Font:
             xo = 0
             i = 0
             while i < len(string):
-                if string[i] == '&':
+                if string[i] == '&' and len(string) > i + 1:
                     cc = '0123456789abcdef'.index(string[i + 1])
+                    if cc < 0:
+                        cc = 15
+
                     br = (cc & 8) << 3
                     b = (cc & 1) * 191 + br
                     g = ((cc & 2) >> 1) * 191 + br

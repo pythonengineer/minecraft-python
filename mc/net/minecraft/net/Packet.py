@@ -36,5 +36,7 @@ class Packet:
                 size += 8
             elif field == DataTypes.Bytes:
                 size += 1024
+            elif field == DataTypes.String:
+                size += 64
 
         self.size = size
