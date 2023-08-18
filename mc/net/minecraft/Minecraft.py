@@ -852,7 +852,7 @@ class Minecraft(window.Window):
         self.__hud.messages.insert(0, ChatLine(string))
 
         while len(self.__hud.messages) > 50:
-            self.__chatMessages.pop(len(self.__hud.messages) - 1)
+            self.__hud.messages.pop(len(self.__hud.messages) - 1)
 
 if __name__ == '__main__':
     fullScreen = False
