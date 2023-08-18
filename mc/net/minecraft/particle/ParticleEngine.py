@@ -17,7 +17,7 @@ class ParticleEngine:
             return
 
         gl.glEnable(gl.GL_TEXTURE_2D)
-        id_ = self.__textures.loadTexture('terrain.png', gl.GL_NEAREST)
+        id_ = self.__textures.getTextureId('terrain.png')
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         xa = -math.cos(player.yRot * math.pi / 180.0)
         za = -math.sin(player.yRot * math.pi / 180.0)

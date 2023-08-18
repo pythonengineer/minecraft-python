@@ -6,7 +6,7 @@ class Font:
 
     def __init__(self, name, textures):
         self.__charWidths = [0] * 256
-        self.__fontTexture = textures.loadTexture(name, gl.GL_NEAREST)
+        self.__fontTexture = textures.getTextureId(name)
         texture = Resources.textures[name]
         w = texture[0]
         h = texture[1]
@@ -38,42 +38,43 @@ class Font:
         self.draw(string, x, y, color)
 
     def draw(self, string, x, y, color, darken=False):
-        if darken:
-            color = (color & 0xFCFCFC) >> 2
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fontTexture)
-        t = tesselator
-        t.begin()
-        t.color(color)
-        xo = 0
-        i = 0
-        while i < len(string):
-            if string[i] == '&':
-                cc = '0123456789abcdef'.index(string[i + 1])
-                br = (cc & 8) << 3
-                b = (cc & 1) * 191 + br
-                g = ((cc & 2) >> 1) * 191 + br
-                r = ((cc & 4) >> 2) * 191 + br
-                color = r << 16 | g << 8 | b
-                i += 2
-                if darken:
-                    color = (color & 0xFCFCFC) >> 2
+        if string is not None:
+            if darken:
+                color = (color & 0xFCFCFC) >> 2
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fontTexture)
+            t = tesselator
+            t.begin()
+            t.color(color)
+            xo = 0
+            i = 0
+            while i < len(string):
+                if string[i] == '&':
+                    cc = '0123456789abcdef'.index(string[i + 1])
+                    br = (cc & 8) << 3
+                    b = (cc & 1) * 191 + br
+                    g = ((cc & 2) >> 1) * 191 + br
+                    r = ((cc & 4) >> 2) * 191 + br
+                    color = r << 16 | g << 8 | b
+                    i += 2
+                    if darken:
+                        color = (color & 0xFCFCFC) >> 2
 
-                t.color(color)
+                    t.color(color)
 
-            ix = ord(string[i]) % ord('\020') << 3
-            iy = ord(string[i]) // ord('\020') << 3
-            f13 = 7.99
-            t.vertexUV(x + xo, y + f13, 0.0, ix / 128.0, (iy + f13) / 128.0)
-            t.vertexUV(x + xo + f13, y + f13, 0.0, (ix + f13) / 128.0, (iy + f13) / 128.0)
-            t.vertexUV(x + xo + f13, y, 0.0, (ix + f13) / 128.0, iy / 128.0)
-            t.vertexUV(x + xo, y, 0.0, ix / 128.0, iy / 128.0)
+                ix = ord(string[i]) % ord('\020') << 3
+                iy = ord(string[i]) // ord('\020') << 3
+                f13 = 7.99
+                t.vertexUV(x + xo, y + f13, 0.0, ix / 128.0, (iy + f13) / 128.0)
+                t.vertexUV(x + xo + f13, y + f13, 0.0, (ix + f13) / 128.0, (iy + f13) / 128.0)
+                t.vertexUV(x + xo + f13, y, 0.0, (ix + f13) / 128.0, iy / 128.0)
+                t.vertexUV(x + xo, y, 0.0, ix / 128.0, iy / 128.0)
 
-            xo += self.__charWidths[ord(string[i])]
-            i += 1
+                xo += self.__charWidths[ord(string[i])]
+                i += 1
 
-        t.end()
-        gl.glDisable(gl.GL_TEXTURE_2D)
+            t.end()
+            gl.glDisable(gl.GL_TEXTURE_2D)
 
     def width(self, string):
         if string is None:

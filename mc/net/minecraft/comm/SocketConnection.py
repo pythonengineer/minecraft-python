@@ -129,7 +129,9 @@ class SocketConnection:
                     b25 = data[4]
                     b8 = data[5]
                     networkPlayer = self.manager.players.get(b15)
-                    if b15 >= 0 and networkPlayer:
+                    if b15 < 0:
+                        self.manager.minecraft.player.moveTo(s17 / 32.0, s18 / 32.0, s21 / 32.0, float(b25 * 360) / 256.0, float(b8 * 360) / 256.0)
+                    elif networkPlayer:
                         networkPlayer.teleport(s17, s18, s21, float(-b25 * 360) / 256.0, float(b8 * 360) / 256.0)
                 elif packet == Packets.PLAYER_MOVE_AND_ROTATE:
                     b15 = data[0]
@@ -158,9 +160,11 @@ class SocketConnection:
                         networkPlayer.queue(b23, b22, b6)
                 elif packet == Packets.PLAYER_DISCONNECT:
                     b15 = data[0]
-                    networkPlayer = self.manager.players.pop(b15)
-                    if b15 >= 0 and networkPlayer:
-                        self.manager.minecraft.level.entities.remove(networkPlayer)
+                    if b15 in self.manager.players:
+                        networkPlayer = self.manager.players.pop(b15)
+                        if b15 >= 0 and networkPlayer:
+                            networkPlayer.clear()
+                            self.manager.minecraft.level.entities.remove(networkPlayer)
                 elif packet == Packets.CHAT_MESSAGE:
                     b15 = data[0]
                     string19 = data[1].decode()
