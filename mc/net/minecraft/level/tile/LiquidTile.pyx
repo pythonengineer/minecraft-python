@@ -21,7 +21,7 @@ cdef class LiquidTile(Tile):
 
         f4 = 0.01
         dd = 0.1
-        self._setShape(0.0 - f4, 0.0 - dd - f4, 0.0 - f4, f4 + 1.0, 1.0 - dd + f4, f4 + 1.0)
+        self._setShape(f4 + 0.0, 0.0 - dd + f4, f4 + 0.0, f4 + 1.0, 1.0 - dd + f4, f4 + 1.0)
         self._setTicking(True)
         if liquid == Liquid.lava:
             self.setTickSpeed(16)
@@ -106,10 +106,7 @@ cdef class LiquidTile(Tile):
         Tile.renderFace(self, t, x, y, z, face)
         self.renderBackFace(t, x, y, z, face)
 
-    cdef bint mayPick(self):
-        return False
-
-    def getAABB(self, int x, int y, int z):
+    def getTileAABB(self, int x, int y, int z):
         return None
 
     cpdef bint blocksLight(self):

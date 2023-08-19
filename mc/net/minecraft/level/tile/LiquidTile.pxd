@@ -17,7 +17,6 @@ cdef class LiquidTile(Tile):
     cdef float _getBrightness(self, Level level, int x, int y, int z)
     cpdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face)
     cpdef renderFace(self, Tesselator t, int x, int y, int z, int face)
-    cdef bint mayPick(self)
     cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
     cpdef int getLiquidType(self)

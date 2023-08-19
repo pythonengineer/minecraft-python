@@ -165,11 +165,16 @@ class NetworkPlayer(Entity):
         f2 = 0.05
         gl.glScalef(0.05, -f2, f2)
         gl.glTranslatef(-self.__minecraft.font.width(self.name) / 2.0, 0.0, 0.0)
+        gl.glNormal3f(1.0, -1.0, 1.0)
+        gl.glDisable(gl.GL_LIGHTING)
+        gl.glDisable(gl.GL_LIGHT0)
         if self.name.lower() == 'notch':
             self.__minecraft.font.draw(self.name, 0, 0, 16776960)
         else:
             self.__minecraft.font.draw(self.name, 0, 0, 0xFFFFFF)
 
+        gl.glEnable(gl.GL_LIGHT0)
+        gl.glEnable(gl.GL_LIGHTING)
         gl.glTranslatef(1.0, 1.0, -0.05)
         self.__minecraft.font.draw(self.name, 0, 0, 5263440)
         gl.glPopMatrix()

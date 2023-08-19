@@ -27,7 +27,6 @@ cdef class Tile:
     cdef renderBackFace(self, Tesselator t, int x, int y, int z, int face)
     cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
-    cdef bint mayPick(self)
     cpdef void tick(self, Level level, int x, int y, int z, random) except *
     cpdef int getLiquidType(self)
     cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *

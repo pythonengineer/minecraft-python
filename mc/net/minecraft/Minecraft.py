@@ -49,7 +49,7 @@ class StopGameException(Exception):
     pass
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.0.20a_01'
+    VERSION_STRING = '0.0.21a'
     __timer = Timer(20.0)
     level = None
     __levelRenderer = None
@@ -94,6 +94,7 @@ class Minecraft(window.Window):
     __hitResult = None
 
     __fogColorMultiplier = 1.0
+    __displayActive = False
     __unusedInt1 = 0
     __unusedInt2 = 0
 
@@ -122,7 +123,8 @@ class Minecraft(window.Window):
 
     def setScreen(self, screen):
         if not isinstance(self.guiScreen, ErrorScreen):
-            self.screenChanged = True
+            if self.guiScreen or screen:
+                self.screenChanged = True
             if self.guiScreen:
                 self.guiScreen.closeScreen()
 
@@ -169,52 +171,52 @@ class Minecraft(window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         try:
             if self.guiScreen:
-                self.guiScreen.updateEvents(button=button)
-                if self.guiScreen:
-                    self.guiScreen.tick()
-                return
+                self.guiScreen.updateMouseEvents(button)
 
-            if not self.__mouseGrabbed:
-                self.grabMouse()
-            elif button == window.mouse.LEFT:
-                self.__clickMouse()
-                self.__prevFrameTime = self.__ticksRan
-            elif button == window.mouse.RIGHT:
-                self.__editMode = (self.__editMode + 1) % 2
-            elif button == window.mouse.MIDDLE and self.__hitResult:
-                tile = self.level.getTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z)
-                if tile == tiles.grass.id:
-                    tile = tiles.dirt.id
+            if self.screenChanged:
+                self.screenChanged = False
+                if compat_platform != 'darwin':
+                    return
 
-                slot = self.player.inventory.getSlotContainsID(tile)
-                if slot >= 0:
-                    self.player.inventory.selectedSlot = slot
-                elif tile > 0 and tiles.tiles[tile] in User.creativeTiles:
-                    self.player.inventory.getSlotContainsTile(tiles.tiles[tile])
+            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
+                if not self.guiScreen:
+                    if not self.__mouseGrabbed:
+                        self.grabMouse()
+                    elif button == window.mouse.LEFT:
+                        self.__clickMouse()
+                        self.__prevFrameTime = self.__ticksRan
+                    elif button == window.mouse.RIGHT:
+                        self.__editMode = (self.__editMode + 1) % 2
+                    elif button == window.mouse.MIDDLE and self.__hitResult:
+                        tile = self.level.getTile(self.__hitResult.x, self.__hitResult.y, self.__hitResult.z)
+                        if tile == tiles.grass.id:
+                            tile = tiles.dirt.id
+
+                        slot = self.player.inventory.getSlotContainsID(tile)
+                        if slot >= 0:
+                            self.player.inventory.selectedSlot = slot
+                        elif tile > 0 and tiles.tiles[tile] in User.creativeTiles:
+                            self.player.inventory.getSlotContainsTile(tiles.tiles[tile])
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_mouse_scroll(self, x, y, dx, dy):
         try:
-            if self.guiScreen:
-                return
+            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
+                if dy == 0:
+                    return
+                elif dy > 0:
+                    dy = 1
+                elif dy < 0:
+                    dy = -1
 
-            if dy == 0:
-                return
-            elif dy > 0:
-                dy = 1
-            elif dy < 0:
-                dy = -1
+                self.player.inventory.selectedSlot -= dy
+                while self.player.inventory.selectedSlot < 0:
+                    self.player.inventory.selectedSlot += len(self.player.inventory.slots)
 
-            i3 = 0
-
-            self.player.inventory.selectedSlot -= dy
-            while self.player.inventory.selectedSlot < 0:
-                self.player.inventory.selectedSlot += len(self.player.inventory.slots)
-
-            while self.player.inventory.selectedSlot >= len(self.player.inventory.slots):
-                self.player.inventory.selectedSlot -= len(self.player.inventory.slots)
+                while self.player.inventory.selectedSlot >= len(self.player.inventory.slots):
+                    self.player.inventory.selectedSlot -= len(self.player.inventory.slots)
         except Exception as e:
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
@@ -233,47 +235,49 @@ class Minecraft(window.Window):
     def on_key_press(self, symbol, modifiers):
         try:
             if self.guiScreen:
-                self.guiScreen.updateEvents(key=symbol)
-                if self.guiScreen:
-                    self.guiScreen.tick()
-                return
+                self.guiScreen.updateKeyboardEvents(key=symbol)
 
-            self.player.setKey(symbol, True)
+            if self.screenChanged:
+                self.screenChanged = False
+                if compat_platform != 'darwin':
+                    return
 
-            if symbol == window.key.ESCAPE:
-                self.__pauseGame()
-            elif symbol == window.key.R:
-                self.player.resetPos()
-            elif symbol == window.key.RETURN:
-                self.level.setSpawnPos(int(self.player.x), int(self.player.y), int(self.player.z), self.player.yRot)
-                self.player.resetPos()
+            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
+                self.player.setKey(symbol, True)
 
-            for i in range(9):
-                if symbol == getattr(window.key, '_' + str(i + 1)):
-                    self.player.inventory.selectedSlot = i
+                if not self.guiScreen:
+                    if symbol == window.key.ESCAPE:
+                        self.__pauseGame()
+                    elif symbol == window.key.R:
+                        self.player.resetPos()
+                    elif symbol == window.key.RETURN:
+                        self.level.setSpawnPos(int(self.player.x), int(self.player.y), int(self.player.z), self.player.yRot)
+                        self.player.resetPos()
+                    elif symbol == window.key.G and self.connectionManager is None and len(self.level.entities) < 256:
+                        self.level.entities.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
+                    elif symbol == window.key.B:
+                        self.setScreen(InventoryScreen())
+                    elif symbol == window.key.T and self.connectionManager and self.connectionManager.isConnected():
+                        self.player.releaseAllKeys()
+                        self.setScreen(ChatScreen())
 
-            if symbol == window.key.Y:
-                self.__yMouseAxis = -self.__yMouseAxis
-            elif symbol == window.key.G and self.connectionManager is None and len(self.level.entities) < 256:
-                self.level.entities.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
-            elif symbol == window.key.F:
-                z15 = modifiers & window.key.MOD_SHIFT
-                self.__levelRenderer.drawDistance = self.__levelRenderer.drawDistance + (-1 if z15 else 1) & 3
-            elif symbol == window.key.B:
-                self.setScreen(InventoryScreen())
-            elif symbol == window.key.T and self.connectionManager and self.connectionManager.isConnected():
-                self.player.releaseAllKeys()
-                self.setScreen(ChatScreen())
+                for i in range(9):
+                    if symbol == getattr(window.key, '_' + str(i + 1)):
+                        self.player.inventory.selectedSlot = i
+
+                if symbol == window.key.Y:
+                    self.__yMouseAxis = -self.__yMouseAxis
+                elif symbol == window.key.F:
+                    z15 = modifiers & window.key.MOD_SHIFT
+                    self.__levelRenderer.drawDistance = self.__levelRenderer.drawDistance + (-1 if z15 else 1) & 3
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_key_release(self, symbol, modifiers):
         try:
-            if self.guiScreen:
-                return
-
-            self.player.setKey(symbol, False)
+            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
+                self.player.setKey(symbol, False)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -286,9 +290,7 @@ class Minecraft(window.Window):
                     return
 
             if self.guiScreen:
-                self.guiScreen.updateEvents(char=text)
-                if self.guiScreen:
-                    self.guiScreen.tick()
+                self.guiScreen.updateKeyboardEvents(char=text)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -296,9 +298,7 @@ class Minecraft(window.Window):
     def on_text_motion(self, motion):
         try:
             if self.guiScreen:
-                self.guiScreen.updateEvents(motion=motion)
-                if self.guiScreen:
-                    self.guiScreen.tick()
+                self.guiScreen.updateKeyboardEvents(motion=motion)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -339,8 +339,10 @@ class Minecraft(window.Window):
                 self.__tick()
 
             self.__checkGlError('Pre render')
-            if not self.__active:
+            if self.__displayActive and not self.__active:
                 self.__pauseGame()
+
+            self.__displayActive = self.__active
 
             if not self.hideGui:
                 if self.level:
@@ -511,7 +513,7 @@ class Minecraft(window.Window):
             else:
                 tile = tiles.tiles[self.level.getTile(x, y, z)]
                 texture = self.player.inventory.getSelected()
-                aabb = tiles.tiles[texture].getAABB(x, y, z)
+                aabb = tiles.tiles[texture].getTileAABB(x, y, z)
                 if (tile is None or tile == tiles.water or tile == tiles.calmWater or tile == tiles.lava or tile == tiles.calmLava) and \
                    (aabb is None or (False if self.player.bb.intersects(aabb) else self.level.isFree(aabb))):
                     if self.__isMultiplayer():
@@ -562,9 +564,7 @@ class Minecraft(window.Window):
 
         if self.guiScreen:
             self.__prevFrameTime = self.__ticksRan + 10000
-            self.guiScreen.updateEvents()
-            if self.guiScreen:
-                self.guiScreen.tick()
+            self.guiScreen.tick()
         else:
             if self.msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.__mouseGrabbed:
                 self.__clickMouse()
@@ -765,6 +765,8 @@ class Minecraft(window.Window):
 
     def __setupFog(self):
         gl.glFogfv(gl.GL_FOG_COLOR, self.__getBuffer(self.__fogColorRed, self.__fogColorGreen, self.__fogColorBlue, 1.0))
+        gl.glNormal3f(0.0, -1.0, 0.0)
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         currentTile = tiles.tiles[self.level.getTile(int(self.player.x), int(self.player.y + 0.12), int(self.player.z))]
         if currentTile and currentTile.getLiquidType() != Liquid.none:
             liquid = currentTile.getLiquidType()
@@ -892,7 +894,7 @@ if __name__ == '__main__':
         elif arg == '-mppass':
             mpPass = sys.argv[i + 1]
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.20a_01')
+    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.21a')
     game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))

@@ -4,9 +4,9 @@
 
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
-This project is currently recreating the **Multiplayer Classic** versions of Minecraft. The latest version is **Classic 0.0.20a_01** as released on _**June 20, 2009**_.
+This project is currently recreating the **Multiplayer Classic** versions of Minecraft. The latest version is **Classic 0.0.21a** as released on _**June 22, 2009**_.
 
-Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.0.20a_01).
+Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.0.21a).
 
 Or the server version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_server_1.8.2).
 
@@ -19,7 +19,7 @@ you can play it just by specifying the Minecraft version you want to play in the
 
 *Pyglet*, *Cython*, and *Pillow* are required dependencies and can easily be installed with *pip*. Use the versions specified in `requirements.txt`.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.0.20a_01`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.0.21`.
 
 Alternatively, for a manual Cython build, run `python setup.py build_ext --inplace`.
 

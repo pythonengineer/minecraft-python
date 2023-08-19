@@ -48,7 +48,7 @@ class Bush(Tile):
 
         return True
 
-    def getAABB(self, x, y, z):
+    def getTileAABB(self, x, y, z):
         return None
 
     def blocksLight(self):

@@ -216,11 +216,11 @@ cdef class Level:
                     if x >= 0 and y >= 0 and z >= 0 and x < self.width and y < self.depth and z < self.height:
                         tile = tiles.tiles[self.getTile(x, y, z)]
                         if tile:
-                            aabb = tile.getAABB(x, y, z)
+                            aabb = tile.getTileAABB(x, y, z)
                             if aabb:
                                 boxes.add(aabb)
                     elif x < 0 or y < 0 or z < 0 or x >= self.width or z >= self.height:
-                        aabb = tiles.unbreakable.getAABB(x, y, z)
+                        aabb = tiles.unbreakable.getTileAABB(x, y, z)
                         if aabb:
                             boxes.add(aabb)
 

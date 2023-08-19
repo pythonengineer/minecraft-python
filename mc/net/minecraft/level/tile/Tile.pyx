@@ -100,17 +100,6 @@ cdef class Tile:
     cdef float _getBrightness(self, Level level, int x, int y, int z):
         return level.getBrightness(x, y, z)
 
-    @staticmethod
-    def cullFace(level, int x, int y, int z, int i):
-        if i == 0: y -= 1
-        elif i == 1: y += 1
-        elif i == 2: z -= 1
-        elif i == 3: z += 1
-        elif i == 4: x -= 1
-        elif i == 5: x += 1
-
-        return not level.isSolidTile(x, y, z)
-
     cpdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
         return False if layer == 1 else not level.isSolidTile(x, y, z)
 
@@ -260,16 +249,10 @@ cdef class Tile:
     def getTileAABB(self, int x, int y, int z):
         return AABB(x, y, z, x + 1, y + 1, z + 1)
 
-    def getAABB(self, int x, int y, int z):
-        return AABB(x, y, z, x + 1, y + 1, z + 1)
-
     cpdef bint blocksLight(self):
         return True
 
     cpdef bint isSolid(self):
-        return True
-
-    cdef bint mayPick(self):
         return True
 
     cpdef void tick(self, Level level, int x, int y, int z, random) except *:

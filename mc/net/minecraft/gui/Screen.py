@@ -40,6 +40,7 @@ class Screen:
         self._width = width
         self._height = height
         self._buttons = []
+        self.allowUserInput = False
 
     def _fill(self, x0, y0, x1, y1, col):
         a = rshift(col, 24) / 255.0
@@ -71,10 +72,10 @@ class Screen:
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glBegin(gl.GL_QUADS)
         gl.glColor4f(f11, f6, f12, f10)
-        gl.glVertex2f(x1, 0.0)
-        gl.glVertex2f(0.0, 0.0)
+        gl.glVertex2f(x1, y0)
+        gl.glVertex2f(x0, y0)
         gl.glColor4f(f8, f9, f13, f7)
-        gl.glVertex2f(0.0, y1)
+        gl.glVertex2f(x0, y1)
         gl.glVertex2f(x1, y1)
         gl.glEnd()
         gl.glDisable(gl.GL_BLEND)
@@ -85,13 +86,13 @@ class Screen:
     def drawString(self, string, x, y, color):
         self._minecraft.font.drawShadow(string, x, y, color)
 
-    def updateEvents(self, button=None, key=None, char=None, motion=None):
-        if button:
-            xm = self._minecraft.mouseX * self._width // self._minecraft.width
-            ym = self._height - self._minecraft.mouseY * self._height // self._minecraft.height - 1
-            self._mousePressed(xm, ym, button)
-        elif key or char or motion:
-            self._keyPressed(key, char, motion)
+    def updateMouseEvents(self, button):
+        xm = self._minecraft.mouseX * self._width // self._minecraft.width
+        ym = self._height - self._minecraft.mouseY * self._height // self._minecraft.height - 1
+        self._mousePressed(xm, ym, button)
+
+    def updateKeyboardEvents(self, key=None, char=None, motion=None):
+        self._keyPressed(key, char, motion)
 
     def tick(self):
         pass
