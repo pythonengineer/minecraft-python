@@ -285,7 +285,8 @@ class Minecraft(window.Window):
         try:
             if self.screenChanged:
                 self.screenChanged = False
-                return
+                if compat_platform != 'darwin':
+                    return
 
             if self.guiScreen:
                 self.guiScreen.updateEvents(char=text)

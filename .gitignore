@@ -11,6 +11,5 @@ minecraft_python.egg-info
 *.prof
 *.c
 *.h
-
 .DS_Store
 *.so
