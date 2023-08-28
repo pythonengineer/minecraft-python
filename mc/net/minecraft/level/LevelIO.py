@@ -6,12 +6,12 @@ class LevelIO:
     MAGIC_NUMBER = 656127880
     CURRENT_VERSION = 2
 
-    def __init__(self, minecraft):
-        self.__minecraft = minecraft
+    def __init__(self, progress):
+        self.__progress = progress
 
     def load(self, level, inp):
-        self.__minecraft.beginLevelLoading('Loading level')
-        self.__minecraft.levelLoadUpdate('Reading..')
+        self.__progress.beginLevelLoading('Loading level')
+        self.__progress.levelLoadUpdate('Reading..')
         try:
             dis = DataInputStream(inp)
             magic = dis.readInt()
@@ -49,8 +49,8 @@ class LevelIO:
             print('Failed to load level:', e)
 
     def loadLegacy(self, level, inp):
-        self.__minecraft.beginLevelLoading('Loading level')
-        self.__minecraft.levelLoadUpdate('Reading..')
+        self.__progress.beginLevelLoading('Loading level')
+        self.__progress.levelLoadUpdate('Reading..')
         try:
             dis = DataInputStream(inp)
 

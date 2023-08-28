@@ -12,6 +12,12 @@ class ParticleEngine:
     def add(self, p):
         self.particles.add(p)
 
+    def tick(self):
+        for p in self.particles.copy():
+            p.tick()
+            if p.removed:
+                self.particles.remove(p)
+
     def render(self, player, a):
         if not len(self.particles):
             return

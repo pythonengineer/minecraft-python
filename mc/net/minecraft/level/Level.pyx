@@ -9,6 +9,7 @@ from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.level.liquid.Liquid cimport Liquid
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
+from mc.net.minecraft.sound.SoundPos import SoundPos
 
 import random
 import gc
@@ -500,7 +501,7 @@ cdef class Level:
         self.__networkMode = mode
 
     def clip(self, vec1, vec2):
-        cdef int x0, y0, z0, x1, y1, z1
+        cdef int x0, y0, z0, x1, y1, z1, i, tile
         cdef float f9, f10, f11, f12, f13, f14, f15, f16, f17
         cdef char sideHit
 
@@ -512,8 +513,17 @@ cdef class Level:
                 x1 = <int>floor(vec1.x)
                 y1 = <int>floor(vec1.y)
                 z1 = <int>floor(vec1.z)
+                i = 20
+                tile = self.getTile(x1, y1, z1)
+                while tile <= 0 or (<Tile>tiles.tiles[tile]).getLiquidType() != Liquid.none:
+                    if i < 0:
+                        return None
 
-                while not isnan(vec1.x) and not isnan(vec1.y) and not isnan(vec1.z):
+                    i -= 1
+
+                    if isnan(vec1.x) or isnan(vec1.y) or isnan(vec1.z):
+                        return None
+
                     if x1 == x0 and y1 == y0 and z1 == z0:
                         return None
 
@@ -592,8 +602,22 @@ cdef class Level:
                         z1 -= 1
 
                     tile = self.getTile(x1, y1, z1)
-                    if tile > 0 and (<Tile>tiles.tiles[tile]).getLiquidType() == 0:
-                        return HitResult(0, x1, y1, z1, sideHit)
+
+                return HitResult(0, x1, y1, z1, sideHit)
+
+    def playSound(self, name, float x, float y, float z,
+                  float volume, float pitch, entity=None):
+        cdef float dist = 16.0
+        if dist > 1.0:
+            dist *= volume
+
+        audioInfo = self.rendererContext.soundManager.getAudioInfo(name, volume, pitch)
+        if self.rendererContext and self.rendererContext.soundPlayer and audioInfo:
+            if entity:
+                if self.rendererContext.player.distanceTo(entity) < dist * dist:
+                    self.rendererContext.soundPlayer.play(audioInfo, SoundPos(x, y, z))
+            elif self.rendererContext.player.getDistanceSq(x, y, z) < dist * dist:
+                self.rendererContext.soundPlayer.play(audioInfo, SoundPos(x, y, z))
 
 cpdef object rebuild(str name, str creator, object createTime, float rotSpawn,
                      set entities, int unprocessed, int tickCount, int multiplier,

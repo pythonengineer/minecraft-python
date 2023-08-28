@@ -73,8 +73,8 @@ class SocketConnection:
 
             if self.manager.processData:
                 if packet == Packets.LOGIN:
-                    self.manager.minecraft.beginLevelLoading(data[1].decode())
-                    self.manager.minecraft.levelLoadUpdate(data[2].decode())
+                    self.manager.minecraft.loadingScreen.beginLevelLoading(data[1].decode())
+                    self.manager.minecraft.loadingScreen.levelLoadUpdate(data[2].decode())
                     self.manager.minecraft.player.userType = data[3]
                 elif packet == Packets.LEVEL_INITIALIZE:
                     self.manager.minecraft.setLevel(None)
@@ -83,7 +83,7 @@ class SocketConnection:
                     s13 = data[0]
                     b5 = data[1]
                     b6 = data[2]
-                    self.manager.minecraft.setLoadingProgress()
+                    self.manager.minecraft.loadingScreen.setLoadingProgress()
                     self.manager.levelBuffer.write(b5, 0, s13)
                 elif packet == Packets.LEVEL_FINALIZE:
                     try:
@@ -170,12 +170,13 @@ class SocketConnection:
                     b15 = data[0]
                     string19 = data[1].decode()
                     if b15 < 0:
-                        self.manager.minecraft.addChatMessage('&e' + string19)
+                        self.manager.minecraft.hud.addChatMessage('&e' + string19)
                     else:
                         self.manager.players.get(b15)
-                        self.manager.minecraft.addChatMessage(string19)
+                        self.manager.minecraft.hud.addChatMessage(string19)
                 elif packet == Packets.KICK_PLAYER:
                     self.manager.minecraft.setScreen(ErrorScreen('Connection lost', data[0].decode()))
+                    self.disconnect()
 
             if not self.connected:
                 break

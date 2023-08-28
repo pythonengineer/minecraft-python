@@ -1,7 +1,9 @@
 # cython: language_level=3
 
+from mc.net.minecraft.renderer.Frustum cimport Frustum
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 from mc.net.minecraft.renderer.Tesselator import tesselator
+from mc.net.minecraft.level.tile.Tiles cimport Tiles
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.level.Level cimport Level
 from pyglet import gl
@@ -13,6 +15,7 @@ cdef class Chunk:
     cdef:
         Level __level
         Tesselator __t
+        Tiles __tiles
 
         int __lists
         int __x0
@@ -22,7 +25,7 @@ cdef class Chunk:
         int __y1
         int __z1
 
-        list __skipRenderPass
+        bint[2] __skipRenderPass
         public bint _isInFrustum
 
     property updates:
@@ -35,9 +38,11 @@ cdef class Chunk:
             Chunk_updates = x
 
     def __cinit__(self):
+        self.__tiles = tiles
         self.__t = tesselator
         self.__lists = -1
-        self.__skipRenderPass = [False, False]
+        self.__skipRenderPass[0] = False
+        self.__skipRenderPass[1] = False
 
     def __init__(self, Level level, int x0, int y0, int z0,
                  int size, int lists, bint fake=False):
@@ -73,13 +78,11 @@ cdef class Chunk:
     cpdef rebuild(self):
         cdef int layer, x0, y0, z0, xx, yy, zz, x, y, z, tileId
         cdef bint z3
-        cdef Tesselator t
-        cdef Level l
 
         self.updates += 1
 
-        t = self.__t
-        l = self.__level
+        cdef Tesselator t = self.__t
+        cdef Level l = self.__level
 
         for layer in range(2):
             x0 = self.__x0
@@ -90,18 +93,18 @@ cdef class Chunk:
             zz = self.__z0 + self.__z1
 
             gl.glNewList(self.__lists + layer, gl.GL_COMPILE)
-            t.begin()
+            self.__t.begin()
 
             z3 = False
 
             for x in range(x0, xx):
                 for y in range(y0, yy):
                     for z in range(z0, zz):
-                        tileId = l.getTile(x, y, z)
+                        tileId = self.__level.getTile(x, y, z)
                         if tileId > 0:
-                            z3 |= tiles.tiles[tileId].render(t, l, layer, x, y, z)
+                            z3 |= self.__tiles.tiles[tileId].render(t, l, layer, x, y, z)
 
-            t.end()
+            self.__t.end()
             gl.glEndList()
             if self.__skipRenderPass[layer] == z3:
                 self.__skipRenderPass[layer] = z3
@@ -110,7 +113,7 @@ cdef class Chunk:
         if self._isInFrustum and not self.__skipRenderPass[layer]:
             buffer.put(self.__lists + layer)
 
-    cpdef isInFrustum(self, frustum):
+    cpdef isInFrustum(self, Frustum frustum):
         self._isInFrustum = frustum.cubeInFrustum(self.__x0, self.__y0, self.__z0,
                                                   self.__x0 + self.__x1,
                                                   self.__y0 + self.__y1,

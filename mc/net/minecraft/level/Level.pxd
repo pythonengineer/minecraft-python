@@ -23,6 +23,8 @@ cdef class Level:
 
         bint __networkMode
 
+        public object rendererContext
+
         public int unprocessed
         int __tickCount
 

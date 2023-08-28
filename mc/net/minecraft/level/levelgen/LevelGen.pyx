@@ -17,7 +17,7 @@ cdef class LevelGen:
 
     cdef:
         Random __random
-        object __minecraft
+        object __loadingScreen
         int __coords[0x100000]
         int __width
         int __height
@@ -27,8 +27,8 @@ cdef class LevelGen:
     def __cinit__(self):
         self.__random = Random()
 
-    def __init__(self, minecraft):
-        self.__minecraft = minecraft
+    def __init__(self, progressListener):
+        self.__loadingScreen = progressListener
 
     def generateLevel(self, str userName, int width, int height, int depth):
         cdef int *heightmap
@@ -42,14 +42,14 @@ cdef class LevelGen:
         cdef PerlinNoise perlinNoise
         cdef Level level
 
-        self.__minecraft.beginLevelLoading('Generating level')
+        self.__loadingScreen.beginLevelLoading('Generating level')
 
         self.__width = width
         self.__height = height
         self.__depth = 64
         self.__blocks = <char*>malloc(sizeof(char) * (self.__width * self.__height << 6))
 
-        self.__minecraft.levelLoadUpdate('Raising..')
+        self.__loadingScreen.levelLoadUpdate('Raising..')
 
         distort8 = Distort(PerlinNoise(self.__random, 8), PerlinNoise(self.__random, 8))
         distort9 = Distort(PerlinNoise(self.__random, 8), PerlinNoise(self.__random, 8))
@@ -71,7 +71,7 @@ cdef class LevelGen:
                 heightmap[i + i13 * self.__width] = <int>d21
 
         oldHeightmap = heightmap
-        self.__minecraft.levelLoadUpdate('Eroding..')
+        self.__loadingScreen.levelLoadUpdate('Eroding..')
 
         distort9 = Distort(PerlinNoise(self.__random, 8), PerlinNoise(self.__random, 8))
         distort32 = Distort(PerlinNoise(self.__random, 8), PerlinNoise(self.__random, 8))
@@ -84,7 +84,7 @@ cdef class LevelGen:
                     i41 = ((heightmap[i34 + i5 * self.__width] - i15) // 4) + i15
                     heightmap[i34 + i5 * self.__width] = i41
 
-        self.__minecraft.levelLoadUpdate('Soiling..')
+        self.__loadingScreen.levelLoadUpdate('Soiling..')
 
         heightmap = oldHeightmap
         w = self.__width
@@ -108,7 +108,7 @@ cdef class LevelGen:
 
                     self.__blocks[i] = id_
 
-        self.__minecraft.levelLoadUpdate('Carving..')
+        self.__loadingScreen.levelLoadUpdate('Carving..')
 
         count = w * h * d // 256 // 64
         rock = <int>tiles.rock.id
@@ -157,7 +157,7 @@ cdef class LevelGen:
         self.__carveTunnels(tiles.oreCoal.id, 90, 1, 4)
         self.__carveTunnels(tiles.oreIron.id, 70, 2, 4)
         self.__carveTunnels(tiles.oreGold.id, 50, 3, 4)
-        self.__minecraft.levelLoadUpdate('Watering..')
+        self.__loadingScreen.levelLoadUpdate('Watering..')
 
         before = getNs()
         tileCount = 0
@@ -182,11 +182,11 @@ cdef class LevelGen:
         after = getNs()
         print('Flood filled ' + str(tileCount) + ' tiles in ' + str((after - before) / 1000000.0) + ' ms')
 
-        self.__minecraft.levelLoadUpdate('Melting..')
+        self.__loadingScreen.levelLoadUpdate('Melting..')
         self.__addLava()
-        self.__minecraft.levelLoadUpdate('Growing..')
+        self.__loadingScreen.levelLoadUpdate('Growing..')
         self.__addBeaches(heightmap)
-        self.__minecraft.levelLoadUpdate('Planting..')
+        self.__loadingScreen.levelLoadUpdate('Planting..')
         self.__plantTrees(heightmap)
 
         level = Level()

@@ -30,6 +30,7 @@ class Particle(Entity):
 
         self.__lifetime = 4.0 // (random.random() * 0.9 + 0.1)
         self.__age = 0
+        self.makeStepSound = False
 
     def tick(self):
         self.xo = self.x

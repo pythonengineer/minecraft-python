@@ -1,6 +1,7 @@
 from mc.net.minecraft.renderer.Tesselator import tesselator
 from mc.net.minecraft.gui.ChatScreen import ChatScreen
 from mc.net.minecraft.level.tile.Tiles import tiles
+from mc.net.minecraft.ChatLine import ChatLine
 from mc.net.minecraft.User import User
 from pyglet import window, gl
 
@@ -13,7 +14,7 @@ class InGameHud:
         self.messages = []
 
     def render(self):
-        self.__minecraft.initGui()
+        self.__minecraft.renderHelper.initGui()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__minecraft.textures.getTextureId('gui.png'))
         gl.glEnable(gl.GL_TEXTURE_2D)
         t = tesselator
@@ -57,7 +58,7 @@ class InGameHud:
                 break
 
             if message.counter < 200 or z5:
-                self.__minecraft.font.drawShadow(message.message, 2, self.__scaledHeight - 8 - (i << 3) - 16, 0xFFFFFF)
+                self.__minecraft.font.drawShadow(message.message, 2, self.__scaledHeight - 8 - i * 9 - 20, 0xFFFFFF)
 
         screenWidth = self.__scaledWidth // 2
         screenHeight = self.__scaledHeight // 2
@@ -108,3 +109,9 @@ class InGameHud:
         t.vertexUV(i0 + i4, i1, -90.0, (i4 + 0) * f7, i3 * f8)
         t.vertexUV(i0, i1, -90.0, 0.0, i3 * f8)
         t.end()
+
+    def addChatMessage(self, string):
+        self.messages.insert(0, ChatLine(string))
+
+        while len(self.messages) > 50:
+            self.messages.pop(len(self.messages) - 1)

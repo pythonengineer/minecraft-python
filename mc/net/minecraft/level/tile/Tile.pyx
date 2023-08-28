@@ -42,6 +42,11 @@ cdef class Tile:
             self.tex = tex
         self._setShape(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
 
+    def setSoundAndGravity(self, soundType, f2, particleGravity):
+        self.particleGravity = particleGravity
+        self.soundType = soundType
+        return self
+
     def _setTicking(self, bint tick):
         self.shouldTick[self.id] = tick
 
@@ -258,7 +263,7 @@ cdef class Tile:
     cpdef void tick(self, Level level, int x, int y, int z, random) except *:
         pass
 
-    def destroy(self, level, int x, int y, int z, particleEngine):
+    def destroy(self, Level level, int x, int y, int z, particleEngine):
         cdef int SD, xx, yy, zz
         cdef float xp, yp, zp
 
@@ -280,7 +285,7 @@ cdef class Tile:
     cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *:
         pass
 
-    def onBlockAdded(self, level, int x, int y, int z):
+    def onBlockAdded(self, Level level, int x, int y, int z):
         pass
 
     cdef int getTickDelay(self):

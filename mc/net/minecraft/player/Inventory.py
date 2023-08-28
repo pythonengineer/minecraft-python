@@ -18,6 +18,19 @@ class Inventory:
 
         return -1
 
+    def scrollHotbar(self, dy):
+        if dy > 0:
+            dy = 1
+        elif dy < 0:
+            dy = -1
+
+        self.selectedSlot -= dy
+        while self.selectedSlot < 0:
+            self.selectedSlot += len(self.slots)
+
+        while self.selectedSlot >= len(self.slots):
+            self.selectedSlot -= len(self.slots)
+
     def getSlotContainsTile(self, tile):
         if tile:
             slot = self.getSlotContainsID(tile.id)

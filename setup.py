@@ -40,7 +40,7 @@ extensions = [
 
 setup(
     name='minecraft-python',
-    version='0.0.21',
+    version='0.0.22a_05',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),
@@ -73,7 +73,11 @@ setup(
     exclude_package_data={
         '': ['*.c', '*.html', '*.pyc'],
     },
+    package_data={
+        '': ['*.png', '*.ogg'],
+    },
     packages=find_packages(),
     ext_modules=cythonize(extensions, annotate=False, language_level=3),
+    include_package_data=True,
     zip_safe=False,
 )

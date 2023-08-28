@@ -25,3 +25,4 @@ class ConnectionThread(Thread):
             self.__minecraft.hideGui = False
             self.__minecraft.connectionManager = None
             self.__minecraft.setScreen(ErrorScreen('Failed to connect', 'You failed to connect to the server. It\'s probably down!'))
+            self.__connectionManager.processData = False

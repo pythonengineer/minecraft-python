@@ -60,14 +60,14 @@ cdef class TextureLavaFX(TextureFX):
         self.__red = f10
 
         for i2 in range(256):
-            f3 = self.__red[i2]
+            f3 = self.__red[i2] * 2.0
             if f3 > 1.0:
                 f3 = 1.0
 
             if f3 < 0.0:
                 f3 = 0.0
 
-            i5 = <int>(f3 * 200.0 + 55.0)
+            i5 = <int>(f3 * 100.0 + 155.0)
             i6 = <int>(f3 * f3 * 255.0)
             i7 = <int>(f3 * f3 * f3 * f3 * 128.0)
             self.imageData[i2 << 2] = <char>i5

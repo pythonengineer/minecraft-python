@@ -10,7 +10,7 @@ cdef class Tesselator:
         self.__buffer = (gl.GLfloat * self.MAX_FLOATS)()
         self.__len = 3
 
-    cpdef end(self):
+    cpdef void end(self):
         cdef int rem, i, n
 
         if self.__vertices > 0:
@@ -53,19 +53,19 @@ cdef class Tesselator:
 
         self.__clear()
 
-    cdef __clear(self):
+    cdef void __clear(self):
         self.__vertices = 0
         self.__buffer._position = 0
         self.__buffer._limit = len(self.__buffer)
         self.__p = 0
 
-    cpdef begin(self):
+    cpdef void begin(self):
         self.__clear()
         self.__hasColor = False
         self.__hasTexture = False
         self.__noColor = False
 
-    cpdef colorFloat(self, float r, float g, float b):
+    cpdef void colorFloat(self, float r, float g, float b):
         if self.__noColor:
             return
 
@@ -77,7 +77,7 @@ cdef class Tesselator:
         self.__g = g
         self.__b = b
 
-    cpdef colorInt(self, int r, int g, int b):
+    cpdef void colorInt(self, int r, int g, int b):
         if self.__noColor:
             return
 
@@ -89,7 +89,7 @@ cdef class Tesselator:
         self.__g = <float>(<char>g & 0xFF) / 255.0
         self.__b = <float>(<char>b & 0xFF) / 255.0
 
-    cpdef vertexUV(self, float x, float y, float z, float u, float v):
+    cpdef inline void vertexUV(self, float x, float y, float z, float u, float v):
         if not self.__hasTexture:
             self.__len += 2
 
@@ -98,7 +98,7 @@ cdef class Tesselator:
         self.__v = v
         self.vertex(x, y, z)
 
-    cpdef vertex(self, float x, float y, float z):
+    cpdef inline void vertex(self, float x, float y, float z):
         if self.__hasTexture:
             self.__array[self.__p] = self.__u
             self.__p += 1
@@ -124,13 +124,13 @@ cdef class Tesselator:
         if self.__vertices % 4 == 0 and self.__p >= self.max_floats - (self.__len << 2):
             self.end()
 
-    cpdef color(self, int c):
+    cpdef void color(self, int c):
         cdef int r = c >> 16 & 0xFF
         cdef int g = c >> 8 & 0xFF
         cdef int b = c & 0xFF
         self.colorInt(r, g, b)
 
-    cpdef noColor(self):
+    cpdef inline void noColor(self):
         self.__noColor = True
 
 tesselator = Tesselator()

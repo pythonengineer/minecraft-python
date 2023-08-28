@@ -10,6 +10,7 @@ cdef class Tile:
         public int tex
         public int id
         public float particleGravity
+        public object soundType
 
         float __xx0
         float __yy0

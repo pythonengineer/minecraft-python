@@ -3,7 +3,6 @@
 from libc.math cimport sqrt
 
 from mc.CompatibilityShims import BufferUtils
-from mc.net.minecraft.phys.AABB import AABB
 from pyglet import gl
 
 cdef class Frustum:
@@ -38,11 +37,13 @@ cdef class Frustum:
             self.__modl[i] = 0.0
             self.__clip[i] = 0.0
 
+        self.calculateFrustum()
+
+    cpdef void calculateFrustum(self):
         for i in range(6):
             for n in range(4):
                 self.__m_Frustum[i][n] = 0.0
 
-    cpdef calculateFrustum(self):
         self._proj.clear()
         self._modl.clear()
         self._clip.clear()
@@ -151,8 +152,8 @@ cdef class Frustum:
         self.__m_Frustum[side][self._c] /= magnitude
         self.__m_Frustum[side][self._d] /= magnitude
 
-    cpdef bint cubeInFrustum(self, float x0, float y0, float z0,
-                             float x1, float y1, float z1):
+    cdef bint cubeInFrustum(self, float x0, float y0, float z0,
+                            float x1, float y1, float z1):
         cdef int i
 
         for i in range(6):
@@ -168,5 +169,5 @@ cdef class Frustum:
 
         return True
 
-    cpdef bint isVisible(self, aabb):
+    cpdef bint isVisible(self, object aabb):
         return self.cubeInFrustum(aabb.x0, aabb.y0, aabb.z0, aabb.x1, aabb.y1, aabb.z1)

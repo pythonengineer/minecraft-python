@@ -27,12 +27,12 @@ cdef class Tesselator:
 
         bint __noColor
 
-    cpdef end(self)
-    cdef __clear(self)
-    cpdef begin(self)
-    cpdef colorFloat(self, float r, float g, float b)
-    cpdef colorInt(self, int r, int g, int b)
-    cpdef vertexUV(self, float x, float y, float z, float u, float v)
-    cpdef vertex(self, float x, float y, float z)
-    cpdef color(self, int c)
-    cpdef noColor(self)
+    cpdef void end(self)
+    cdef void __clear(self)
+    cpdef void begin(self)
+    cpdef void colorFloat(self, float r, float g, float b)
+    cpdef void colorInt(self, int r, int g, int b)
+    cpdef inline void vertexUV(self, float x, float y, float z, float u, float v)
+    cpdef inline void vertex(self, float x, float y, float z)
+    cpdef void color(self, int c)
+    cpdef inline void noColor(self)

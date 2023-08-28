@@ -1,4 +1,5 @@
 from mc.net.minecraft.level.liquid.Liquid import Liquid
+from mc.net.minecraft.level.tile.Tiles import SoundType, tiles
 from mc.net.minecraft.phys.AABB import AABB
 
 import random
@@ -22,6 +23,8 @@ class Entity:
     heightOffset = 0.0
     _bbWidth = 0.6
     bbHeight = 1.8
+    __walkDist = 0.0
+    makeStepSound = True
 
     def __init__(self, level):
         self._level = level
@@ -107,6 +110,8 @@ class Entity:
         return False if len(self._level.getCubes(aABB)) > 0 else not self._level.containsAnyLiquid(aABB)
 
     def move(self, xa, ya, za):
+        xOrg = self.x
+        zOrg = self.z
         xaOrg = xa
         yaOrg = ya
         zaOrg = za
@@ -140,6 +145,19 @@ class Entity:
         self.x = (self.bb.x0 + self.bb.x1) / 2.0
         self.y = self.bb.y0 + self.heightOffset
         self.z = (self.bb.z0 + self.bb.z1) / 2.0
+
+        f13 = self.x - xOrg
+        f1 = self.z - zOrg
+        self.__walkDist = float(self.__walkDist + math.sqrt(f13 * f13 + f1 * f1) * 0.6)
+        if self.makeStepSound:
+            tile = self._level.getTile(int(self.x), int(self.y - 0.2 - self.heightOffset), int(self.z))
+            if self.__walkDist > 1.0 and tile > 0:
+                soundType = tiles.tiles[tile].soundType
+                if soundType != SoundType.none:
+                    self.__walkDist -= float(int(self.__walkDist))
+                    self.playSound('step.' + soundType.name,
+                                   soundType.getVolume() * 0.75,
+                                   soundType.getPitch())
 
     def isInWater(self):
         return self._level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), Liquid.water)
@@ -180,6 +198,9 @@ class Entity:
     def setLevel(self, level):
         self._level = level
 
+    def playSound(self, name, volume, pitch):
+        self._level.playSound(name, self.x, self.y - self.heightOffset, self.z, volume, pitch, self)
+
     def moveTo(self, x, y, z, yRot, xRot):
         self.xo = self.x = x
         self.yo = self.y = y
@@ -187,3 +208,20 @@ class Entity:
         self.yRot = yRot
         self.xRot = xRot
         self.setPos(x, y, z)
+
+    def distanceTo(self, entity):
+        x = self.x - entity.x
+        y = self.y - entity.y
+        z = self.z - entity.z
+        return math.sqrt(x * x + y * y + z * z)
+
+    def getDistanceSq(self, x, y, z):
+        x -= self.x
+        y -= self.y
+        z = z - self.z
+        d = math.sqrt(x * x + y * y + z * z)
+        d = 1.0 - d / 32.0
+        if d < 0.0:
+            d = 0.0
+
+        return d
