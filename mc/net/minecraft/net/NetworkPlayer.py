@@ -11,6 +11,8 @@ class NetworkPlayer(Entity):
         super().__init__(minecraft.level)
         self.__minecraft = minecraft
         self.__zombieModel = minecraft.playerModel
+        self.displayName = name
+        name = minecraft.font.removeColorCodes(name)
         self.name = name
         self.tickCount = 0
         self.__xp = xp
@@ -164,14 +166,14 @@ class NetworkPlayer(Entity):
         gl.glRotatef(-self.__minecraft.player.yRot, 0.0, 1.0, 0.0)
         f2 = 0.05
         gl.glScalef(0.05, -f2, f2)
-        gl.glTranslatef(-self.__minecraft.font.width(self.name) / 2.0, 0.0, 0.0)
+        gl.glTranslatef(-self.__minecraft.font.width(self.displayName) / 2.0, 0.0, 0.0)
         gl.glNormal3f(1.0, -1.0, 1.0)
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_LIGHT0)
         if self.name.lower() == 'notch':
-            self.__minecraft.font.draw(self.name, 0, 0, 16776960)
+            self.__minecraft.font.draw(self.displayName, 0, 0, 16776960)
         else:
-            self.__minecraft.font.draw(self.name, 0, 0, 0xFFFFFF)
+            self.__minecraft.font.draw(self.displayName, 0, 0, 16777215)
 
         gl.glEnable(gl.GL_LIGHT0)
         gl.glEnable(gl.GL_LIGHTING)

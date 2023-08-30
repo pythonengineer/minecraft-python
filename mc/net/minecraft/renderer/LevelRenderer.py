@@ -13,7 +13,6 @@ class LevelRenderer:
     MAX_REBUILDS_PER_FRAME = 4
     CHUNK_SIZE = 16
     level = None
-    drawDistance = 0
     dummyBuffer = BufferUtils.createIntBuffer(65536)
     dirtyChunks = set()
     sortedChunks = []

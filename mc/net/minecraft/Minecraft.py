@@ -3,6 +3,7 @@ pyglet.options['debug_gl'] = False
 pyglet.options['audio'] = ('openal', 'silent')
 
 from mc.net.minecraft.Timer import Timer
+from mc.net.minecraft.Options import Options
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.ProgressListener import ProgressListener
 from mc.net.minecraft.level.tile.Tile import Tile
@@ -53,7 +54,7 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.0.22a_05'
+    VERSION_STRING = '0.0.23a_01'
     __timer = Timer(20.0)
     level = None
     levelRenderer = None
@@ -64,7 +65,6 @@ class Minecraft(window.Window):
     minecraftUri = ''
 
     __active = False
-    yMouseAxis = 1
     editMode = 0
     guiScreen = None
 
@@ -91,6 +91,7 @@ class Minecraft(window.Window):
     __prevFrameTime = 0
 
     hitResult = None
+    options = None
 
     __title = ''
     __text = ''
@@ -177,25 +178,24 @@ class Minecraft(window.Window):
                 if compat_platform != 'darwin':
                     return
 
-            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
-                if not self.guiScreen:
-                    if not self.mouseGrabbed:
-                        self.grabMouse()
-                    elif button == window.mouse.LEFT:
-                        self.__clickMouse()
-                        self.__prevFrameTime = self.__ticksRan
-                    elif button == window.mouse.RIGHT:
-                        self.editMode = (self.editMode + 1) % 2
-                    elif button == window.mouse.MIDDLE and self.hitResult:
-                        tile = self.level.getTile(self.hitResult.x, self.hitResult.y, self.hitResult.z)
-                        if tile == tiles.grass.id:
-                            tile = tiles.dirt.id
+            if not self.guiScreen:
+                if not self.mouseGrabbed:
+                    self.grabMouse()
+                elif button == window.mouse.LEFT:
+                    self.__clickMouse()
+                    self.__prevFrameTime = self.__ticksRan
+                elif button == window.mouse.RIGHT:
+                    self.editMode = (self.editMode + 1) % 2
+                elif button == window.mouse.MIDDLE and self.hitResult:
+                    tile = self.level.getTile(self.hitResult.x, self.hitResult.y, self.hitResult.z)
+                    if tile == tiles.grass.id:
+                        tile = tiles.dirt.id
 
-                        slot = self.player.inventory.getSlotContainsID(tile)
-                        if slot >= 0:
-                            self.player.inventory.selectedSlot = slot
-                        elif tile > 0 and tiles.tiles[tile] in User.creativeTiles:
-                            self.player.inventory.getSlotContainsTile(tiles.tiles[tile])
+                    slot = self.player.inventory.containsTileAt(tile)
+                    if slot >= 0:
+                        self.player.inventory.selectedSlot = slot
+                    elif tile > 0 and tiles.tiles[tile] in User.creativeTiles:
+                        self.player.inventory.setTile(tiles.tiles[tile])
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -214,7 +214,11 @@ class Minecraft(window.Window):
             self.mouseY = y
             if self.mouseGrabbed:
                 xo = dx
-                yo = dy * self.yMouseAxis
+                if self.options.invertMouse:
+                    yo = dy * -1
+                else:
+                    yo = dy
+
                 self.player.turn(xo, yo)
         except Exception as e:
             print(traceback.format_exc())
@@ -231,35 +235,31 @@ class Minecraft(window.Window):
                     return
 
             if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
-                self.player.setKey(symbol, True)
+                if symbol != self.options.toggleFog.key:
+                    self.player.setKey(symbol, True)
 
-                if not self.guiScreen:
-                    if symbol == window.key.ESCAPE:
-                        self.pauseGame()
-                    elif symbol == window.key.R:
-                        self.player.resetPos()
-                    elif symbol == window.key.M:
-                        self.soundPlayer.enabled = not self.soundPlayer.enabled
-                    elif symbol == window.key.RETURN:
-                        self.level.setSpawnPos(int(self.player.x), int(self.player.y), int(self.player.z), self.player.yRot)
-                        self.player.resetPos()
-                    elif symbol == window.key.G and self.connectionManager is None and len(self.level.entities) < 256:
-                        self.level.entities.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
-                    elif symbol == window.key.B:
-                        self.setScreen(InventoryScreen())
-                    elif symbol == window.key.T and self.connectionManager and self.connectionManager.isConnected():
-                        self.player.releaseAllKeys()
-                        self.setScreen(ChatScreen())
+                    if not self.guiScreen:
+                        if symbol == window.key.ESCAPE:
+                            self.pauseGame()
+                        elif symbol == self.options.load.key:
+                            self.player.resetPos()
+                        elif symbol == self.options.save.key:
+                            self.level.setSpawnPos(int(self.player.x), int(self.player.y), int(self.player.z), self.player.yRot)
+                            self.player.resetPos()
+                        elif symbol == window.key.G and self.connectionManager is None and len(self.level.entities) < 256:
+                            self.level.entities.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
+                        elif symbol == self.options.build.key:
+                            self.setScreen(InventoryScreen())
+                        elif symbol == self.options.chat.key and self.connectionManager and self.connectionManager.isConnected():
+                            self.player.releaseAllKeys()
+                            self.setScreen(ChatScreen())
 
-                for i in range(9):
-                    if symbol == getattr(window.key, '_' + str(i + 1)):
-                        self.player.inventory.selectedSlot = i
-
-                if symbol == window.key.Y:
-                    self.yMouseAxis = -self.yMouseAxis
-                elif symbol == window.key.F:
+                    for i in range(9):
+                        if symbol == getattr(window.key, '_' + str(i + 1)):
+                            self.player.inventory.selectedSlot = i
+                else:
                     z15 = modifiers & window.key.MOD_SHIFT
-                    self.levelRenderer.drawDistance = self.levelRenderer.drawDistance + (-1 if z15 else 1) & 3
+                    self.options.setOption(4, -1 if z15 else 1)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -338,9 +338,14 @@ class Minecraft(window.Window):
             self.__displayActive = self.__active
 
             if not self.hideGui:
+                screenWidth = self.width * 240 // self.height
+                screenHeight = self.height * 240 // self.height
+                xMouse = self.mouseX * screenWidth // self.width
+                yMouse = screenHeight - self.mouseY * screenHeight // self.height - 1
+
                 if self.level:
                     self.__render(self.__timer.a)
-                    self.hud.render()
+                    self.hud.render(self.guiScreen is not None, xMouse, yMouse)
                     self.__checkGlError('Rendered gui')
                 else:
                     #gl.glViewport(0, 0, self.width, self.height)
@@ -353,10 +358,6 @@ class Minecraft(window.Window):
                     self.renderHelper.initGui()
 
                 if self.guiScreen:
-                    screenWidth = self.width * 240 // self.height
-                    screenHeight = self.height * 240 // self.height
-                    xMouse = self.mouseX * screenWidth // self.width
-                    yMouse = screenHeight - self.mouseY * screenHeight // self.height - 1
                     self.guiScreen.render(xMouse, yMouse)
 
             self.__checkGlError('Post render')
@@ -425,12 +426,12 @@ class Minecraft(window.Window):
                     success = self.loadLevel(self.loadMapUser, self.loadMapId)
                 else:
                     level = self.levelIo.load(self.level, gzip.open('level.dat', 'rb'))
-                    success = level != None
+                    success = level is not None
                     if not success:
                         level = self.levelIo.loadLegacy(self.level, gzip.open('level.dat', 'rb'))
-                        success = level != None
-
-                    self.setLevel(level)
+                        success = level is not None
+                    else:
+                        self.setLevel(level)
             except Exception as e:
                 print(traceback.format_exc())
                 success = False
@@ -440,16 +441,38 @@ class Minecraft(window.Window):
 
         self.levelRenderer = LevelRenderer(self.textures)
         self.particleEngine = ParticleEngine(self.level, self.textures)
-        self.player = Player(self.level, MovementInputFromOptions())
+
+        name = 'minecraft'
+        home = os.path.expanduser('~') or '.'
+        if 'unix' in sys.platform or 'linux' in sys.platform or \
+           'solaris' in sys.platform or 'sunos' in sys.platform:
+            file = os.path.join(home, '.' + name)
+        elif 'win' in sys.platform:
+            if 'APPDATA' in os.environ:
+                file = os.path.join(os.environ['APPDATA'], '.' + name)
+            else:
+                file = os.path.join(home, '.' + name)
+        elif 'mac' in sys.platform or 'darwin' in sys.platform:
+            file = os.path.join(home, 'Library', 'Application Support', name)
+        else:
+            file = os.path.join(home, name)
+
+        if not os.path.isdir(file):
+            os.mkdir(file)
+
+        if not os.path.isdir(file):
+            raise RuntimeError(f'The working directory could not be created: {file}')
+
+        self.options = Options(self, file)
+        self.player = Player(self.level, MovementInputFromOptions(self.options))
         self.player.resetPos()
         if self.level:
             self.setLevel(self.level)
 
         try:
-            self.soundPlayer = SoundPlayer()
+            self.soundPlayer = SoundPlayer(self.options)
             self.soundPlayer.player = media.Player()
             self.soundPlayer.listener = media.get_audio_driver().get_listener()
-            self.soundPlayer.entity = self.player
         except:
             print(traceback.format_exc())
 
@@ -540,9 +563,12 @@ class Minecraft(window.Window):
 
     def __tick(self):
         if self.soundPlayer:
-            if getMillis() > self.soundManager.lastMusic and \
-               self.soundManager.playMusic(self.soundPlayer, 'calm'):
-                self.soundManager.lastMusic = getMillis() + math.floor(self.soundManager.random.random() * 900000) + 300000
+            if self.options.music:
+                if getMillis() > self.soundManager.lastMusic and \
+                   self.soundManager.playMusic(self.soundPlayer, 'calm'):
+                    self.soundManager.lastMusic = getMillis() + math.floor(self.soundManager.random.random() * 900000) + 300000
+            else:
+                self.soundManager.stopMusic()
 
         for message in self.hud.messages.copy():
             message.counter += 1
@@ -642,7 +668,7 @@ class Minecraft(window.Window):
     def __render(self, a):
         #gl.glViewport(0, 0, self.width, self.height)
 
-        f4 = pow(1.0 / (4 - self.levelRenderer.drawDistance), 0.25)
+        f4 = pow(1.0 / (4 - self.options.renderDistance), 0.25)
         self.renderHelper.fogColorRed = 0.6 * (1.0 - f4) + f4
         self.renderHelper.fogColorGreen = 0.8 * (1.0 - f4) + f4
         self.renderHelper.fogColorBlue = 1.0 * (1.0 - f4) + f4
@@ -663,12 +689,11 @@ class Minecraft(window.Window):
 
         gl.glClearColor(self.renderHelper.fogColorRed, self.renderHelper.fogColorGreen, self.renderHelper.fogColorBlue, 0.0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-        self.__checkGlError('Set viewport')
 
         self.__pick(a)
 
         self.renderHelper.fogColorMultiplier = 1.0
-        self.renderHelper.renderDistance = float(512 >> (self.levelRenderer.drawDistance << 1))
+        self.renderHelper.renderDistance = float(512 >> (self.options.renderDistance << 1))
         self.__setupCamera(a)
 
         gl.glEnable(gl.GL_CULL_FACE)
@@ -790,7 +815,7 @@ if __name__ == '__main__':
         elif arg == '-mppass':
             mpPass = sys.argv[i + 1]
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.22a_05')
+    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.23a_01')
     game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))

@@ -11,7 +11,7 @@ class Inventory:
     def getSelected(self):
         return self.slots[self.selectedSlot]
 
-    def getSlotContainsID(self, slot):
+    def containsTileAt(self, slot):
         for i in range(len(self.slots)):
             if slot == self.slots[i]:
                 return i
@@ -31,9 +31,9 @@ class Inventory:
         while self.selectedSlot >= len(self.slots):
             self.selectedSlot -= len(self.slots)
 
-    def getSlotContainsTile(self, tile):
+    def setTile(self, tile):
         if tile:
-            slot = self.getSlotContainsID(tile.id)
+            slot = self.containsTileAt(tile.id)
             if slot >= 0:
                 self.slots[slot] = self.slots[self.selectedSlot]
 

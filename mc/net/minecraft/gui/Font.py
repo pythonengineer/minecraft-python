@@ -89,3 +89,14 @@ class Font:
                     length += self.__charWidths[ord(char)]
 
             return length
+
+    @staticmethod
+    def removeColorCodes(text):
+        string = ''
+        for char in text:
+            if char == '&':
+                continue
+            else:
+                string += char
+
+        return string

@@ -11,6 +11,7 @@ class SoundManager:
     __music = {}
     random = random.Random()
     lastMusic = getMillis() + 60000
+    musicStream = None
 
     def getAudioInfo(self, sound, volume, pitch):
         l = self.sounds.get(sound)
@@ -49,10 +50,14 @@ class SoundManager:
 
     def playMusic(self, soundPlayer, music):
         l = self.__music.get(music)
-
-        if l and soundPlayer.enabled and soundPlayer.supported:
+        if l and soundPlayer.supported and (not self.musicStream or not self.musicStream._source):
             file = l[math.floor(self.random.random() * len(l))]
-            media.load(file).play()
+            self.musicStream = media.load(file).play()
             return True
         else:
             return False
+
+    def stopMusic(self):
+        if self.musicStream and self.musicStream._source:
+            self.musicStream.pause()
+            self.musicStream = None

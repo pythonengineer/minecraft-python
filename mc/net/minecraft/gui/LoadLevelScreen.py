@@ -30,10 +30,10 @@ class LoadLevelScreen(Screen):
         super().init(minecraft, width, height)
 
         for i in range(5):
-            self._buttons.append(Button(i, self._width // 2 - 100, self._height // 4 + i * 24, 200, 20, '---'))
+            self._buttons.append(Button(i, self._width // 2 - 100, self._height // 4 + i * 24, '---'))
             self._buttons[i].visible = False
 
-        self._buttons.append(Button(5, self._width // 2 - 100, self._height // 4 + 144, 200, 20, 'Cancel'))
+        self._buttons.append(Button(5, self._width // 2 - 100, self._height // 4 + 144, 'Cancel'))
 
         self.run()
 
@@ -52,8 +52,8 @@ class LoadLevelScreen(Screen):
 
     def render(self, xm, ym):
         self._fillGradient(0, 0, self._width, self._height, 1610941696, -1607454624)
-        self.drawCenteredString(self._title, self._width / 2, 40, 0xFFFFFF)
+        self.drawCenteredString(self._font, self._title, self._width / 2, 40, 0xFFFFFF)
         if not self.__loaded:
-            self.drawCenteredString(self.__status, self._width // 2, self._height // 2 - 4, 0xFFFFFF)
+            self.drawCenteredString(self._font, self.__status, self._width // 2, self._height // 2 - 4, 0xFFFFFF)
 
         super().render(xm, ym)

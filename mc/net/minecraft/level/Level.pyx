@@ -5,8 +5,8 @@ cimport cython
 from libc.stdlib cimport malloc, free
 from libc.math cimport floor, isnan
 
+from mc.net.minecraft.level.liquid.Liquid import Liquid
 from mc.net.minecraft.HitResult import HitResult
-from mc.net.minecraft.level.liquid.Liquid cimport Liquid
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.sound.SoundPos import SoundPos
@@ -227,7 +227,7 @@ cdef class Level:
 
         return boxes
 
-    def swap(self, int x0, int y0, int z0, int x1, int y1, int z1):
+    cdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1):
         cdef int i7, i8
 
         if not self.__networkMode:
@@ -611,13 +611,14 @@ cdef class Level:
         if dist > 1.0:
             dist *= volume
 
-        audioInfo = self.rendererContext.soundManager.getAudioInfo(name, volume, pitch)
-        if self.rendererContext and self.rendererContext.soundPlayer and audioInfo:
-            if entity:
-                if self.rendererContext.player.distanceTo(entity) < dist * dist:
+        if self.rendererContext and self.rendererContext.soundPlayer and self.rendererContext.options.sound:
+            audioInfo = self.rendererContext.soundManager.getAudioInfo(name, volume, pitch)
+            if audioInfo:
+                if entity:
+                    if self.rendererContext.player.distanceTo(entity) < dist * dist:
+                        self.rendererContext.soundPlayer.play(audioInfo, SoundPos(x, y, z))
+                elif self.rendererContext.player.getDistanceSq(x, y, z) < dist * dist:
                     self.rendererContext.soundPlayer.play(audioInfo, SoundPos(x, y, z))
-            elif self.rendererContext.player.getDistanceSq(x, y, z) < dist * dist:
-                self.rendererContext.soundPlayer.play(audioInfo, SoundPos(x, y, z))
 
 cpdef object rebuild(str name, str creator, object createTime, float rotSpawn,
                      set entities, int unprocessed, int tickCount, int multiplier,

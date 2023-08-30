@@ -1,27 +1,30 @@
 from mc.net.minecraft.renderer.Tesselator import tesselator
+from mc.net.minecraft.gui.Gui import Gui
 from mc.net.minecraft.gui.ChatScreen import ChatScreen
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.ChatLine import ChatLine
 from mc.net.minecraft.User import User
 from pyglet import window, gl
 
-class InGameHud:
+class InGameHud(Gui):
 
     def __init__(self, minecraft, width, height):
         self.__minecraft = minecraft
         self.__scaledWidth = width * 240 // height
         self.__scaledHeight = height * 240 // height
         self.messages = []
+        self.hoveredUsername = None
 
-    def render(self):
+    def render(self, isScreen, xm, ym):
         self.__minecraft.renderHelper.initGui()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__minecraft.textures.getTextureId('gui.png'))
         gl.glEnable(gl.GL_TEXTURE_2D)
         t = tesselator
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glEnable(gl.GL_BLEND)
-        self.__blit(self.__scaledWidth / 2 - 91, self.__scaledHeight - 22, 0, 0, 182, 22)
-        self.__blit(self.__scaledWidth / 2 - 91 - 1 + self.__minecraft.player.inventory.selectedSlot * 20, self.__scaledHeight - 22 - 1, 0, 22, 24, 22)
+        self._zLevel = -90.0
+        self.blit(self.__scaledWidth / 2 - 91, self.__scaledHeight - 22, 0, 0, 182, 22)
+        self.blit(self.__scaledWidth / 2 - 91 - 1 + self.__minecraft.player.inventory.selectedSlot * 20, self.__scaledHeight - 22 - 1, 0, 22, 24, 22)
         gl.glDisable(gl.GL_BLEND)
 
         for i in range(len(self.__minecraft.player.inventory.slots)):
@@ -45,7 +48,8 @@ class InGameHud:
                 gl.glPopMatrix()
 
         self.__minecraft.font.drawShadow(self.__minecraft.VERSION_STRING, 2, 2, 16777215)
-        self.__minecraft.font.drawShadow(self.__minecraft.fpsString, 2, 12, 16777215)
+        if self.__minecraft.options.showFPS:
+            self.__minecraft.font.drawShadow(self.__minecraft.fpsString, 2, 12, 16777215)
 
         b13 = 10
         z5 = False
@@ -73,6 +77,8 @@ class InGameHud:
         t.vertex(screenWidth - 4, screenHeight + 1, 0.0)
         t.vertex(screenWidth + 5, screenHeight + 1, 0.0)
         t.end()
+
+        self.hoveredUsername = None
         if self.__minecraft.ksh[window.key.TAB] and self.__minecraft.connectionManager and self.__minecraft.connectionManager.isConnected():
             players = []
             players.append(self.__minecraft.user.name)
@@ -94,21 +100,13 @@ class InGameHud:
             self.__minecraft.font.drawShadow(string, screenWidth - self.__minecraft.font.width(string) // 2, screenHeight - 64 - 12, 0xFFFFFF)
 
             for i, name in enumerate(players):
-                i4 = screenWidth + i % 2 * 120 - 120
-                i15 = screenHeight - 64 + (i // 2 << 3)
-                self.__minecraft.font.draw(name, i4, i15, 0xFFFFFF)
-
-    @staticmethod
-    def __blit(i0, i1, i2, i3, i4, i5):
-        f7 = 0.00390625
-        f8 = 0.015625
-        t = tesselator
-        t.begin()
-        t.vertexUV(i0, i1 + 22, -90.0, 0.0, (i3 + 22) * f8)
-        t.vertexUV(i0 + i4, i1 + 22, -90.0, (i4 + 0) * f7, (i3 + 22) * f8)
-        t.vertexUV(i0 + i4, i1, -90.0, (i4 + 0) * f7, i3 * f8)
-        t.vertexUV(i0, i1, -90.0, 0.0, i3 * f8)
-        t.end()
+                i8 = screenWidth + i % 2 * 120 - 120
+                i9 = screenHeight - 64 + (i // 2 << 3)
+                if isScreen and xm >= i8 and ym >= i9 and xm < i8 + 120 and ym < i9 + 8:
+                    self.hoveredUsername = name
+                    self.__minecraft.font.draw(name, i8 + 2, i9, 0xFFFFFF)
+                else:
+                    self.__minecraft.font.draw(name, i8, i9, 0xFFFFFF)
 
     def addChatMessage(self, string):
         self.messages.insert(0, ChatLine(string))

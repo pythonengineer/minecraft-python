@@ -26,7 +26,7 @@ class InventoryScreen(Screen):
             i3 = self._height // 2 + slot // 8 * 24 - 48
             self._fillGradient(i2 - 3, i3 - 8, i2 + 23, i3 + 24 - 6, -1862270977, -1056964609)
 
-        self.drawCenteredString('Select block', self._width // 2, 40, 0xFFFFFF)
+        self.drawCenteredString(self._font, 'Select block', self._width // 2, 40, 0xFFFFFF)
         t = tesselator
         id_ = self._minecraft.textures.getTextureId('terrain.png')
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
@@ -58,6 +58,6 @@ class InventoryScreen(Screen):
         if button == window.mouse.LEFT:
             tile = self.__getTileAtSlot(xm, ym)
             if tile >= 0:
-                self._minecraft.player.inventory.getSlotContainsTile(User.creativeTiles[tile])
+                self._minecraft.player.inventory.setTile(User.creativeTiles[tile])
 
             self._minecraft.setScreen(None)

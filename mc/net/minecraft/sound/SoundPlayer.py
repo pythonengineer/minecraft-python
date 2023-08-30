@@ -4,11 +4,10 @@ import math
 class SoundPlayer:
     player = None
     listener = None
-    entity = None
-    enabled = True
     supported = True
 
-    def __init__(self):
+    def __init__(self, options):
+        self.options = options
         try:
             import pyogg
             return
@@ -56,7 +55,7 @@ class SoundPlayer:
         self.listener.up_orientation = (upX, upY, upZ)
 
     def play(self, sound, soundPos):
-        if not self.enabled or not self.supported:
+        if not self.options.sound or not self.supported:
             return
 
         dist = 16.0

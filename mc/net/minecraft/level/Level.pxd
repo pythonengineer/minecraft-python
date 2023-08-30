@@ -46,6 +46,7 @@ cdef class Level:
     cdef findSpawn(self)
     cdef void calcLightDepths(self, int x0, int y0, int x1, int y1) except *
     cdef inline bint isLightBlocker(self, int x, int y, int z) except *
+    cdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cpdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_)
     cdef bint netSetTileNoNeighborChange(self, int x, int y, int z, int type_)
     cpdef bint setTile(self, int x, int y, int z, int type_)

@@ -4,13 +4,16 @@ from pyglet import window
 class MovementInputFromOptions(MovementInput):
     __keys = [False] * 10
 
+    def __init__(self, options):
+        self.__options = options
+
     def setKey(self, symbol, state):
         id_ = -1
-        if symbol in (window.key.UP, window.key.W): id_ = 0
-        if symbol in (window.key.DOWN, window.key.S): id_ = 1
-        if symbol in (window.key.LEFT, window.key.A): id_ = 2
-        if symbol in (window.key.RIGHT, window.key.D): id_ = 3
-        if symbol in (window.key.SPACE, window.key.LWINDOWS, window.key.LMETA): id_ = 4
+        if symbol == self.__options.forward.key: id_ = 0
+        if symbol == self.__options.back.key: id_ = 1
+        if symbol == self.__options.left.key: id_ = 2
+        if symbol == self.__options.right.key: id_ = 3
+        if symbol == self.__options.jump.key: id_ = 4
         if id_ >= 0:
             self.__keys[id_] = state
 

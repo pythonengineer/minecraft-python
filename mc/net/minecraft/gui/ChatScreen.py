@@ -31,4 +31,14 @@ class ChatScreen(Screen):
 
     def render(self, xm, ym):
         self._fill(2, self._height - 14, self._width - 2, self._height - 2, -2 ** 31)
-        self.drawString('> ' + self.__typedMsg + ('_' if self.__counter // 6 % 2 == 0 else ''), 4, self._height - 12, 14737632)
+        self.drawString(self._font, '> ' + self.__typedMsg + ('_' if self.__counter // 6 % 2 == 0 else ''), 4, self._height - 12, 14737632)
+
+    def _mousePressed(self, xm, ym, button):
+        if button == window.mouse.LEFT and self._minecraft.hud.hoveredUsername:
+            if len(self.__typedMsg) > 0 and self.__typedMsg[-1:] != ' ':
+                self.__typedMsg += ' '
+
+            self.__typedMsg = self.__typedMsg + self._minecraft.hud.hoveredUsername
+            i = 64 - (len(self._minecraft.user.name) + 2)
+            if len(self.__typedMsg) > i:
+                self.__typedMsg = self.__typedMsg[0:i]

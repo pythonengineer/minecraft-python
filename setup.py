@@ -34,13 +34,15 @@ extensions = [
               sources=['mc/net/minecraft/level/tile/Tile.pyx']),
     Extension(name='mc.net.minecraft.level.tile.LiquidTile',
               sources=['mc/net/minecraft/level/tile/LiquidTile.pyx']),
+    Extension(name='mc.net.minecraft.level.tile.FallingTile',
+              sources=['mc/net/minecraft/level/tile/FallingTile.pyx']),
     Extension(name='mc.net.minecraft.level.tile.Tiles',
               sources=['mc/net/minecraft/level/tile/Tiles.pyx']),
 ]
 
 setup(
     name='minecraft-python',
-    version='0.0.22a_05',
+    version='0.0.23a_01',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

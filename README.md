@@ -4,9 +4,9 @@
 
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
-This project is currently recreating the **Multiplayer Classic** versions of Minecraft. The latest version is **Classic 0.0.22a_05** as released on _**June 29, 2009**_.
+This project is currently recreating the **Multiplayer Classic** versions of Minecraft. The latest version is **Classic 0.0.23a_01** as released on _**July 11, 2009**_.
 
-Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.0.22a_05).
+Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.0.23a_01).
 
 Or the server version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_server_1.8.2).
 
@@ -22,7 +22,7 @@ you can play it just by specifying the Minecraft version you want to play in the
 This version features block sounds and music, and for audio to work you need either *PyOgg* which is recommended, or FFmpeg which is installed on the system.
 GStreamer is also supported on Linux through the *gst-python* library. PyOgg requires that your system have one of the *Opus*, *FLAC*, or *Vorbis* codecs. OpenAL is required.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.0.22a_05`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.0.23a_01`.
 
 Alternatively, for a manual Cython build, run `python setup.py build_ext --inplace`.
 
@@ -32,12 +32,9 @@ Run with the argument `-fullscreen` to open the window in fullscreen mode.
 
 ### Gameplay
 
-This version features multiplayer, chat, caves, beaches, hill terrain, infinite liquid tiles, level saving, and human mobs.
+This version features multiplayer, chat, caves, beaches, hill terrain, infinite liquid tiles, level saving, options, and human mobs.
 
-Press *B* to open the inventory menu. Press *Enter* to set your spawn position, *R* to teleport to your spawn position,
-*Y* to invert the mouse, *G* to spawn a mob, *F* to toggle render distance, and *M* to mute audio.
-
-*Minecraft: Python Edition* should be compatible with any platform that supports OpenGL, modern Python 3, and Cython.
+Press *B* to open the inventory menu, *G* to spawn a human mob. Press *Esc* to pause and see other controls.
 
 ### Multiplayer
 

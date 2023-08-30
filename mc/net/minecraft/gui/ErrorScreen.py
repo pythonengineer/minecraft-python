@@ -11,8 +11,8 @@ class ErrorScreen(Screen):
 
     def render(self, xm, ym):
         self._fillGradient(0, 0, self._width, self._height, -12574688, -11530224)
-        self.drawCenteredString(self.__title, self._width // 2, 90, 0xFFFFFF)
-        self.drawCenteredString(self.__desc, self._width // 2, 110, 0xFFFFFF)
+        self.drawCenteredString(self._font, self.__title, self._width // 2, 90, 0xFFFFFF)
+        self.drawCenteredString(self._font, self.__desc, self._width // 2, 110, 0xFFFFFF)
         super().render(xm, ym)
 
     def _keyPressed(self, key, char, motion):
