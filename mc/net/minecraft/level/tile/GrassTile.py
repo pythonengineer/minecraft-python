@@ -5,7 +5,7 @@ import math
 class GrassTile(Tile):
 
     def __init__(self, tiles, id_):
-        super().__init__(tiles, id_)
+        super().__init__(tiles, 2)
         self.tex = 3
         self._setTicking(True)
 
@@ -26,4 +26,7 @@ class GrassTile(Tile):
                 yt = y + math.floor(5 * random.random()) - 3
                 zt = z + math.floor(3 * random.random()) - 1
                 if level.getTile(xt, yt, zt) == self.tiles.dirt.id and level.isLit(xt, yt + 1, zt):
-                    level.setTile(xt, yt, zt, self.tiles.grass.id)
+                    level.setTile(xt, yt, zt, self.id)
+
+    def getId(self):
+        return self.tiles.dirt.getId()

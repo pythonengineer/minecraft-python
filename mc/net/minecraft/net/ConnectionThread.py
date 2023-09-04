@@ -5,24 +5,24 @@ from threading import Thread
 
 class ConnectionThread(Thread):
 
-    def __init__(self, connectionManager, ip, port, username, mpPass, minecraft):
+    def __init__(self, networkClient, ip, port, username, mpPass, minecraft):
         super().__init__()
-        self.__connectionManager = connectionManager
+        self.__networkClient = networkClient
         self.__ip = ip
         self.__port = port
         self.__username = username
         self.__mpPass = mpPass
-        self.__minecraft = minecraft
+        self.__mc = minecraft
 
     def run(self):
         try:
             connection = SocketConnection(self.__ip, self.__port)
-            self.__connectionManager.connection = connection
-            connection.manager = self.__connectionManager
+            self.__networkClient.serverConnection = connection
+            connection.client = self.__networkClient
             connection.sendPacket(Packets.LOGIN, [6, self.__username, self.__mpPass, 0])
-            self.__connectionManager.processData = True
+            self.__networkClient.processData = True
         except ConnectionRefusedError:
-            self.__minecraft.hideGui = False
-            self.__minecraft.connectionManager = None
-            self.__minecraft.setScreen(ErrorScreen('Failed to connect', 'You failed to connect to the server. It\'s probably down!'))
-            self.__connectionManager.processData = False
+            self.__mc.hideScreen = False
+            self.__mc.networkClient = None
+            self.__mc.setScreen(ErrorScreen('Failed to connect', 'You failed to connect to the server. It\'s probably down!'))
+            self.__networkClient.processData = False

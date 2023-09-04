@@ -1,4 +1,6 @@
-from mc.net.minecraft.KeyBinding import KeyBinding
+from mc.net.minecraft.KeyMapping import KeyMapping
+from mc.net.minecraft.renderer.Textures import Textures
+from mc import Resources
 from pyglet import window
 
 import pathlib
@@ -137,32 +139,36 @@ class Options:
     __RENDER_DISTANCES = ('FAR', 'NORMAL', 'SHORT', 'TINY')
     music = True
     sound = True
-    invertMouse = False
-    showFPS = False
-    renderDistance = 0
+    invertYMouse = False
+    showFramerate = False
+    viewDistance = 0
+    bobView = True
+    anaglyph3d = False
+    limitFramerate = False
 
     def __init__(self, minecraft, file):
-        self.forward = KeyBinding('Forward', window.key.W)
-        self.left = KeyBinding('Left', window.key.A)
-        self.back = KeyBinding('Back', window.key.S)
-        self.right = KeyBinding('Right', window.key.D)
-        self.jump = KeyBinding('Jump', window.key.SPACE)
-        self.build = KeyBinding('Build', window.key.B)
-        self.chat = KeyBinding('Chat', window.key.T)
-        self.toggleFog = KeyBinding('Toggle fog', window.key.F)
-        self.save = KeyBinding('Save location', window.key.RETURN)
-        self.load = KeyBinding('Load location', window.key.R)
-        self.keyBindings = [self.forward, self.left, self.back, self.right, self.jump,
-                            self.build, self.chat, self.toggleFog, self.save, self.load]
+        self.forward = KeyMapping('Forward', window.key.W)
+        self.left = KeyMapping('Left', window.key.A)
+        self.back = KeyMapping('Back', window.key.S)
+        self.right = KeyMapping('Right', window.key.D)
+        self.jump = KeyMapping('Jump', window.key.SPACE)
+        self.build = KeyMapping('Build', window.key.B)
+        self.chat = KeyMapping('Chat', window.key.T)
+        self.toggleFog = KeyMapping('Toggle fog', window.key.F)
+        self.save = KeyMapping('Save location', window.key.RETURN)
+        self.load = KeyMapping('Load location', window.key.R)
+        self.keys = [self.forward, self.left, self.back, self.right, self.jump,
+                     self.build, self.chat, self.toggleFog, self.save, self.load]
+        self.__minecraft = minecraft
         self.__optionsFile = (pathlib.Path(file) / 'options.txt').resolve()
-        self.__loadOptions()
+        self.__load()
 
-    def getKeyBinding(self, i):
-        return self.keyBindings[i].name + ': ' + window.key.symbol_string(self.keyBindings[i].key)
+    def getKeyMessage(self, i):
+        return self.keys[i].name + ': ' + window.key.symbol_string(self.keys[i].key)
 
-    def setKeyBinding(self, i, key):
-        self.keyBindings[i].key = key
-        self.__saveOptions()
+    def setKey(self, i, key):
+        self.keys[i].key = key
+        self.__save()
 
     def setOption(self, option, arg):
         if option == 0:
@@ -170,29 +176,47 @@ class Options:
         elif option == 1:
             self.sound = not self.sound
         elif option == 2:
-            self.invertMouse = not self.invertMouse
+            self.invertYMouse = not self.invertYMouse
         elif option == 3:
-            self.showFPS = not self.showFPS
+            self.showFramerate = not self.showFramerate
         elif option == 4:
-            self.renderDistance = self.renderDistance + arg & 3
+            self.viewDistance = self.viewDistance + arg & 3
+        elif option == 5:
+            self.bobView = not self.bobView
+        elif option == 6:
+            self.anaglyph3d = not self.anaglyph3d
+            for id_, img in self.__minecraft.textures.pixelsMap.items():
+                self.__minecraft.textures.addTextureId(img, id_)
 
-        self.__saveOptions()
+            for string, id_ in self.__minecraft.textures.idMap.items():
+                if string.startswith('##'):
+                    img = self.__minecraft.textures.addTexture(Resources.textures[string[2:]])
+                else:
+                    img = Resources.textures[string]
 
-    def getOption(self, option):
+                self.__minecraft.textures.addTextureId(img, id_)
+
+        self.__save()
+
+    def getMessage(self, option):
         if option == 0:
             return 'Music: ' + ('ON' if self.music else 'OFF')
         elif option == 1:
             return 'Sound: ' + ('ON' if self.sound else 'OFF')
         elif option == 2:
-            return 'Invert mouse: ' + ('ON' if self.invertMouse else 'OFF')
+            return 'Invert mouse: ' + ('ON' if self.invertYMouse else 'OFF')
         elif option == 3:
-            return 'Show FPS: ' + ('ON' if self.showFPS else 'OFF')
+            return 'Show FPS: ' + ('ON' if self.showFramerate else 'OFF')
         elif option == 4:
-            return 'Render distance: ' + Options.__RENDER_DISTANCES[self.renderDistance]
-        else:
-            return ''
+            return 'Render distance: ' + Options.__RENDER_DISTANCES[self.viewDistance]
+        elif option == 5:
+            return 'View bobbing: ' + ('ON' if self.bobView else 'OFF')
+        elif option == 6:
+            return '3d anaglyph: ' + ('ON' if self.anaglyph3d else 'OFF')
 
-    def __loadOptions(self):
+        return ''
+
+    def __load(self):
         try:
             if self.__optionsFile.exists():
                 with open(self.__optionsFile, 'r') as f:
@@ -204,28 +228,34 @@ class Options:
                         elif split[0] == 'sound':
                             self.sound = split[1] == 'true'
                         elif split[0] == 'invertYMouse':
-                            self.invertMouse = split[1] == 'true'
+                            self.invertYMouse = split[1] == 'true'
                         elif split[0] == 'showFrameRate':
-                            self.showFPS = split[1] == 'true'
+                            self.showFramerate = split[1] == 'true'
                         elif split[0] == 'viewDistance':
-                            self.renderDistance = int(split[1])
+                            self.viewDistance = int(split[1])
+                        elif split[0] == 'bobView':
+                            self.bobView = split[1] == 'true'
+                        elif split[0] == 'anaglyph3d':
+                            self.anaglyph3d = split[1] == 'true'
 
-                        for binding in self.keyBindings:
+                        for binding in self.keys:
                             if split[0] == 'key_' + binding.name:
                                 binding.key = _KEYS[int(split[1])]
         except Exception as e:
             print('Failed to load options:', e)
 
-    def __saveOptions(self):
+    def __save(self):
         try:
             with open(self.__optionsFile, 'w+') as f:
                 f.write('music:' + ('true' if self.music else 'false') + '\n')
                 f.write('sound:' + ('true' if self.sound else 'false') + '\n')
-                f.write('invertYMouse:' + ('true' if self.invertMouse else 'false') + '\n')
-                f.write('showFrameRate:' + ('true' if self.showFPS else 'false') + '\n')
-                f.write('viewDistance:' + str(self.renderDistance) + '\n')
+                f.write('invertYMouse:' + ('true' if self.invertYMouse else 'false') + '\n')
+                f.write('showFrameRate:' + ('true' if self.showFramerate else 'false') + '\n')
+                f.write('viewDistance:' + str(self.viewDistance) + '\n')
+                f.write('bobView:' + ('true' if self.bobView else 'false') + '\n')
+                f.write('anaglyph3d:' + ('true' if self.anaglyph3d else 'false') + '\n')
 
-                for binding in self.keyBindings:
+                for binding in self.keys:
                     f.write('key_' + binding.name + ':' + str(_GL_KEYS[binding.key]) + '\n')
         except Exception as e:
             print('Failed to save options:', e)

@@ -7,8 +7,8 @@ class Particle(Entity):
 
     def __init__(self, level, x, y, z, xa, ya, za, tile):
         super().__init__(level)
-        self.tex = tile.tex
-        self.__gravity = tile.particleGravity
+        self.__texture = tile.tex
+        self.__particleGravity = tile.particleGravity
         self.setSize(0.2, 0.2)
         self.heightOffset = self.bbHeight / 2.0
         self.setPos(x, y, z)
@@ -32,6 +32,17 @@ class Particle(Entity):
         self.__age = 0
         self.makeStepSound = False
 
+    def setPower(self, strafe):
+        self.__xd *= strafe
+        self.__yd = (self.__yd - 0.1) * strafe + 0.1
+        self.__zd *= strafe
+        return self
+
+    def scale(self, scale):
+        self.setSize(0.2 * scale, 0.2 * scale)
+        self.__size *= scale
+        return self
+
     def tick(self):
         self.xo = self.x
         self.yo = self.y
@@ -39,9 +50,10 @@ class Particle(Entity):
 
         if self.__age >= self.__lifetime:
             self.removed = True
+
         self.__age += 1
 
-        self.__yd -= 0.04 * self.__gravity
+        self.__yd -= 0.04 * self.__particleGravity
         self.move(self.__xd, self.__yd, self.__zd)
         self.__xd *= 0.98
         self.__yd *= 0.98
@@ -52,10 +64,10 @@ class Particle(Entity):
             self.__zd *= 0.7
 
     def render(self, t, a, xa, ya, za, xa2, za2):
-        u0 = (self.tex % 16 + self.__uo / 4.0) / 16.0
-        u1 = u0 + 0.01560938
-        v0 = (self.tex // 16 + self.__vo / 4.0) / 16.0
-        v1 = v0 + 0.01560938
+        u0 = (self.__texture % 16 + self.__uo / 4.0) / 16.0
+        u1 = u0 + 0.015609375
+        v0 = (self.__texture // 16 + self.__vo / 4.0) / 16.0
+        v1 = v0 + 0.015609375
         r = 0.1 * self.__size
 
         x = self.xo + (self.x - self.xo) * a

@@ -28,7 +28,7 @@ class NameLevelScreen(Screen):
     def _buttonClicked(self, button):
         if button.enabled:
             if button.id == 0 and len(self.__name.strip()) > 1:
-                #self._minecraft.levelIo.save(self._minecraft.level, self._minecraft.minecraftUri, self._minecraft.user.name, self._minecraft.user.sessionId, self.__name.strip(), self.__id)
+                #self._minecraft.levelIo.saveLevelData(self._minecraft.level, self._minecraft.minecraftUri, self._minecraft.user.name, self._minecraft.user.sessionId, self.__name.strip(), self.__id)
                 self._minecraft.setScreen(None)
                 self._minecraft.grabMouse()
             elif button.id == 1:

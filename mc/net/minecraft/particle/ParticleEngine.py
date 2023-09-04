@@ -4,13 +4,14 @@ from pyglet import gl
 import math
 
 class ParticleEngine:
-    particles = set()
+    particles = []
 
     def __init__(self, level, textures):
         self.__textures = textures
+        level.particleEngine = self
 
-    def add(self, p):
-        self.particles.add(p)
+    def addParticle(self, p):
+        self.particles.append(p)
 
     def tick(self):
         for p in self.particles.copy():
@@ -23,7 +24,7 @@ class ParticleEngine:
             return
 
         gl.glEnable(gl.GL_TEXTURE_2D)
-        id_ = self.__textures.getTextureId('terrain.png')
+        id_ = self.__textures.loadTexture('terrain.png')
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         xa = -math.cos(player.yRot * math.pi / 180.0)
         za = -math.sin(player.yRot * math.pi / 180.0)
@@ -35,8 +36,9 @@ class ParticleEngine:
         t = tesselator
         t.begin()
         for p in self.particles:
-            f10 = 0.8 * p.getBrightness()
+            f10 = 0.6 * p.getBrightness(a)
             t.colorFloat(f10, f10, f10)
             p.render(t, a, xa, ya, za, xa2, za2)
+
         t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)

@@ -11,5 +11,8 @@ class Vec3:
         return Vec3(self.x - vec.x, self.y - vec.y, self.z - vec.z)
 
     def normalize(self):
-        f1 = math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
-        return Vec3(self.x / f1, self.y / f1, self.z / f1)
+        f = math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+        return Vec3(self.x / f, self.y / f, self.z / f)
+
+    def addVector(self, x, y, z):
+        return Vec3(self.x + x, self.y + y, self.z + z)

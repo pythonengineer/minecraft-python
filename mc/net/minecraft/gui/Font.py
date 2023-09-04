@@ -6,7 +6,7 @@ class Font:
 
     def __init__(self, name, textures):
         self.__charWidths = [0] * 256
-        self.__fontTexture = textures.getTextureId(name + '2')
+        self.__fontTexture = textures.loadTexture(name + '2')
         texture = Resources.textures[name + '1']
         w = texture[0]
         h = texture[1]
@@ -20,17 +20,21 @@ class Font:
             for x in range(8):
                 if emptyColumn:
                     break
+
                 xPixel = (xt << 3) + x
                 emptyColumn = True
                 for y in range(8):
                     if not emptyColumn:
                         break
+
                     yPixel = ((yt << 3) + y) * w
                     pixel = rawPixels[xPixel + yPixel] & 255
                     if pixel > 128:
                         emptyColumn = False
+
             if i == 32:
                 x = 4
+
             self.__charWidths[i] = x
 
     def drawShadow(self, string, x, y, color):
@@ -41,6 +45,7 @@ class Font:
         if string is not None:
             if darken:
                 color = (color & 0xFCFCFC) >> 2
+
             gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fontTexture)
             t = tesselator
@@ -93,8 +98,12 @@ class Font:
     @staticmethod
     def removeColorCodes(text):
         string = ''
-        for char in text:
+        i = 0
+        while i < len(text):
+            char = text[i]
+            i += 1
             if char == '&':
+                i += 1
                 continue
             else:
                 string += char

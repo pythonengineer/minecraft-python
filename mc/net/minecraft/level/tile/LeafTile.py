@@ -1,20 +1,18 @@
-from mc.net.minecraft.level.tile.Tile import Tile
+from mc.net.minecraft.level.tile.BaseLeafTile import BaseLeafTile
 
-class LeafTile(Tile):
+import random
+import math
 
-    def __init__(self, tiles, id_, tex, z3):
-        super().__init__(tiles, 18, 22)
-        self.__renderAdjacentFaces = True
+class LeafTile(BaseLeafTile):
 
-    def isSolid(self):
-        return False
+    def __init__(self, tiles, id_, tex):
+        super().__init__(tiles, 18, 22, True)
 
-    def _shouldRenderFace(self, level, x, y, z, layer, face):
-        tile = level.getTile(x, y, z)
-        if not self.__renderAdjacentFaces and tile == self.id:
-            return False
+    def getResourceCount(self):
+        if math.floor(6 * random.random()) == 0:
+            return 1
         else:
-            return super()._shouldRenderFace(level, x, y, z, layer, face)
+            return 0
 
-    def blocksLight(self):
-        return False
+    def getId(self):
+        return self.tiles.bush.id

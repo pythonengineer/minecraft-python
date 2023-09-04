@@ -3,7 +3,6 @@
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.liquid.Liquid import Liquid
-from mc.net.minecraft.level.Level cimport Level
 
 cdef class LiquidTile(Tile):
 
@@ -12,9 +11,10 @@ cdef class LiquidTile(Tile):
         self._liquid = liquid
 
         self.tex = 14
-
         if liquid == Liquid.lava:
             self.tex = 30
+
+        self.isLiquid[id_] = True
 
         self._tileId = id_
         self._calmTileId = id_ + 1
@@ -26,10 +26,13 @@ cdef class LiquidTile(Tile):
         if liquid == Liquid.lava:
             self.setTickSpeed(16)
 
-    def onBlockAdded(self, Level level, int x, int y, int z):
+    cdef bint isOpaque(self):
+        return False
+
+    def onPlace(self, level, int x, int y, int z):
         level.addToTickNextTick(x, y, z, self._tileId)
 
-    cpdef void tick(self, Level level, int x, int y, int z, random) except *:
+    cpdef void tick(self, level, int x, int y, int z, random) except *:
         cdef bint hasChanged, change
         hasChanged = False
         while True:
@@ -56,7 +59,7 @@ cdef class LiquidTile(Tile):
         else:
             level.setTileNoUpdate(x, y, z, self._calmTileId)
 
-    cdef bint __checkSponge(self, Level level, int x, int y, int z):
+    cdef bint __checkSponge(self, level, int x, int y, int z):
         cdef int xx, yy, zz
 
         if self._liquid == Liquid.water:
@@ -68,7 +71,7 @@ cdef class LiquidTile(Tile):
 
         return True
 
-    cdef bint __checkWater(self, Level level, int x, int y, int z):
+    cdef bint __checkWater(self, level, int x, int y, int z):
         if level.getTile(x, y, z) == 0:
             if not self.__checkSponge(level, x, y, z):
                 return False
@@ -78,33 +81,31 @@ cdef class LiquidTile(Tile):
 
         return False
 
-    cdef float _getBrightness(self, Level level, int x, int y, int z):
+    cdef float _getBrightness(self, level, int x, int y, int z):
         return 100.0 if self._liquid == Liquid.lava else level.getBrightness(x, y, z)
 
-    cpdef bint _shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
-        cdef int tile
-
-        if x >= 0 and y >= 0 and z >= 0 and x < level.width and z < level.height:
-            if layer != 1:
-                 return False
-            else:
-                tile = level.getTile(x, y, z)
-                if tile != self._tileId and tile != self._calmTileId:
-                    if face != 1 or level.getTile(x - 1, y, z) != 0 and \
-                       level.getTile(x + 1, y, z) != 0 and \
-                       level.getTile(x, y, z - 1) != 0 and \
-                       level.getTile(x, y, z + 1) != 0:
-                        return Tile._shouldRenderFace(self, level, x, y, z, -1, face)
-                    else:
-                        return True
-                else:
-                    return False
-        else:
+    cpdef bint shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
+        if x < 0 or y < 0 or z < 0 or x >= level.width or z >= level.height:
             return False
 
-    cpdef renderFace(self, Tesselator t, int x, int y, int z, int face):
+        if layer != 1 and self._liquid == Liquid.water:
+            return False
+
+        cdef int tile = level.getTile(x, y, z)
+        if tile == self._tileId or tile == self._calmTileId:
+            return False
+
+        if face == 1 and (level.getTile(x - 1, y, z) == 0 or \
+                          level.getTile(x + 1, y, z) == 0 or \
+                          level.getTile(x, y, z - 1) == 0 or \
+                          level.getTile(x, y, z + 1) == 0):
+            return True
+
+        return Tile.shouldRenderFace(self, level, x, y, z, -1, face)
+
+    cpdef void renderFace(self, Tesselator t, int x, int y, int z, int face):
         Tile.renderFace(self, t, x, y, z, face)
-        self.renderBackFace(t, x, y, z, face)
+        Tile.renderBackFace(self, t, x, y, z, face)
 
     def getTileAABB(self, int x, int y, int z):
         return None
@@ -118,7 +119,7 @@ cdef class LiquidTile(Tile):
     cpdef int getLiquidType(self):
         return self._liquid
 
-    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *:
+    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *:
         cdef int liquid
 
         if type_ != 0:
@@ -131,3 +132,12 @@ cdef class LiquidTile(Tile):
 
     cdef int getTickDelay(self):
         return 5 if self._liquid == Liquid.lava else 0
+
+    cdef wasExploded(self, level, int x, int y, int z, float f):
+        pass
+
+    def spawnResources(self, level, int x, int y, int z):
+        pass
+
+    cpdef int getResourceCount(self):
+        return 0

@@ -8,10 +8,11 @@ cdef class PerlinNoise:
     def __cinit__(self):
         self.__levels = 8
 
-    def __init__(self, Random random, levels):
+    def __init__(self, Random random, int levels):
         cdef int i
-        self.__noiseLevels = [None] * 8
-        for i in range(self.__levels):
+        self.__levels = levels
+        self.__noiseLevels = [None] * levels
+        for i in range(levels):
             self.__noiseLevels[i] = ImprovedNoise(random)
 
     cdef double getValue(self, double x, double y):

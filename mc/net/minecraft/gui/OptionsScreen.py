@@ -1,5 +1,6 @@
 from mc.net.minecraft.gui.Screen import Screen
 from mc.net.minecraft.gui.Button import Button
+from mc.net.minecraft.gui.SmallButton import SmallButton
 from mc.net.minecraft.gui.ControlsScreen import ControlsScreen
 
 class OptionsScreen(Screen):
@@ -11,20 +12,20 @@ class OptionsScreen(Screen):
 
     def init(self, minecraft, width, height):
         super().init(minecraft, width, height)
-        for i in range(5):
-            self._buttons.append(Button(i, self._width // 2 - 100, self._height // 6 + i * 24, self.__options.getOption(i)))
+        for i in range(7):
+            self._buttons.append(SmallButton(i, self._width // 2 - 155 + i % 2 * 160, self._height // 6 + 24 * (i >> 1), self.__options.getMessage(i)))
 
-        self._buttons.append(Button(10, self._width // 2 - 100, self._height // 6 + 120 + 12, 'Controls...'))
-        self._buttons.append(Button(20, self._width // 2 - 100, self._height // 6 + 168, 'Done'))
+        self._buttons.append(Button(100, self._width // 2 - 100, self._height // 6 + 120 + 12, 'Controls...'))
+        self._buttons.append(Button(200, self._width // 2 - 100, self._height // 6 + 168, 'Done'))
 
     def _buttonClicked(self, button):
         if button.enabled:
-            if button.id < 5:
+            if button.id < 100:
                 self.__options.setOption(button.id, 1)
-                button.msg = self.__options.getOption(button.id)
-            elif button.id == 10:
+                button.msg = self.__options.getMessage(button.id)
+            elif button.id == 100:
                 self._minecraft.setScreen(ControlsScreen(self, self.__options))
-            elif button.id == 20:
+            elif button.id == 200:
                 self._minecraft.setScreen(self.__parent)
 
     def render(self, xm, ym):

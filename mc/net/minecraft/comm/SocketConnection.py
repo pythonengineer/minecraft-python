@@ -71,40 +71,40 @@ class SocketConnection:
             for i, field in enumerate(packet.fields):
                 data[i] = self.read(field)
 
-            if self.manager.processData:
+            if self.client.processData:
                 if packet == Packets.LOGIN:
-                    self.manager.minecraft.loadingScreen.beginLevelLoading(data[1].decode())
-                    self.manager.minecraft.loadingScreen.levelLoadUpdate(data[2].decode())
-                    self.manager.minecraft.player.userType = data[3]
+                    self.client.minecraft.loadingScreen.beginLevelLoading(data[1].decode())
+                    self.client.minecraft.loadingScreen.levelLoadUpdate(data[2].decode())
+                    self.client.minecraft.player.userType = data[3]
                 elif packet == Packets.LEVEL_INITIALIZE:
-                    self.manager.minecraft.setLevel(None)
-                    self.manager.levelBuffer = ByteArrayOutputStream()
+                    self.client.minecraft.loadLegacy(None)
+                    self.client.levelBuffer = ByteArrayOutputStream()
                 elif packet == Packets.LEVEL_DATA_CHUNK:
                     s13 = data[0]
                     b5 = data[1]
                     b6 = data[2]
-                    self.manager.minecraft.loadingScreen.setLoadingProgress()
-                    self.manager.levelBuffer.write(b5, 0, s13)
+                    self.client.minecraft.loadingScreen.setLoadingProgress()
+                    self.client.levelBuffer.write(b5, 0, s13)
                 elif packet == Packets.LEVEL_FINALIZE:
                     try:
-                        self.manager.levelBuffer.close()
+                        self.client.levelBuffer.close()
                     except Exception as e:
                         print(traceback.format_exc())
 
-                    b14 = LevelIO.loadBlocks(ByteArrayInputStream(gzip.decompress(self.manager.levelBuffer.toByteArray())))
-                    self.manager.levelBuffer = None
+                    b14 = LevelIO.loadBlocks(ByteArrayInputStream(gzip.decompress(self.client.levelBuffer.toByteArray())))
+                    self.client.levelBuffer = None
                     s18 = data[0]
                     s21 = data[1]
                     s17 = data[2]
                     level = Level()
                     level.setNetworkMode(True)
                     level.setDataLegacy(s18, s21, s17, b14)
-                    self.manager.minecraft.setLevel(level)
-                    self.manager.minecraft.hideGui = False
-                    self.manager.connected = True
+                    self.client.minecraft.loadLegacy(level)
+                    self.client.minecraft.hideScreen = False
+                    self.client.connected = True
                 elif packet == Packets.SET_TILE:
-                    if self.manager.minecraft.level:
-                        self.manager.minecraft.level.netSetTile(int(data[0]), int(data[1]),
+                    if self.client.minecraft.level:
+                        self.client.minecraft.level.netSetTile(int(data[0]), int(data[1]),
                                                                 int(data[2]), data[3])
                 elif packet == Packets.PLAYER_JOIN:
                     b15 = data[0]
@@ -114,14 +114,14 @@ class SocketConnection:
                     s24 = data[4]
                     b8 = data[5]
                     b9 = data[6]
-                    if b15 not in self.manager.players:
+                    if b15 not in self.client.players:
                         if b15 >= 0:
-                            networkPlayer = NetworkPlayer(self.manager.minecraft, b15, string19, s18, s21, s24, (-b8 * 360) / 256.0, (b9 * 360) / 256.0)
-                            self.manager.players[b15] = networkPlayer
-                            self.manager.minecraft.level.entities.add(networkPlayer)
+                            networkPlayer = NetworkPlayer(self.client.minecraft, b15, string19, s18, s21, s24, (-b8 * 360) / 256.0, (b9 * 360) / 256.0)
+                            self.client.players[b15] = networkPlayer
+                            self.client.minecraft.level.addEntity(networkPlayer)
                         else:
-                            self.manager.minecraft.level.setSpawnPos(s18 // 32, s21 // 32, s24 // 32, b8 * 320 / 256)
-                            self.manager.minecraft.player.moveTo(s18 / 32.0, s21 / 32.0, s24 / 32.0, (b8 * 360) / 256.0, (b9 * 360) / 256.0)
+                            self.client.minecraft.level.setSpawnPos(s18 // 32, s21 // 32, s24 // 32, b8 * 320 / 256)
+                            self.client.minecraft.player.moveTo(s18 / 32.0, s21 / 32.0, s24 / 32.0, (b8 * 360) / 256.0, (b9 * 360) / 256.0)
                 elif packet == Packets.PLAYER_TELEPORT:
                     b15 = data[0]
                     s17 = data[1]
@@ -129,9 +129,9 @@ class SocketConnection:
                     s21 = data[3]
                     b25 = data[4]
                     b8 = data[5]
-                    networkPlayer = self.manager.players.get(b15)
+                    networkPlayer = self.client.players.get(b15)
                     if b15 < 0:
-                        self.manager.minecraft.player.moveTo(s17 / 32.0, s18 / 32.0, s21 / 32.0, float(b25 * 360) / 256.0, float(b8 * 360) / 256.0)
+                        self.client.minecraft.player.moveTo(s17 / 32.0, s18 / 32.0, s21 / 32.0, float(b25 * 360) / 256.0, float(b8 * 360) / 256.0)
                     elif networkPlayer:
                         networkPlayer.teleport(s17, s18, s21, float(-b25 * 360) / 256.0, float(b8 * 360) / 256.0)
                 elif packet == Packets.PLAYER_MOVE_AND_ROTATE:
@@ -141,41 +141,41 @@ class SocketConnection:
                     b6 = data[3]
                     b25 = data[4]
                     b8 = data[5]
-                    networkPlayer = self.manager.players.get(b15)
+                    networkPlayer = self.client.players.get(b15)
                     if b15 >= 0 and networkPlayer:
-                        networkPlayer.queue(b23, b22, b6, float(-b25 * 360) / 256.0, float(b8 * 360) / 256.0)
+                        networkPlayer.queue1(b23, b22, b6, float(-b25 * 360) / 256.0, float(b8 * 360) / 256.0)
                 elif packet == Packets.PLAYER_ROTATE:
                     b15 = data[0]
                     b23 = data[1]
                     b22 = data[2]
-                    networkPlayer = self.manager.players.get(b15)
+                    networkPlayer = self.client.players.get(b15)
                     if b15 >= 0 and networkPlayer:
-                        networkPlayer.queue(float(-b23 * 360) / 256.0, float(b22 * 360) / 256.0)
+                        networkPlayer.queue2(float(-b23 * 360) / 256.0, float(b22 * 360) / 256.0)
                 elif packet == Packets.PLAYER_MOVE:
                     b15 = data[0]
                     b23 = data[1]
                     b22 = data[2]
                     b6 = data[3]
-                    networkPlayer = self.manager.players.get(b15)
+                    networkPlayer = self.client.players.get(b15)
                     if b15 >= 0 and networkPlayer:
-                        networkPlayer.queue(b23, b22, b6)
+                        networkPlayer.queue3(b23, b22, b6)
                 elif packet == Packets.PLAYER_DISCONNECT:
                     b15 = data[0]
-                    if b15 in self.manager.players:
-                        networkPlayer = self.manager.players.pop(b15)
+                    if b15 in self.client.players:
+                        networkPlayer = self.client.players.pop(b15)
                         if b15 >= 0 and networkPlayer:
                             networkPlayer.clear()
-                            self.manager.minecraft.level.entities.remove(networkPlayer)
+                            self.client.minecraft.level.removeEntity(networkPlayer)
                 elif packet == Packets.CHAT_MESSAGE:
                     b15 = data[0]
                     string19 = data[1].decode()
                     if b15 < 0:
-                        self.manager.minecraft.hud.addChatMessage('&e' + string19)
+                        self.client.minecraft.gui.addMessage('&e' + string19)
                     else:
-                        self.manager.players.get(b15)
-                        self.manager.minecraft.hud.addChatMessage(string19)
+                        self.client.players.get(b15)
+                        self.client.minecraft.gui.addMessage(string19)
                 elif packet == Packets.KICK_PLAYER:
-                    self.manager.minecraft.setScreen(ErrorScreen('Connection lost', data[0].decode()))
+                    self.client.minecraft.setScreen(ErrorScreen('Connection lost', data[0].decode()))
                     self.disconnect()
 
             if not self.connected:
@@ -234,7 +234,7 @@ class SocketConnection:
 
                             self.writeBuffer.put(self.__stringPacket)
                     except Exception as e:
-                        self.manager.disconnect(e)
+                        self.client.handleException(e)
 
     def read(self, field):
         if not self.connected:
@@ -263,5 +263,5 @@ class SocketConnection:
                 else:
                     return None
             except Exception as e:
-                self.manager.disconnect(e)
+                self.client.handleException(e)
                 return None

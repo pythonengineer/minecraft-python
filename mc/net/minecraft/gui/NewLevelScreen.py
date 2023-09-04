@@ -10,10 +10,10 @@ class NewLevelScreen(Screen):
     def init(self, minecraft, width, height):
         super().init(minecraft, width, height)
         self._buttons.clear()
-        self._buttons.append(Button(0, self._width // 2 - 100, self._height // 3, 'Small'))
-        self._buttons.append(Button(1, self._width // 2 - 100, self._height // 3 + 32, 'Normal'))
-        self._buttons.append(Button(2, self._width // 2 - 100, self._height // 3 + 64, 'Huge'))
-        self._buttons.append(Button(3, self._width // 2 - 100, self._height // 3 + 96, 'Cancel'))
+        self._buttons.append(Button(0, self._width // 2 - 100, self._height // 4, 'Small'))
+        self._buttons.append(Button(1, self._width // 2 - 100, self._height // 4 + 24, 'Normal'))
+        self._buttons.append(Button(2, self._width // 2 - 100, self._height // 4 + 48, 'Huge'))
+        self._buttons.append(Button(3, self._width // 2 - 100, self._height // 4 + 120, 'Cancel'))
 
     def _buttonClicked(self, button):
         if button.id == 3:

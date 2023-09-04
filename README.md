@@ -4,11 +4,9 @@
 
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
-This project is currently recreating the **Multiplayer Classic** versions of Minecraft. The latest version is **Classic 0.0.23a_01** as released on _**July 11, 2009**_.
+This project is currently recreating the **Survival Test Classic** versions of Minecraft. The latest version is **Classic 0.24_SURVIVAL_TEST_03** as released on _**September 1, 2009**_.
 
-Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.0.23a_01).
-
-Or the server version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_server_1.8.2).
+Learn more about this version [here](https://minecraft.fandom.com/wiki/Java_Edition_Classic_0.24_SURVIVAL_TEST_03).
 
 This project is organized so that every commit is strictly the finished Python version of the Java game of the same version number.
 This means that you can go back into this repository's commit history and see only the source code changes between versions of Minecraft,
@@ -19,10 +17,10 @@ you can play it just by specifying the Minecraft version you want to play in the
 
 *Pyglet*, *Cython*, *Pillow*, and *PyOgg* are required dependencies and can easily be installed with *pip*. Use the versions specified in `requirements.txt`.
 
-This version features block sounds and music, and for audio to work you need either *PyOgg* which is recommended, or FFmpeg which is installed on the system.
+For audio to work you will either need *PyOgg* which is recommended, or FFmpeg which is installed on the system.
 GStreamer is also supported on Linux through the *gst-python* library. PyOgg requires that your system have one of the *Opus*, *FLAC*, or *Vorbis* codecs. OpenAL is required.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.0.23a_01`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.24`.
 
 Alternatively, for a manual Cython build, run `python setup.py build_ext --inplace`.
 
@@ -32,25 +30,20 @@ Run with the argument `-fullscreen` to open the window in fullscreen mode.
 
 ### Gameplay
 
-This version features multiplayer, chat, caves, beaches, hill terrain, infinite liquid tiles, level saving, options, and human mobs.
+This version features early mob enemies and basic combat. Press Tab to launch arrows at enemies.
 
-Press *B* to open the inventory menu, *G* to spawn a human mob. Press *Esc* to pause and see other controls.
+There are pigs, but they don't drop anything. Creepers, zombies, and skeletons all attack the same, but creepers explode upon death.
+
+To heal, pick up brown mushrooms and right click to eat. Red mushrooms are poisonous and will take damage.
 
 ### Multiplayer
 
-To launch the multiplayer game, run `python -m mc.net.minecraft.Minecraft -server <host:port> -user <username> -mppass [password]`.
-
-Press *Tab* in-game to view connected players.
-
-To host a server, follow the instructions in the `README.TXT` file in the *server* directory.
-Make sure `verify-names` is set to `false` in the server properties.
+Since this is a Survival version of Classic, multiplayer support is disabled.
 
 ### Additional Notes
 
 The `mc.resources` directory contains all of the textures and sounds that this version uses. However,
 the textures are only there for convenience, as all of the texture buffers are already preloaded
 in the `mc.Resources` module.
-
-The *server* directory contains the unmodified, original Minecraft server build for this version.
 
 This would have been much more challenging to work on without the great tools provided by [RetroMCP-Java](https://github.com/MCPHackers/RetroMCP-Java).

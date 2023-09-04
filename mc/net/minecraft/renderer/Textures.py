@@ -3,26 +3,36 @@ from mc import Resources
 from pyglet import gl
 
 class Textures:
-    __idMap = {}
-    idBuffer = BufferUtils.createUintBuffer(1)
-    textureBuffer = BufferUtils.createByteBuffer(262144)
+    idMap = {}
+    pixelsMap = {}
+    ib = BufferUtils.createUintBuffer(1)
+    pixels = BufferUtils.createByteBuffer(262144)
     textureList = []
 
-    def getTextureId(self, resourceName):
-        if resourceName in self.__idMap:
-            return self.__idMap[resourceName]
+    def __init__(self, options):
+        self.options = options
+
+    def loadTexture(self, resourceName):
+        if resourceName in self.idMap:
+            return self.idMap[resourceName]
         else:
-            id_ = self.addTexture(Resources.textures[resourceName])
-            self.__idMap[resourceName] = id_
+            self.ib.clear()
+            gl.glGenTextures(1, self.ib)
+            id_ = self.ib.get(0)
+            if resourceName.startswith('##'):
+                self.addTextureId(Textures.addTexture(Resources.textures[resourceName]), id_)
+            else:
+                self.addTextureId(Resources.textures[resourceName], id_)
+
+            self.idMap[resourceName] = id_
             return id_
 
-    def addTexture(self, img):
-        self.idBuffer.clear()
-        gl.glGenTextures(1, self.idBuffer)
-        id_ = self.idBuffer.get(0)
+    @staticmethod
+    def addTexture(img):
+        return img
 
+    def addTextureId(self, img, id_):
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
-
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
 
@@ -37,15 +47,16 @@ class Textures:
             w = img[0]
             h = img[1]
 
-        self.textureBuffer.clear()
+        self.pixels.clear()
 
         if not isinstance(img, tuple):
-            b6 = bytearray(w * h << 2)
+            argb = bytearray(w * h << 2)
 
             def convertPixel(c):
                 x = c[0] << 16 | c[1] << 8 | c[2] | c[3] << 24
                 if x >= 1 << 31:
                     x -= 1 << 32
+
                 return x
 
             rgb = [convertPixel(pixel) for pixel in rgb]
@@ -55,21 +66,46 @@ class Textures:
                 r = rgb[i] >> 16 & 255
                 g = rgb[i] >> 8 & 255
                 b = rgb[i] & 255
-                b6[i << 2] = r
-                b6[(i << 2) + 1] = g
-                b6[(i << 2) + 2] = b
-                b6[(i << 2) + 3] = a
+                if self.options.anaglyph3d:
+                    nr = (r * 30 + g * 59 + b * 11) // 100
+                    g = (r * 30 + g * 70) // 100
+                    b = (r * 30 + b * 70) // 100
+                    r = nr
 
-            self.textureBuffer.put(b6)
-            self.textureBuffer.position(0).limit(len(b6))
+                argb[i << 2] = r
+                argb[(i << 2) + 1] = g
+                argb[(i << 2) + 2] = b
+                argb[(i << 2) + 3] = a
+
+            self.pixels.put(argb)
+            self.pixels.position(0).limit(len(argb))
         else:
-            self.textureBuffer.put(img[2], 0, len(img[2]))
-            self.textureBuffer.position(0).limit(len(img[2]))
+            rgb = list(img[2])
+            if self.options.anaglyph3d:
+                argb = bytearray(w * h << 2)
+                for i in range(w * h):
+                    r = rgb[i << 2] & 255
+                    g = rgb[(i << 2) + 1] & 255
+                    b = rgb[(i << 2) + 2] & 255
+                    a = rgb[(i << 2) + 3] & 255
 
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, self.textureBuffer)
+                    nr = (r * 30 + g * 59 + b * 11) // 100
+                    g = (r * 30 + g * 70) // 100
+                    b = (r * 30 + b * 70) // 100
+                    r = nr
 
-        return id_
+                    argb[i << 2] = r
+                    argb[(i << 2) + 1] = g
+                    argb[(i << 2) + 2] = b
+                    argb[(i << 2) + 3] = a
+            else:
+                argb = rgb
 
-    def registerTextureFX(self, textureFX):
-        self.textureList.append(textureFX)
-        textureFX.onTick()
+            self.pixels.put(argb)
+            self.pixels.position(0).limit(len(argb))
+
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, self.pixels)
+
+    def addDynamicTexture(self, dynamicTexture):
+        self.textureList.append(dynamicTexture)
+        dynamicTexture.tick()

@@ -11,8 +11,8 @@ cdef class Tiles:
         public Tile rock
         public Tile grass
         public Tile dirt
-        public Tile wood
         public Tile stoneBrick
+        public Tile wood
         public Tile bush
         public Tile unbreakable
         public LiquidTile water
@@ -21,9 +21,9 @@ cdef class Tiles:
         public LiquidTile calmLava
         public Tile sand
         public Tile gravel
-        public Tile oreGold
-        public Tile oreIron
-        public Tile oreCoal
+        public Tile goldOre
+        public Tile ironOre
+        public Tile coalOre
         public Tile log
         public Tile leaf
         public Tile sponge
@@ -44,8 +44,8 @@ cdef class Tiles:
         public Tile clothDarkGray
         public Tile clothGray
         public Tile clothWhite
-        public Tile plantYellow
-        public Tile plantRed
+        public Tile flower
+        public Tile rose
         public Tile mushroomBrown
         public Tile mushroomRed
-        public Tile blockGold
+        public Tile goldBlock

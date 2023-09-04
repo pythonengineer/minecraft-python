@@ -12,19 +12,23 @@ import math
 class LevelRenderer:
     MAX_REBUILDS_PER_FRAME = 4
     CHUNK_SIZE = 16
-    level = None
-    dummyBuffer = BufferUtils.createIntBuffer(65536)
-    dirtyChunks = set()
-    sortedChunks = []
-    cloudTickCounter = 0
-    __lX = -9999.0
-    __lY = -9999.0
-    __lZ = -9999.0
 
-    def __init__(self, textures):
+    def __init__(self, minecraft, textures):
+        self.__minecraft = minecraft
         self.textures = textures
+        self.level = None
+        self.ib = BufferUtils.createIntBuffer(65536)
+        self.allDirtyChunks = set()
+        self.__sortedChunks = []
+        self.chunks = []
+        self.__chunkBuffer = [0] * 50000
+        self.cloudTickCounter = 0
+        self.__lX = -9999.0
+        self.__lY = -9999.0
+        self.__lZ = -9999.0
+        self.hurtTime = 0.0
         self.surroundLists = gl.glGenLists(2)
-        self.__chunkRenderLists = gl.glGenLists(Tesselator.MAX_FLOATS)
+        self.glLists = gl.glGenLists(Tesselator.MAX_FLOATS)
 
     def setLevel(self, level):
         if self.level:
@@ -33,37 +37,36 @@ class LevelRenderer:
         self.level = level
         if self.level:
             level.addListener(self)
-            self.dummyBuffer = BufferUtils.createIntBuffer(65536)
             self.compileSurroundingGround()
 
     def compileSurroundingGround(self):
-        if self.sortedChunks:
-            for chunk in self.sortedChunks:
+        if self.chunks:
+            for chunk in self.chunks:
                 chunk.clear()
 
         self.__xChunks = self.level.width // self.CHUNK_SIZE
         self.__yChunks = self.level.depth // self.CHUNK_SIZE
         self.__zChunks = self.level.height // self.CHUNK_SIZE
-        self.sortedChunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
-        self.__chunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
+        self.chunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
+        self.__sortedChunks = [None] * self.__xChunks * self.__yChunks * self.__zChunks
 
         lists = 0
         for x in range(self.__xChunks):
             for y in range(self.__yChunks):
                 for z in range(self.__zChunks):
-                    self.sortedChunks[(z * self.__yChunks + y) * self.__xChunks + x] = Chunk(self.level,
-                                                                                             x << 4,
-                                                                                             y << 4,
-                                                                                             z << 4,
-                                                                                             self.CHUNK_SIZE,
-                                                                                             self.__chunkRenderLists + lists)
-                    self.__chunks[(z * self.__yChunks + y) * self.__xChunks + x] = self.sortedChunks[(z * self.__yChunks + y) * self.__xChunks + x]
-                    lists += 2
+                    self.chunks[(z * self.__yChunks + y) * self.__xChunks + x] = Chunk(self.level,
+                                                                                       x << 4,
+                                                                                       y << 4,
+                                                                                       z << 4,
+                                                                                       LevelRenderer.CHUNK_SIZE,
+                                                                                       self.glLists + lists)
+                    self.__sortedChunks[(z * self.__yChunks + y) * self.__xChunks + x] = self.chunks[(z * self.__yChunks + y) * self.__xChunks + x]
+                    lists += 8
 
-        self.dirtyChunks.clear()
+        self.allDirtyChunks.clear()
         gl.glNewList(self.surroundLists, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.getTextureId('rock.png'))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('rock.png'))
         gl.glColor4f(0.5, 0.5, 0.5, 1.0)
         t = tesselator
         y = self.level.getGroundLevel()
@@ -86,7 +89,7 @@ class LevelRenderer:
                 t.vertexUV(xx + 0, yy, zz + 0, 0.0, 0.0)
 
         t.end()
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.getTextureId('rock.png'))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('rock.png'))
         gl.glColor3f(0.8, 0.8, 0.8)
         t.begin()
 
@@ -121,7 +124,7 @@ class LevelRenderer:
         gl.glNewList(self.surroundLists + 1, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glColor3f(1.0, 1.0, 1.0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.getTextureId('water.png'))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('water.png'))
         y = self.level.getWaterLevel()
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
@@ -154,40 +157,7 @@ class LevelRenderer:
         gl.glEndList()
         self.setDirty(0, 0, 0, self.level.width, self.level.depth, self.level.height)
 
-    def renderEntities(self, frustum, a):
-        for entity in self.level.entities:
-            if frustum.isVisible(entity.bb):
-                entity.render(self.textures, a)
-
-    def render(self, player, layer, z=None):
-        if z is not None:
-            x = player
-            y = layer
-            i6 = self.level.getTile(x, y, z)
-            if i6 != 0 and tiles.tiles[i6].isSolid():
-                gl.glEnable(gl.GL_TEXTURE_2D)
-                gl.glColor4f(0.2, 0.2, 0.2, 1.0)
-                gl.glDepthFunc(gl.GL_LESS)
-                t = tesselator
-                t.begin()
-
-                for i in range(6):
-                    tiles.tiles[i6].renderFace(t, x, y, z, i)
-
-                t.end()
-                gl.glCullFace(gl.GL_FRONT)
-                t.begin()
-
-                for i in range(6):
-                    tiles.tiles[i6].renderFace(t, x, y, z, i)
-
-                t.end()
-                gl.glCullFace(gl.GL_BACK)
-                gl.glDisable(gl.GL_TEXTURE_2D)
-                gl.glDepthFunc(gl.GL_LEQUAL)
-
-            return
-
+    def render(self, player, layer):
         xd = player.x - self.__lX
         yd = player.y - self.__lY
         zd = player.z - self.__lZ
@@ -195,33 +165,43 @@ class LevelRenderer:
             self.__lX = player.x
             self.__lY = player.y
             self.__lZ = player.z
-            self.__chunks = sorted(self.__chunks, key=cmp_to_key(DistanceSorter(player).compare))
+            self.__sortedChunks = sorted(self.__sortedChunks, key=cmp_to_key(DistanceSorter(player).compare))
 
-        self.dummyBuffer.clear()
+        startingIndex = 0
+        for chunk in self.__sortedChunks:
+            startingIndex = chunk.render(self.__chunkBuffer, startingIndex, layer, player.x, player.y, player.z)
 
-        for chunk in self.__chunks:
-            chunk.render(self.dummyBuffer, layer)
-
-        self.dummyBuffer.flip()
-        if self.dummyBuffer.remaining() > 0:
+        self.ib.clear()
+        self.ib.put(self.__chunkBuffer, 0, startingIndex)
+        self.ib.flip()
+        if self.ib.remaining() > 0:
             gl.glEnable(gl.GL_TEXTURE_2D)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.getTextureId('terrain.png'))
-            gl.glCallLists(self.dummyBuffer.capacity(), gl.GL_INT, self.dummyBuffer)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('terrain.png'))
+            gl.glCallLists(self.ib.capacity(), gl.GL_INT, self.ib)
             gl.glDisable(gl.GL_TEXTURE_2D)
 
-        return self.dummyBuffer.remaining()
+        return self.ib.remaining()
 
-    def renderClouds(self, a):
+    def renderClouds(self, partialTicks):
         gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.getTextureId('clouds.png'))
-        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('clouds.png'))
+        r = (self.level.cloudColor >> 16 & 0xFF) / 255.0
+        g = (self.level.cloudColor >> 8 & 0xFF) / 255.0
+        b = (self.level.cloudColor & 0xFF) / 255.0
+        if self.__minecraft.options.anaglyph3d:
+            nr = (r * 30.0 + g * 59.0 + b * 11.0) / 100.0
+            g = (r * 30.0 + g * 70.0) / 100.0
+            b = (r * 30.0 + b * 70.0) / 100.0
+            r = nr
+
         t = tesselator
         f3 = 0.0
         f4 = 4.8828125E-4
         f3 = self.level.depth + 2.
-        f1 = (self.cloudTickCounter + a) * f4 * 0.03
+        f1 = (self.cloudTickCounter + partialTicks) * f4 * 0.03
         f5 = 0.0
         t.begin()
+        t.colorFloat(r, g, b)
 
         for i8 in range(-2048, self.level.width + 2048, 512):
             for i6 in range(-2048, self.level.height + 2048, 512):
@@ -237,7 +217,16 @@ class LevelRenderer:
         t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)
         t.begin()
-        t.colorFloat(0.5, 0.8, 1.0)
+        r = (self.level.skyColor >> 16 & 0xFF) / 255.0
+        g = (self.level.skyColor >> 8 & 0xFF) / 255.0
+        b = (self.level.skyColor & 0xFF) / 255.0
+        if self.__minecraft.options.anaglyph3d:
+            nr = (r * 30.0 + g * 59.0 + b * 11.0) / 100.0
+            g = (r * 30.0 + g * 70.0) / 100.0
+            b = (r * 30.0 + b * 70.0) / 100.0
+            r = nr
+
+        t.colorFloat(r, g, b)
         f3 = self.level.depth + 10.
 
         for i7 in range(-2048, self.level.width + 2048, 512):
@@ -249,83 +238,59 @@ class LevelRenderer:
 
         t.end()
 
-    def renderHit(self, player, h, mode, tileType):
+    def renderBasicTile(self, x, y, z):
+        tile = self.level.getTile(x, y, z)
+        if tile == 0 or not tiles.tiles[tile].isSolid():
+            return
+
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glColor4f(0.2, 0.2, 0.2, 1.0)
+        gl.glDepthFunc(gl.GL_LESS)
+        t = tesselator
+        t.begin()
+        for face in range(6):
+            tiles.tiles[n5].renderFace(t, x, y, z, face)
+
+        t.end()
+        gl.glCullFace(gl.GL_FRONT)
+        t.begin()
+        for face in range(6):
+            tiles.tiles[n5].renderFace(t, x, y, z, face)
+
+        t.end()
+        gl.glCullFace(gl.GL_BACK)
+        gl.glDisable(gl.GL_TEXTURE_2D)
+        gl.glDepthFunc(gl.GL_LEQUAL)
+
+    def renderHit(self, h, mode, tileType):
         t = tesselator
         gl.glEnable(gl.GL_BLEND)
         gl.glEnable(gl.GL_ALPHA_TEST)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE)
         gl.glColor4f(1.0, 1.0, 1.0, (math.sin(getMillis() / 100.0) * 0.2 + 0.4) * 0.5)
-        if mode == 0:
-            t.begin()
-            for i in range(6):
-                Tile.renderFaceNoTexture(player, t, h.x, h.y, h.z, i)
-            t.end()
-        else:
-            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-            br = math.sin(getMillis() / 100.0) * 0.2 + 0.8
-            gl.glColor4f(br, br, br, math.sin(getMillis() / 200.0) * 0.2 + 0.5)
+        if self.hurtTime > 0.0:
+            gl.glBlendFunc(gl.GL_DST_COLOR, gl.GL_SRC_COLOR)
             gl.glEnable(gl.GL_TEXTURE_2D)
-            id_ = self.textures.getTextureId('terrain.png')
+            id_ = self.textures.loadTexture('terrain.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
-            x = h.x
-            y = h.y
-            z = h.z
-            if h.f == 0: y -= 1
-            elif h.f == 1: y += 1
-            elif h.f == 2: z -= 1
-            elif h.f == 3: z += 1
-            elif h.f == 4: x -= 1
-            elif h.f == 5: x += 1
+            gl.glColor4f(1.0, 1.0, 1.0, 0.5)
+            gl.glPushMatrix()
+            gl.glTranslatef(h.x + 0.5, h.y + 0.5, h.z + 0.5)
+            gl.glScalef(1.01, 1.01, 1.01)
+            gl.glTranslatef(-(h.x + 0.5), -(h.y + 0.5), -(h.z + 0.5))
             t.begin()
             t.noColor()
-            tiles.tiles[tileType].render(t, self.level, 0, x, y, z)
-            tiles.tiles[tileType].render(t, self.level, 1, x, y, z)
+            gl.glDepthMask(False)
+            for face in range(6):
+                tiles.rock.renderFaceNoTexture(t, h.x, h.y, h.z,
+                                               face, 240 + int(self.hurtTime * 10.0))
             t.end()
+            gl.glDepthMask(True)
+            gl.glPopMatrix()
             gl.glDisable(gl.GL_TEXTURE_2D)
 
         gl.glDisable(gl.GL_BLEND)
         gl.glDisable(gl.GL_ALPHA_TEST)
-
-    @staticmethod
-    def renderHitOutline(h, mode):
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-        gl.glColor4f(0.0, 0.0, 0.0, 0.4)
-        x = h.x
-        y = h.y
-        z = h.z
-        if mode == 1:
-            if h.f == 0: y -= 1.0
-            elif h.f == 1: y += 1.0
-            elif h.f == 2: z -= 1.0
-            elif h.f == 3: z += 1.0
-            elif h.f == 4: x -= 1.0
-            elif h.f == 5: x += 1.0
-        gl.glBegin(gl.GL_LINE_STRIP)
-        gl.glVertex3f(x, y, z)
-        gl.glVertex3f(x + 1.0, y, z)
-        gl.glVertex3f(x + 1.0, y, z + 1.0)
-        gl.glVertex3f(x, y, z + 1.0)
-        gl.glVertex3f(x, y, z)
-        gl.glEnd()
-        gl.glBegin(gl.GL_LINE_STRIP)
-        gl.glVertex3f(x, y + 1.0, z)
-        gl.glVertex3f(x + 1.0, y + 1.0, z)
-        gl.glVertex3f(x + 1.0, y + 1.0, z + 1.0)
-        gl.glVertex3f(x, y + 1.0, z + 1.0)
-        gl.glVertex3f(x, y + 1.0, z)
-        gl.glEnd()
-        gl.glBegin(gl.GL_LINES)
-        gl.glVertex3f(x, y, z)
-        gl.glVertex3f(x, y + 1.0, z)
-        gl.glVertex3f(x + 1.0, y, z)
-        gl.glVertex3f(x + 1.0, y + 1.0, z)
-        gl.glVertex3f(x + 1.0, y, z + 1.0)
-        gl.glVertex3f(x + 1.0, y + 1.0, z + 1.0)
-        gl.glVertex3f(x, y, z + 1.0)
-        gl.glVertex3f(x, y + 1.0, z + 1.0)
-        gl.glEnd()
-        gl.glDisable(gl.GL_BLEND)
 
     def setDirty(self, x0, y0, z0, x1, y1, z1):
         x0 //= self.CHUNK_SIZE
@@ -345,4 +310,4 @@ class LevelRenderer:
         for x in range(x0, x1 + 1):
             for y in range(y0, y1 + 1):
                 for z in range(z0, z1 + 1):
-                    self.dirtyChunks.add(self.sortedChunks[(z * self.__yChunks + y) * self.__xChunks + x])
+                    self.allDirtyChunks.add(self.chunks[(z * self.__yChunks + y) * self.__xChunks + x])

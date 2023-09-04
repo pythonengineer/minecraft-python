@@ -26,6 +26,8 @@ cdef class Frustum:
 
     cpdef void calculateFrustum(self)
     cdef __normalizePlane(self, int side)
+    cdef bint cubeFullyInFrustum(self, float x0, float y0, float z0,
+                                 float x1, float y1, float z1)
     cdef bint cubeInFrustum(self, float x0, float y0, float z0,
                             float x1, float y1, float z1)
     cpdef bint isVisible(self, object aabb)

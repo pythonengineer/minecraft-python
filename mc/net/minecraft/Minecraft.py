@@ -2,10 +2,12 @@ import pyglet
 pyglet.options['debug_gl'] = False
 pyglet.options['audio'] = ('openal', 'silent')
 
+from mc.net.minecraft import StopGameException
 from mc.net.minecraft.Timer import Timer
 from mc.net.minecraft.Options import Options
+from mc.net.minecraft.LevelLoaderListener import LevelLoaderListener
 from mc.net.minecraft.HitResult import HitResult
-from mc.net.minecraft.ProgressListener import ProgressListener
+from mc.net.minecraft.phys.AABB import AABB
 from mc.net.minecraft.level.tile.Tile import Tile
 from mc.net.minecraft.level.tile.Tiles import SoundType, tiles
 from mc.net.minecraft.level.liquid.Liquid import Liquid
@@ -13,11 +15,9 @@ from mc.net.minecraft.level.Level import Level
 from mc.net.minecraft.level.LevelIO import LevelIO
 from mc.net.minecraft.level.levelgen.LevelGen import LevelGen
 from mc.net.minecraft.character.Vec3 import Vec3
-from mc.net.minecraft.character.Zombie import Zombie
-from mc.net.minecraft.character.ZombieModel import ZombieModel
 from mc.net.minecraft.player.Player import Player
-from mc.net.minecraft.player.MovementInputFromOptions import MovementInputFromOptions
-from mc.net.minecraft.net.ConnectionManager import ConnectionManager
+from mc.net.minecraft.player.KeyboardInput import KeyboardInput
+from mc.net.minecraft.net.Client import Client
 from mc.net.minecraft.net.NetworkPlayer import NetworkPlayer
 from mc.net.minecraft.net.Packet import Packet
 from mc.net.minecraft.net import Packets
@@ -25,18 +25,22 @@ from mc.net.minecraft.gui.Font import Font
 from mc.net.minecraft.gui.ChatScreen import ChatScreen
 from mc.net.minecraft.gui.ErrorScreen import ErrorScreen
 from mc.net.minecraft.gui.PauseScreen import PauseScreen
-from mc.net.minecraft.gui.InventoryScreen import InventoryScreen
-from mc.net.minecraft.gui.InGameHud import InGameHud
+from mc.net.minecraft.gui.DeathScreen import DeathScreen
+from mc.net.minecraft.gui.Gui import Gui
+from mc.net.minecraft.item.Arrow import Arrow
+from mc.net.minecraft.item.Sign import Sign
 from mc.net.minecraft.particle.ParticleEngine import ParticleEngine
-from mc.net.minecraft.renderer.texture.TextureWaterFX import TextureWaterFX
-from mc.net.minecraft.renderer.texture.TextureLavaFX import TextureLavaFX
+from mc.net.minecraft.renderer.texture.WaterTexture import WaterTexture
+from mc.net.minecraft.renderer.texture.LavaTexture import LavaTexture
 from mc.net.minecraft.renderer.DirtyChunkSorter import DirtyChunkSorter
 from mc.net.minecraft.renderer.LevelRenderer import LevelRenderer
-from mc.net.minecraft.renderer.RenderHelper import RenderHelper
+from mc.net.minecraft.renderer.GameRenderer import GameRenderer
 from mc.net.minecraft.renderer.Textures import Textures
+from mc.net.minecraft.renderer.Tesselator import tesselator
 from mc.net.minecraft.renderer.Frustum import Frustum
 from mc.net.minecraft.renderer.Chunk import Chunk
-from mc.net.minecraft.sound.SoundManager import SoundManager
+from mc.net.minecraft.gamemode.SurvivalGameMode import SurvivalGameMode
+from mc.net.minecraft.sound.SoundEngine import SoundEngine
 from mc.net.minecraft.sound.SoundPlayer import SoundPlayer
 from mc.net.minecraft.User import User
 from mc.CompatibilityShims import ByteArrayInputStream, ByteArrayOutputStream
@@ -54,33 +58,18 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.0.23a_01'
-    __timer = Timer(20.0)
+    VERSION_STRING = '0.24_SURVIVAL_TEST_03'
     level = None
     levelRenderer = None
     player = None
     particleEngine = None
 
-    user = None
     minecraftUri = ''
 
     __active = False
-    editMode = 0
-    guiScreen = None
 
-    __ticksRan = 0
-
-    loadMapUser = ''
-    loadMapId = 0
-
-    hud = None
-    connectionManager = None
-
-    server = ''
-    port = 0
-
-    running = True
-    fpsString = ''
+    gui = None
+    networkClient = None
 
     ksh = window.key.KeyStateHandler()
     msh = window.mouse.MouseStateHandler()
@@ -88,24 +77,36 @@ class Minecraft(window.Window):
     mouseX = 0
     mouseY = 0
 
-    __prevFrameTime = 0
-
-    hitResult = None
     options = None
 
-    __title = ''
-    __text = ''
-    screenChanged = False
-    hideGui = False
-    playerModel = ZombieModel()
+    guiScreenChanged = False
 
     def __init__(self, fullscreen, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.__fullscreen = fullscreen
-        self.textures = Textures()
-        self.textures.registerTextureFX(TextureLavaFX())
-        self.textures.registerTextureFX(TextureWaterFX())
+
+        self.gamemode = SurvivalGameMode(self)
+        self.__timer = Timer(20.0)
+        self.user = None
+        self.guiScreen = None
+        self.loadingScreen = LevelLoaderListener(self)
+        self.lighting = GameRenderer(self)
+        self.levelIo = LevelIO(self.loadingScreen)
+        self.soundEngine = SoundEngine()
+        self.__frames = 0
+        self.loadMapUser = ''
+        self.loadMapId = 0
+        self.hideScreen = False
+        self.hitResult = None
+
+        self.server = ''
+        self.port = 0
+
+        self.running = False
+        self.fpsString = ''
+
+        self.__oFrames = 0
 
         self.push_handlers(self.ksh)
         self.push_handlers(self.msh)
@@ -117,9 +118,12 @@ class Minecraft(window.Window):
     def setScreen(self, screen):
         if not isinstance(self.guiScreen, ErrorScreen):
             if self.guiScreen or screen:
-                self.screenChanged = True
+                self.guiScreenChanged = True
             if self.guiScreen:
-                self.guiScreen.closeScreen()
+                self.guiScreen.removed()
+
+            if not screen and self.player.health <= 0:
+                screen = DeathScreen()
 
             self.guiScreen = screen
             if screen:
@@ -127,7 +131,7 @@ class Minecraft(window.Window):
                 screenWidth = self.width * 240 // self.height
                 screenHeight = self.height * 240 // self.height
                 screen.init(self, screenWidth, screenHeight)
-                self.hideGui = False
+                self.hideScreen = False
             else:
                 self.grabMouse()
         else:
@@ -140,7 +144,7 @@ class Minecraft(window.Window):
                 print('########## GL ERROR ##########')
                 print('@ ' + string)
                 print(errorCode)
-                sys.exit(1)
+                sys.exit(0)
 
     def destroy(self):
         try:
@@ -150,7 +154,7 @@ class Minecraft(window.Window):
             print(traceback.format_exc())
 
         try:
-            LevelIO.save(self.level, gzip.open('level.dat', 'wb'))
+            self.levelIo.save(self.level, gzip.open('level.dat', 'wb'))
         except Exception as e:
             print(traceback.format_exc())
 
@@ -171,10 +175,10 @@ class Minecraft(window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         try:
             if self.guiScreen:
-                self.guiScreen.updateMouseEvents(button)
+                self.guiScreen.mouseEvent(button)
 
-            if self.screenChanged:
-                self.screenChanged = False
+            if self.guiScreenChanged:
+                self.guiScreenChanged = False
                 if compat_platform != 'darwin':
                     return
 
@@ -182,29 +186,30 @@ class Minecraft(window.Window):
                 if not self.mouseGrabbed:
                     self.grabMouse()
                 elif button == window.mouse.LEFT:
-                    self.__clickMouse()
-                    self.__prevFrameTime = self.__ticksRan
+                    self.__clickMouse(0)
+                    self.__oFrames = self.__frames
                 elif button == window.mouse.RIGHT:
-                    self.editMode = (self.editMode + 1) % 2
+                    self.__clickMouse(1)
+                    self.__oFrames = self.__frames
                 elif button == window.mouse.MIDDLE and self.hitResult:
-                    tile = self.level.getTile(self.hitResult.x, self.hitResult.y, self.hitResult.z)
+                    tile = self.level.getTile(self.hitResult.x,
+                                              self.hitResult.y,
+                                              self.hitResult.z)
                     if tile == tiles.grass.id:
                         tile = tiles.dirt.id
 
                     slot = self.player.inventory.containsTileAt(tile)
                     if slot >= 0:
-                        self.player.inventory.selectedSlot = slot
-                    elif tile > 0 and tiles.tiles[tile] in User.creativeTiles:
-                        self.player.inventory.setTile(tiles.tiles[tile])
+                        self.player.inventory.selected = slot
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_mouse_scroll(self, x, y, dx, dy):
         try:
-            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
+            if not self.guiScreen:
                 if dy != 0:
-                    self.player.inventory.scrollHotbar(dy)
+                    self.player.inventory.swapPaint(dy)
         except Exception as e:
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
@@ -212,14 +217,17 @@ class Minecraft(window.Window):
         try:
             self.mouseX = x
             self.mouseY = y
-            if self.mouseGrabbed:
-                xo = dx
-                if self.options.invertMouse:
-                    yo = dy * -1
-                else:
-                    yo = dy
 
-                self.player.turn(xo, yo)
+            if not self.mouseGrabbed:
+                return
+
+            xo = dx
+            if self.options.invertYMouse:
+                yo = dy * -1
+            else:
+                yo = dy
+
+            self.player.turn(xo, yo)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -227,46 +235,42 @@ class Minecraft(window.Window):
     def on_key_press(self, symbol, modifiers):
         try:
             if self.guiScreen:
-                self.guiScreen.updateKeyboardEvents(key=symbol)
+                self.guiScreen.keyboardEvent(key=symbol)
 
-            if self.screenChanged:
-                self.screenChanged = False
+            if self.guiScreenChanged:
+                self.guiScreenChanged = False
                 if compat_platform != 'darwin':
                     return
 
-            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
+            if not self.guiScreen:
                 if symbol != self.options.toggleFog.key:
                     self.player.setKey(symbol, True)
 
-                    if not self.guiScreen:
-                        if symbol == window.key.ESCAPE:
-                            self.pauseGame()
-                        elif symbol == self.options.load.key:
-                            self.player.resetPos()
-                        elif symbol == self.options.save.key:
-                            self.level.setSpawnPos(int(self.player.x), int(self.player.y), int(self.player.z), self.player.yRot)
-                            self.player.resetPos()
-                        elif symbol == window.key.G and self.connectionManager is None and len(self.level.entities) < 256:
-                            self.level.entities.add(Zombie(self.level, self.player.x, self.player.y, self.player.z))
-                        elif symbol == self.options.build.key:
-                            self.setScreen(InventoryScreen())
-                        elif symbol == self.options.chat.key and self.connectionManager and self.connectionManager.isConnected():
-                            self.player.releaseAllKeys()
-                            self.setScreen(ChatScreen())
+                    if symbol == window.key.ESCAPE:
+                        self.pauseScreen()
+                    elif symbol == self.options.build.key and not self.networkClient:
+                        self.level.addEntity(Sign(self, self.player.x, self.player.y,
+                                                  self.player.z, self.player.yRot))
+                    elif symbol == window.key.TAB and not self.networkClient:
+                        self.level.addEntity(Arrow(self, self.player, self.player.x, self.player.y,
+                                                   self.player.z, self.player.yRot, self.player.xRot))
+                    elif symbol == self.options.chat.key and self.networkClient and self.networkClient.isConnected():
+                        self.player.releaseAllKeys()
+                        self.setScreen(ChatScreen())
 
                     for i in range(9):
                         if symbol == getattr(window.key, '_' + str(i + 1)):
-                            self.player.inventory.selectedSlot = i
+                            self.player.inventory.selected = i
                 else:
-                    z15 = modifiers & window.key.MOD_SHIFT
-                    self.options.setOption(4, -1 if z15 else 1)
+                    shift = modifiers & window.key.MOD_SHIFT
+                    self.options.setOption(4, -1 if shift else 1)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_key_release(self, symbol, modifiers):
         try:
-            if not self.guiScreen or (self.guiScreen and self.guiScreen.allowUserInput):
+            if not self.guiScreen:
                 self.player.setKey(symbol, False)
         except Exception as e:
             print(traceback.format_exc())
@@ -274,13 +278,13 @@ class Minecraft(window.Window):
 
     def on_text(self, text):
         try:
-            if self.screenChanged:
-                self.screenChanged = False
+            if self.guiScreenChanged:
+                self.guiScreenChanged = False
                 if compat_platform != 'darwin':
                     return
 
             if self.guiScreen:
-                self.guiScreen.updateKeyboardEvents(char=text)
+                self.guiScreen.keyboardEvent(char=text)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -288,7 +292,7 @@ class Minecraft(window.Window):
     def on_text_motion(self, motion):
         try:
             if self.guiScreen:
-                self.guiScreen.updateKeyboardEvents(motion=motion)
+                self.guiScreen.keyboardEvent(motion=motion)
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -296,57 +300,58 @@ class Minecraft(window.Window):
     def on_draw(self):
         try:
             now = getMillis()
-            passedMs = now - self.__timer.lastSyncSysClock
-            j11 = getNs() // self.__timer.NS_PER_SECOND
+            passedMs = now - self.__timer.msPerTick
+            j11 = getNs() // Timer.NS_PER_SECOND
             if passedMs > 1000:
-                j13 = j11 - self.__timer.lastSyncHRClock
+                j13 = j11 - self.__timer.passedTime
                 d15 = passedMs / j13
-                self.__timer.timeSyncAdjustment += (d15 - self.__timer.timeSyncAdjustment) * 0.2
-                self.__timer.lastSyncSysClock = now
-                self.__timer.lastSyncHRClock = j11
+                self.__timer.averageFrameTime += (d15 - self.__timer.averageFrameTime) * 0.2
+                self.__timer.msPerTick = now
+                self.__timer.passedTime = j11
             elif passedMs < 0:
-                self.__timer.lastSyncSysClock = now
-                self.__timer.lastSyncHRClock = j11
+                self.__timer.msPerTick = now
+                self.__timer.passedTime = j11
 
             d48 = j11 / 1000.0
-            d15 = (d48 - self.__timer.lastHRTime) * self.__timer.timeSyncAdjustment
-            self.__timer.lastHRTime = d48
+            d15 = (d48 - self.__timer.lastTime) * self.__timer.averageFrameTime
+            self.__timer.lastTime = d48
             if d15 < 0.0:
                 d15 = 0.0
             elif d15 > 1.0:
                 d15 = 1.0
 
-            self.__timer.fps += d15 * self.__timer.timeScale * self.__timer.ticksPerSecond
-            self.__timer.ticks = int(self.__timer.fps)
-            if self.__timer.ticks > self.__timer.MAX_TICKS_PER_UPDATE:
-                self.__timer.ticks = self.__timer.MAX_TICKS_PER_UPDATE
+            self.__timer.ticks += d15 * self.__timer.fps * self.__timer.ticksPerSecond
+            self.__timer.frames = int(self.__timer.ticks)
+            if self.__timer.frames > Timer.MAX_TICKS_PER_UPDATE:
+                self.__timer.frames = Timer.MAX_TICKS_PER_UPDATE
 
-            self.__timer.fps -= float(self.__timer.ticks)
-            self.__timer.a = self.__timer.fps
+            self.__timer.ticks -= float(self.__timer.frames)
+            self.__timer.alpha = self.__timer.ticks
 
-            for i in range(self.__timer.ticks):
-                self.__ticksRan += 1
+            for i in range(self.__timer.frames):
+                self.__frames += 1
                 self.__tick()
 
             self.__checkGlError('Pre render')
 
-            self.soundPlayer.setListener(self.player, self.__timer.fps)
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            self.gamemode.render(self.__timer.alpha)
+            self.soundPlayer.setListener(self.player, self.__timer.frames)
 
-            if self.renderHelper.displayActive and not self.__active:
-                self.pauseGame()
+            if self.lighting.displayActive and not self.__active:
+                self.pauseScreen()
 
-            self.__displayActive = self.__active
+            self.lighting.displayActive = self.__active
 
-            if not self.hideGui:
+            if not self.hideScreen:
                 screenWidth = self.width * 240 // self.height
                 screenHeight = self.height * 240 // self.height
                 xMouse = self.mouseX * screenWidth // self.width
                 yMouse = screenHeight - self.mouseY * screenHeight // self.height - 1
 
                 if self.level:
-                    self.__render(self.__timer.a)
-                    self.hud.render(self.guiScreen is not None, xMouse, yMouse)
-                    self.__checkGlError('Rendered gui')
+                    self.__render(self.__timer.alpha)
+                    self.gui.render(self.__timer.alpha, self.guiScreen is not None, xMouse, yMouse)
                 else:
                     #gl.glViewport(0, 0, self.width, self.height)
                     gl.glClearColor(0.0, 0.0, 0.0, 0.0)
@@ -355,7 +360,7 @@ class Minecraft(window.Window):
                     gl.glLoadIdentity()
                     gl.glMatrixMode(gl.GL_MODELVIEW)
                     gl.glLoadIdentity()
-                    self.renderHelper.initGui()
+                    self.lighting.init()
 
                 if self.guiScreen:
                     self.guiScreen.render(xMouse, yMouse)
@@ -366,6 +371,7 @@ class Minecraft(window.Window):
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def run(self):
+        self.running = True
         self.__frustum = Frustum()
         self.__dummyChunk = Chunk(None, 0, 0, 0, 0, 0, True)
 
@@ -394,54 +400,6 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_MODELVIEW)
         self.__checkGlError('Startup')
 
-        self.font = Font('default.png', self.textures)
-
-        imgData = BufferUtils.createIntBuffer(256)
-        imgData.clear().limit(256)
-
-        #gl.glViewport(0, 0, self.width, self.height)
-
-        self.loadingScreen = ProgressListener(self)
-        self.renderHelper = RenderHelper(self)
-        self.levelIo = LevelIO(self.loadingScreen)
-        self.__levelGen = LevelGen(self.loadingScreen)
-        self.soundManager = SoundManager()
-
-        path = os.path.abspath(os.path.join(os.getcwd(), 'mc', 'resources', 'sound'))
-        for root, dirs, files in os.walk(path):
-            for fileName in files:
-                folder = os.path.basename(root)
-                if folder == 'music':
-                    self.soundManager.registerMusic(os.path.join(root, fileName), fileName)
-                else:
-                    self.soundManager.registerSound(os.path.join(root, fileName), os.path.join(folder, fileName).replace('\\', '/'))
-
-        if self.server and self.user:
-            self.level = None
-        else:
-            success = False
-
-            try:
-                if self.loadMapUser:
-                    success = self.loadLevel(self.loadMapUser, self.loadMapId)
-                else:
-                    level = self.levelIo.load(self.level, gzip.open('level.dat', 'rb'))
-                    success = level is not None
-                    if not success:
-                        level = self.levelIo.loadLegacy(self.level, gzip.open('level.dat', 'rb'))
-                        success = level is not None
-                    else:
-                        self.setLevel(level)
-            except Exception as e:
-                print(traceback.format_exc())
-                success = False
-
-            if not success:
-                self.generateLevel(1)
-
-        self.levelRenderer = LevelRenderer(self.textures)
-        self.particleEngine = ParticleEngine(self.level, self.textures)
-
         name = 'minecraft'
         home = os.path.expanduser('~') or '.'
         if 'unix' in sys.platform or 'linux' in sys.platform or \
@@ -464,10 +422,45 @@ class Minecraft(window.Window):
             raise RuntimeError(f'The working directory could not be created: {file}')
 
         self.options = Options(self, file)
-        self.player = Player(self.level, MovementInputFromOptions(self.options))
-        self.player.resetPos()
-        if self.level:
-            self.setLevel(self.level)
+        self.textures = Textures(self.options)
+        self.textures.addDynamicTexture(LavaTexture())
+        self.textures.addDynamicTexture(WaterTexture())
+        self.font = Font('default.png', self.textures)
+
+        imgData = BufferUtils.createIntBuffer(256)
+        imgData.clear().limit(256)
+
+        self.levelRenderer = LevelRenderer(self, self.textures)
+
+        #gl.glViewport(0, 0, self.width, self.height)
+
+        if self.server and self.user:
+            self.level = None
+        else:
+            success = False
+
+            try:
+                level = self.levelIo.load(gzip.open('level.dat', 'rb'))
+                success = level is not None
+                if success:
+                    self.loadLevel(level)
+            except Exception as e:
+                print(traceback.format_exc())
+                success = False
+
+        if not self.level:
+            self.generateLevel(1)
+
+        self.particleEngine = ParticleEngine(self.level, self.textures)
+
+        path = os.path.abspath(os.path.join(os.getcwd(), 'mc', 'resources', 'sound'))
+        for root, dirs, files in os.walk(path):
+            for fileName in files:
+                folder = os.path.basename(root)
+                if folder == 'music':
+                    self.soundEngine.registerMusic(os.path.join(root, fileName), fileName)
+                else:
+                    self.soundEngine.registerSound(os.path.join(root, fileName), os.path.join(folder, fileName).replace('\\', '/'))
 
         try:
             self.soundPlayer = SoundPlayer(self.options)
@@ -477,28 +470,31 @@ class Minecraft(window.Window):
             print(traceback.format_exc())
 
         self.__checkGlError('Post startup')
-        self.hud = InGameHud(self, self.width, self.height)
+        self.gui = Gui(self, self.width, self.height)
         if self.server and self.user:
-            self.connectionManager = ConnectionManager(self, self.server, self.port, self.user.name, self.user.mpPass)
+            self.networkClient = Client(self, self.server, self.port, self.user.name, self.user.mpPass)
 
         lastTime = getMillis()
         frames = -2
-        while self.running:
-            clock.tick()
-            self.dispatch_events()
-            self.dispatch_event('on_draw')
-            app.platform_event_loop.step(timeout=0.001)
-            if frames >= 0 and not self.hideGui:
-                self.flip()
+        try:
+            while self.running:
+                clock.tick()
+                self.dispatch_events()
+                self.dispatch_event('on_draw')
+                app.platform_event_loop.step(timeout=0.001)
+                if frames >= 0 and not self.hideScreen:
+                    self.flip()
 
-            frames += 1
-            while getMillis() >= lastTime + 1000:
-                self.fpsString = str(frames) + ' fps, ' + str(self.__dummyChunk.updates) + ' chunk updates'
-                self.__dummyChunk.updates = 0
-                lastTime += 1000
-                frames = 0
-
-        self.destroy()
+                frames += 1
+                while getMillis() >= lastTime + 1000:
+                    self.fpsString = str(frames) + ' fps, ' + str(self.__dummyChunk.updates) + ' chunk updates'
+                    self.__dummyChunk.updates = 0
+                    lastTime += 1000
+                    frames = 0
+        except StopGameException:
+            pass
+        finally:
+            self.destroy()
 
     def grabMouse(self):
         if self.mouseGrabbed:
@@ -507,7 +503,7 @@ class Minecraft(window.Window):
         self.mouseGrabbed = True
         self.set_exclusive_mouse(True)
         self.setScreen(None)
-        self.__prevFrameTime = self.__ticksRan + 10000
+        self.__oFrames = self.__frames + 10000
 
     def __releaseMouse(self):
         if not self.mouseGrabbed:
@@ -518,271 +514,453 @@ class Minecraft(window.Window):
         self.set_exclusive_mouse(False)
         self.set_mouse_position(self.width // 2, self.height // 2)
 
-    def pauseGame(self):
+    def pauseScreen(self):
         if not isinstance(self.guiScreen, PauseScreen):
             self.setScreen(PauseScreen())
 
-    def __clickMouse(self):
-        if self.hitResult:
-            x = self.hitResult.x
-            y = self.hitResult.y
-            z = self.hitResult.z
-            if self.editMode != 0:
-                if self.hitResult.f == 0: y -= 1
-                if self.hitResult.f == 1: y += 1
-                if self.hitResult.f == 2: z -= 1
-                if self.hitResult.f == 3: z += 1
-                if self.hitResult.f == 4: x -= 1
-                if self.hitResult.f == 5: x += 1
+    def __clickMouse(self, editMode):
+        item = self.player.inventory.getSelected()
+        if editMode == 0:
+            self.lighting.tileRenderer.rot = -1
+            self.lighting.tileRenderer.move = True
+        elif editMode == 1 and item > 0 and self.gamemode.removeResource(self.player, item):
+            self.lighting.tileRenderer.progress = 0.0
+            return
 
-            oldTile = tiles.tiles[self.level.getTile(x, y, z)]
-            if self.editMode == 0:
-                if oldTile != tiles.unbreakable or self.player.userType >= 100:
-                    changed = self.level.netSetTile(x, y, z, 0)
-                    if oldTile and changed:
-                        if self.__isMultiplayer():
-                            self.connectionManager.sendBlockChange(x, y, z, self.editMode, self.player.inventory.getSelected())
+        if not self.hitResult:
+            return
 
-                        if oldTile.soundType != SoundType.none:
-                            self.level.playSound('step.' + oldTile.soundType.name,
-                                                 x, y, z,
-                                                 (oldTile.soundType.getVolume() + 1.0) / 2.0,
-                                                 oldTile.soundType.getPitch() * 0.8)
-                            oldTile.destroy(self.level, x, y, z, self.particleEngine)
-            else:
-                tile = tiles.tiles[self.level.getTile(x, y, z)]
-                texture = self.player.inventory.getSelected()
-                aabb = tiles.tiles[texture].getTileAABB(x, y, z)
-                if (tile is None or tile == tiles.water or tile == tiles.calmWater or tile == tiles.lava or tile == tiles.calmLava) and \
-                   (aabb is None or (False if self.player.bb.intersects(aabb) else self.level.isFree(aabb))):
-                    if self.__isMultiplayer():
-                        self.connectionManager.sendBlockChange(x, y, z, self.editMode, texture)
+        if self.hitResult.typeOfHit == 1:
+            self.hitResult.entity.hurt(self.player, 4)
+            return
+        elif self.hitResult.typeOfHit != 0:
+            return
 
-                    self.level.netSetTile(x, y, z, self.player.inventory.getSelected())
-                    tiles.tiles[texture].onBlockAdded(self.level, x, y, z)
+        x = self.hitResult.x
+        y = self.hitResult.y
+        z = self.hitResult.z
+        if editMode != 0:
+            if self.hitResult.sideHit == 0: y -= 1
+            if self.hitResult.sideHit == 1: y += 1
+            if self.hitResult.sideHit == 2: z -= 1
+            if self.hitResult.sideHit == 3: z += 1
+            if self.hitResult.sideHit == 4: x -= 1
+            if self.hitResult.sideHit == 5: x += 1
+
+        oldTile = tiles.tiles[self.level.getTile(x, y, z)]
+        if editMode == 0:
+            if oldTile != tiles.unbreakable or self.player.userType >= 100:
+                self.gamemode.startDestroyBlock(x, y, z)
+                return
+        else:
+            texture = self.player.inventory.getSelected()
+            if texture <= 0:
+                return
+
+            tile = tiles.tiles[self.level.getTile(x, y, z)]
+            if tile and tile != tiles.water and tile != tiles.calmWater and tile != tiles.lava and tile != tiles.calmLava:
+                return
+
+            aabb = tiles.tiles[texture].getTileAABB(x, y, z)
+            if aabb and (self.player.bb.intersectsBB(aabb) or not self.level.isFree(aabb)):
+                return
+            elif not self.gamemode.consumeBlock(texture):
+                return
+
+            if self.isOnlineClient():
+                self.networkClient.sendTileUpdated(x, y, z, editMode, texture)
+
+            self.level.netSetTile(x, y, z, texture)
+            self.lighting.tileRenderer.progress = 0.0
+            tiles.tiles[texture].onPlace(self.level, x, y, z)
 
     def __tick(self):
         if self.soundPlayer:
             if self.options.music:
-                if getMillis() > self.soundManager.lastMusic and \
-                   self.soundManager.playMusic(self.soundPlayer, 'calm'):
-                    self.soundManager.lastMusic = getMillis() + math.floor(self.soundManager.random.random() * 900000) + 300000
+                if getMillis() > self.soundEngine.lastMusic and \
+                   self.soundEngine.playMusic(self.soundPlayer, 'calm'):
+                    self.soundEngine.lastMusic = getMillis() + math.floor(self.soundEngine.random.random() * 900000) + 300000
             else:
-                self.soundManager.stopMusic()
+                self.soundEngine.stopMusic()
 
-        for message in self.hud.messages.copy():
+        self.gui.tickCounter += 1
+        for message in self.gui.messages.copy():
             message.counter += 1
 
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.getTextureId('terrain.png'))
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('terrain.png'))
 
         for texture in self.textures.textureList:
-            texture.onTick()
-            self.textures.textureBuffer.clear()
-            self.textures.textureBuffer.put(texture.imageData)
-            self.textures.textureBuffer.position(0).limit(len(texture.imageData))
-            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, texture.iconIndex % 16 << 4,
-                               texture.iconIndex // 16 << 4, 16, 16,
-                               gl.GL_RGBA, gl.GL_UNSIGNED_BYTE,
-                               self.textures.textureBuffer)
+            texture.anaglyph = self.options.anaglyph3d
+            texture.tick()
+            self.textures.pixels.clear()
+            self.textures.pixels.put(texture.pixels)
+            self.textures.pixels.position(0).limit(len(texture.pixels))
+            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, texture.tex % 16 << 4,
+                               texture.tex // 16 << 4, 16, 16, gl.GL_RGBA,
+                               gl.GL_UNSIGNED_BYTE, self.textures.pixels)
 
-        if self.connectionManager and not isinstance(self.guiScreen, ErrorScreen):
-            if not self.connectionManager.isConnected():
+        if self.networkClient and not isinstance(self.guiScreen, ErrorScreen):
+            if not self.networkClient.isConnected():
                 self.loadingScreen.beginLevelLoading('Connecting..')
                 self.loadingScreen.setLoadingProgress()
             else:
-                if self.connectionManager.processData:
-                    if self.connectionManager.connection.connected:
+                if self.networkClient.processData:
+                    if self.networkClient.serverConnection.connected:
                         try:
-                            self.connectionManager.connection.processData()
+                            self.networkClient.serverConnection.processData()
                         except Exception as e:
                             self.setScreen(ErrorScreen('Disconnected!', 'You\'ve lost connection to the server'))
-                            self.hideGui = False
+                            self.hideScreen = False
                             print(traceback.format_exc())
-                            self.connectionManager.connection.disconnect()
-                            self.connectionManager = None
+                            self.networkClient.serverConnection.disconnect()
+                            self.networkClient = None
 
-                if self.connectionManager and self.connectionManager.connected:
+                if self.networkClient and self.networkClient.connected:
                     i10 = int(self.player.x * 32.0)
                     i4 = int(self.player.y * 32.0)
                     i5 = int(self.player.z * 32.0)
                     i6 = int(self.player.yRot * 256.0 / 360.0) & 255
                     i9 = int(self.player.xRot * 256.0 / 360.0) & 255
-                    self.connectionManager.connection.sendPacket(Packets.PLAYER_TELEPORT, [-1, i10, i4, i5, i6, i9])
+                    self.networkClient.serverConnection.sendPacket(Packets.PLAYER_TELEPORT, [-1, i10, i4, i5, i6, i9])
 
-        if self.guiScreen:
-            self.__prevFrameTime = self.__ticksRan + 10000
-            self.guiScreen.tick()
+        if not self.guiScreen and self.player.health <= 0:
+            self.setScreen(None)
+        if not self.guiScreen:
+            if self.msh[window.mouse.LEFT] and float(self.__frames - self.__oFrames) >= self.__timer.ticksPerSecond / 4.0 and self.mouseGrabbed:
+                self.__clickMouse(0)
+                self.__oFrames = self.__frames
+            elif self.msh[window.mouse.RIGHT] and float(self.__frames - self.__oFrames) >= self.__timer.ticksPerSecond / 4.0 and self.mouseGrabbed:
+                self.__clickMouse(1)
+                self.__oFrames = self.__frames
+
+            leftHeld = not self.guiScreen and self.msh[window.mouse.LEFT] and self.mouseGrabbed
+            if leftHeld and self.hitResult and self.hitResult.typeOfHit == 0:
+                x = self.hitResult.x
+                y = self.hitResult.y
+                z = self.hitResult.z
+                self.gamemode.stopDestroyBlock(x, y, z, self.hitResult.sideHit)
+            else:
+                self.gamemode.tick()
         else:
-            if self.msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.mouseGrabbed:
-                self.__clickMouse()
-                self.__prevFrameTime = self.__ticksRan
+            self.__oFrames = self.__frames + 10000
+            self.guiScreen.tick()
 
         if self.level:
+            tileRenderer = self.lighting.tileRenderer
+            tileRenderer.oProgress = tileRenderer.progress
+            if tileRenderer.move:
+                tileRenderer.rot += 1
+                if tileRenderer.rot == 7:
+                    tileRenderer.rot = 0
+                    tileRenderer.move = False
+
+            tile = self.player.inventory.getSelected()
+            block = None
+            if tile > 0:
+                block = tiles.tiles[tile]
+
+            decrease = 1.0 if block == tileRenderer.tile else 0.0
+            progress = decrease - tileRenderer.progress
+            if progress > 0.4:
+                progress = 0.4
+
+            tileRenderer.progress += progress
+            if tileRenderer.progress < 0.1:
+                tileRenderer.tile = block
+
             self.levelRenderer.cloudTickCounter += 1
             self.level.tickEntities()
-            if not self.__isMultiplayer():
+            if not self.isOnlineClient():
                 self.level.tick()
 
             self.particleEngine.tick()
-            self.player.tick()
 
-    def __isMultiplayer(self):
-        return self.connectionManager is not None
+    def isOnlineClient(self):
+        return self.networkClient is not None
 
-    def __orientCamera(self, a):
-        gl.glTranslatef(0.0, 0.0, -0.3)
-        gl.glRotatef(self.player.xRotO + (self.player.xRot - self.player.xRotO) * a, 1.0, 0.0, 0.0)
-        gl.glRotatef(self.player.yRotO + (self.player.yRot - self.player.yRotO) * a, 0.0, 1.0, 0.0)
+    def __orientCamera(self, alpha):
+        gl.glTranslatef(0.0, 0.0, -0.1)
+        gl.glRotatef(self.player.xRotO + (self.player.xRot - self.player.xRotO) * alpha, 1.0, 0.0, 0.0)
+        gl.glRotatef(self.player.yRotO + (self.player.yRot - self.player.yRotO) * alpha, 0.0, 1.0, 0.0)
 
-        x = self.player.xo + (self.player.x - self.player.xo) * a
-        y = self.player.yo + (self.player.y - self.player.yo) * a
-        z = self.player.zo + (self.player.z - self.player.zo) * a
+        x = self.player.xo + (self.player.x - self.player.xo) * alpha
+        y = self.player.yo + (self.player.y - self.player.yo) * alpha
+        z = self.player.zo + (self.player.z - self.player.zo) * alpha
         gl.glTranslatef(-x, -y, -z)
 
-    def __setupCamera(self, a):
+    def __setupCamera(self, i, alpha):
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gluPerspective(70.0, self.width / self.height, 0.05, self.renderHelper.renderDistance)
+        if self.options.anaglyph3d:
+            gl.glTranslatef(-((i << 1) - 1) * 0.07, 0.0, 0.0)
+
+        fov = 70.0
+        if self.player.health <= 0:
+            t = self.player.deathTime + alpha
+            fov /= (1.0 - 500.0 / (t + 500.0)) * 2.0 + 1.0
+
+        gluPerspective(fov, self.width / self.height, 0.05, self.lighting.renderDistance)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
-        self.__orientCamera(a)
 
-    def __pick(self, a):
-        xRot = self.player.xRotO + (self.player.xRot - self.player.xRotO) * a
-        yRot = self.player.yRotO + (self.player.yRot - self.player.yRotO) * a
-        x = self.player.xo + (self.player.x - self.player.xo) * a
-        y = self.player.yo + (self.player.y - self.player.yo) * a
-        z = self.player.zo + (self.player.z - self.player.zo) * a
+        if self.options.anaglyph3d:
+            gl.glTranslatef(((i << 1) - 1) * 0.1, 0.0, 0.0)
+
+        self.lighting.renderHurtFrames(alpha)
+        if self.options.bobView:
+            self.lighting.cameraBob(alpha)
+
+        self.__orientCamera(alpha)
+
+    def __pick(self, alpha):
+        xRot = self.player.xRotO + (self.player.xRot - self.player.xRotO) * alpha
+        yRot = self.player.yRotO + (self.player.yRot - self.player.yRotO) * alpha
+        x = self.player.xo + (self.player.x - self.player.xo) * alpha
+        y = self.player.yo + (self.player.y - self.player.yo) * alpha
+        z = self.player.zo + (self.player.z - self.player.zo) * alpha
 
         vec1 = Vec3(x, y, z)
         y1 = math.cos((-yRot) * math.pi / 180.0 + math.pi)
         y2 = math.sin((-yRot) * math.pi / 180.0 + math.pi)
         x1 = math.cos((-xRot) * math.pi / 180.0)
         x2 = math.sin((-xRot) * math.pi / 180.0)
-        x = (y2 * x1) * 5.0
-        y = x2 * 5.0
-        z = (y1 * x1) * 5.0
-        vec2 = Vec3(vec1.x + x, vec1.y + y, vec1.z + z)
+        xy = y2 * x1
+        y1 *= x1
+        d = self.gamemode.getPickRange()
+        vec2 = vec1.addVector(xy * d, x2 * d, y1 * d)
         self.hitResult = self.level.clip(vec1, vec2)
 
-    def __render(self, a):
-        #gl.glViewport(0, 0, self.width, self.height)
-
-        f4 = pow(1.0 / (4 - self.options.renderDistance), 0.25)
-        self.renderHelper.fogColorRed = 0.6 * (1.0 - f4) + f4
-        self.renderHelper.fogColorGreen = 0.8 * (1.0 - f4) + f4
-        self.renderHelper.fogColorBlue = 1.0 * (1.0 - f4) + f4
-        self.renderHelper.fogColorRed *= self.renderHelper.fogColorMultiplier
-        self.renderHelper.fogColorGreen *= self.renderHelper.fogColorMultiplier
-        self.renderHelper.fogColorBlue *= self.renderHelper.fogColorMultiplier
-        tile = tiles.tiles[self.level.getTile(int(self.player.x), int(self.player.y + 0.12), int(self.player.z))]
-        if tile and tile.getLiquidType() != Liquid.none:
-            liquid = tile.getLiquidType()
-            if liquid == Liquid.water:
-                self.renderHelper.fogColorRed = 0.02
-                self.renderHelper.fogColorGreen = 0.02
-                self.renderHelper.fogColorBlue = 0.2
-            elif liquid == Liquid.lava:
-                self.renderHelper.fogColorRed = 0.6
-                self.renderHelper.fogColorGreen = 0.1
-                self.renderHelper.fogColorBlue = 0.0
-
-        gl.glClearColor(self.renderHelper.fogColorRed, self.renderHelper.fogColorGreen, self.renderHelper.fogColorBlue, 0.0)
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-
-        self.__pick(a)
-
-        self.renderHelper.fogColorMultiplier = 1.0
-        self.renderHelper.renderDistance = float(512 >> (self.options.renderDistance << 1))
-        self.__setupCamera(a)
-
-        gl.glEnable(gl.GL_CULL_FACE)
-
-        self.__frustum.calculateFrustum()
-        for chunk in self.levelRenderer.sortedChunks:
-            chunk.isInFrustum(self.__frustum)
-
-        for chunk in self.levelRenderer.dirtyChunks.copy():
-            chunk.rebuild()
-            self.levelRenderer.dirtyChunks.remove(chunk)
-
-        z21 = self.level.isSolid(self.player.x, self.player.y, self.player.z, 0.1)
-        self.renderHelper.setupFog()
-        gl.glEnable(gl.GL_FOG)
-        self.levelRenderer.render(self.player, 0)
-        if z21:
-            x = int(self.player.x)
-            y = int(self.player.y)
-            z = int(self.player.z)
-
-            for xx in range(x - 1, x + 2):
-                for yy in range(y - 1, y + 2):
-                    for zz in range(z - 1, z + 2):
-                        self.levelRenderer.render(xx, yy, zz)
-
-        self.renderHelper.toggleLight(True)
-        self.levelRenderer.renderEntities(self.__frustum, a)
-        self.renderHelper.toggleLight(False)
-        self.renderHelper.setupFog()
-        self.particleEngine.render(self.player, a)
-        gl.glCallList(self.levelRenderer.surroundLists)
-        gl.glDisable(gl.GL_LIGHTING)
-        self.renderHelper.setupFog()
-        self.levelRenderer.renderClouds(a)
-        self.renderHelper.setupFog()
-        gl.glEnable(gl.GL_LIGHTING)
-
+        vec = Vec3(x, y, z)
         if self.hitResult:
+            x = vec.x - self.hitResult.vec.x
+            y = vec.y - self.hitResult.vec.y
+            z = vec.z - self.hitResult.vec.z
+            d = math.sqrt(x * x + y * y + z * z)
+
+        entities = self.level.blockMap.getEntitiesWithinAABBExcludingEntity(self.player, self.player.bb.expand(xy * d, x2 * d, y1 * d))
+        for entity in entities:
+            if not entity.isPickable():
+                continue
+
+            axisAlignedBB = entity.bb.grow(0.1, 0.1, 0.1)
+            di = 0.0
+            while di < d:
+                if not axisAlignedBB.contains(vec.addVector(xy * di, x2 * di, y1 * di)):
+                    di += 0.05
+                    continue
+
+                d = di
+                self.hitResult = HitResult(entity)
+                di += 0.05
+                break
+
+    def __render(self, alpha):
+        for i in range(2):
+            if self.options.anaglyph3d:
+                if i == 0:
+                    gl.glColorMask(False, True, True, False)
+                else:
+                    gl.glColorMask(True, False, False, False)
+
+            #gl.glViewport(0, 0, self.width, self.height)
+
+            f4 = 1.0 - pow(1.0 / (4 - self.options.viewDistance), 0.25)
+            x = (self.level.skyColor >> 16 & 0xFF) / 255.0
+            y = (self.level.skyColor >> 8 & 0xFF) / 255.0
+            z = (self.level.skyColor & 0xFF) / 255.0
+            self.lighting.fogRed = x
+            self.lighting.fogGreen = y
+            self.lighting.fogBlue = z
+            self.lighting.fogRed += (x - self.lighting.fogRed) * f4
+            self.lighting.fogGreen += (y - self.lighting.fogGreen) * f4
+            self.lighting.fogBlue += (z - self.lighting.fogBlue) * f4
+            self.lighting.fogRed *= self.lighting.fogColorMultiplier
+            self.lighting.fogGreen *= self.lighting.fogColorMultiplier
+            self.lighting.fogBlue *= self.lighting.fogColorMultiplier
+            tile = tiles.tiles[self.level.getTile(int(self.player.x), int(self.player.y + 0.12), int(self.player.z))]
+            if tile and tile.getLiquidType() != Liquid.none:
+                liquid = tile.getLiquidType()
+                if liquid == Liquid.water:
+                    self.lighting.fogRed = 0.02
+                    self.lighting.fogGreen = 0.02
+                    self.lighting.fogBlue = 0.2
+                elif liquid == Liquid.lava:
+                    self.lighting.fogRed = 0.6
+                    self.lighting.fogGreen = 0.1
+                    self.lighting.fogBlue = 0.0
+
+            if self.options.anaglyph3d:
+                x = (self.lighting.fogRed * 30.0 + self.lighting.fogGreen * 59.0 + self.lighting.fogBlue * 11.0) / 100.0
+                y = (self.lighting.fogRed * 30.0 + self.lighting.fogGreen * 70.0) / 100.0
+                z = (self.lighting.fogRed * 30.0 + self.lighting.fogBlue * 70.0) / 100.0
+                self.lighting.fogRed = x
+                self.lighting.fogGreen = y
+                self.lighting.fogBlue = z
+
+            gl.glClearColor(self.lighting.fogRed, self.lighting.fogGreen, self.lighting.fogBlue, 0.0)
+            gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+            self.lighting.fogColorMultiplier = 1.0
+
+            gl.glEnable(gl.GL_CULL_FACE)
+            self.lighting.renderDistance = float(512 >> (self.options.viewDistance << 1))
+
+            self.__setupCamera(i, alpha)
+            self.__pick(alpha)
+
+            self.__frustum.calculateFrustum()
+            for chunk in self.levelRenderer.chunks:
+                chunk.updateInFrustum(self.__frustum)
+
+            for chunk in self.levelRenderer.allDirtyChunks.copy():
+                chunk.rebuild(False)
+                self.levelRenderer.allDirtyChunks.remove(chunk)
+
+            self.lighting.setupFog()
+            gl.glEnable(gl.GL_FOG)
+            self.levelRenderer.render(self.player, 0)
+            if self.level.isSolid(self.player.x, self.player.y, self.player.z, 0.1):
+                x = int(self.player.x)
+                y = int(self.player.y)
+                z = int(self.player.z)
+
+                for xx in range(x - 1, x + 2):
+                    for yy in range(y - 1, y + 2):
+                        for zz in range(z - 1, z + 2):
+                            self.levelRenderer.renderBasicTile(xx, yy, zz)
+
+            self.lighting.toggleLight(True)
+            self.level.blockMap.render(self.__frustum, self.levelRenderer.textures, alpha)
+            self.lighting.toggleLight(False)
+            self.lighting.setupFog()
+            self.particleEngine.render(self.player, alpha)
+            gl.glCallList(self.levelRenderer.surroundLists)
             gl.glDisable(gl.GL_LIGHTING)
-            gl.glDisable(gl.GL_ALPHA_TEST)
-            self.levelRenderer.renderHit(self.player, self.hitResult, self.editMode, self.player.inventory.getSelected())
-            LevelRenderer.renderHitOutline(self.hitResult, self.editMode)
-            gl.glEnable(gl.GL_ALPHA_TEST)
+            self.lighting.setupFog()
+            self.levelRenderer.renderClouds(alpha)
+            self.lighting.setupFog()
             gl.glEnable(gl.GL_LIGHTING)
 
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-        self.renderHelper.setupFog()
-        gl.glCallList(self.levelRenderer.surroundLists + 1)
+            if self.hitResult:
+                gl.glDisable(gl.GL_LIGHTING)
+                gl.glDisable(gl.GL_ALPHA_TEST)
+                self.levelRenderer.renderHit(self.hitResult, 0, self.player.inventory.getSelected())
+                gl.glEnable(gl.GL_BLEND)
+                gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+                gl.glColor4f(0.0, 0.0, 0.0, 0.4)
+                gl.glLineWidth(2.0)
+                gl.glDepthMask(False)
+                AABB(self.hitResult.x,
+                     self.hitResult.y,
+                     self.hitResult.z,
+                     self.hitResult.x + 1,
+                     self.hitResult.y + 1,
+                     self.hitResult.z + 1).grow(0.002, 0.002, 0.002).render()
+                gl.glDepthMask(True)
+                gl.glDisable(gl.GL_BLEND)
+                gl.glEnable(gl.GL_ALPHA_TEST)
+                gl.glEnable(gl.GL_LIGHTING)
 
-        gl.glEnable(gl.GL_BLEND)
-        gl.glColorMask(False, False, False, False)
-        i20 = self.levelRenderer.render(self.player, 1)
-        gl.glColorMask(True, True, True, True)
-        if i20 > 0:
-            gl.glEnable(gl.GL_TEXTURE_2D)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.getTextureId('terrain.png'))
-            gl.glCallLists(self.levelRenderer.dummyBuffer.capacity(), gl.GL_INT, self.levelRenderer.dummyBuffer)
+            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+            self.lighting.setupFog()
+            gl.glCallList(self.levelRenderer.surroundLists + 1)
+            gl.glEnable(gl.GL_BLEND)
+            gl.glColorMask(False, False, False, False)
+            remaining = self.levelRenderer.render(self.player, 1)
+            gl.glColorMask(True, True, True, True)
+            if self.options.anaglyph3d:
+                if i == 0:
+                    gl.glColorMask(False, True, True, False)
+                else:
+                    gl.glColorMask(True, False, False, False)
+
+            if remaining > 0:
+                gl.glEnable(gl.GL_TEXTURE_2D)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.loadTexture('terrain.png'))
+                gl.glCallLists(self.levelRenderer.ib.capacity(), gl.GL_INT, self.levelRenderer.ib)
+                gl.glDisable(gl.GL_TEXTURE_2D)
+
+            gl.glDepthMask(True)
+            gl.glDisable(gl.GL_BLEND)
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glDisable(gl.GL_FOG)
             gl.glDisable(gl.GL_TEXTURE_2D)
+            gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+            gl.glLoadIdentity()
+            if self.options.anaglyph3d:
+                gl.glTranslatef(((i << 1) - 1) * 0.1, 0.0, 0.0)
 
-        gl.glDepthMask(True)
-        gl.glDisable(gl.GL_BLEND)
-        gl.glDisable(gl.GL_LIGHTING)
-        gl.glDisable(gl.GL_FOG)
-        gl.glDisable(gl.GL_TEXTURE_2D)
-        if self.hitResult:
-            gl.glDepthFunc(gl.GL_LESS)
-            gl.glDisable(gl.GL_ALPHA_TEST)
-            self.levelRenderer.renderHit(self.player, self.hitResult, self.editMode, self.player.inventory.getSelected())
-            LevelRenderer.renderHitOutline(self.hitResult, self.editMode)
-            gl.glEnable(gl.GL_ALPHA_TEST)
-            gl.glDepthFunc(gl.GL_LEQUAL)
+            self.lighting.renderHurtFrames(alpha)
+            if self.options.bobView:
+                self.lighting.cameraBob(alpha)
+
+            tileRenderer = self.lighting.tileRenderer
+            progress = tileRenderer.oProgress + (tileRenderer.progress - tileRenderer.oProgress) * alpha
+            gl.glPushMatrix()
+            gl.glRotatef(self.player.xRotO + (self.player.xRot - self.player.xRotO) * alpha, 1.0, 0.0, 0.0)
+            gl.glRotatef(self.player.yRotO + (self.player.yRot - self.player.yRotO) * alpha, 0.0, 1.0, 0.0)
+            self.lighting.toggleLight(True)
+            gl.glPopMatrix()
+            gl.glPushMatrix()
+            if tileRenderer.move:
+                if tileRenderer.rot == -1:
+                    tileRenderer.rot += 1
+
+                slot = (tileRenderer.rot + alpha) / 7.0
+                f20 = math.sin(slot * math.pi)
+                f3 = math.sin(math.sqrt(slot) * math.pi)
+                gl.glTranslatef(-f3 * 0.4, math.sin(math.sqrt(slot) * math.pi * 2.0) * 0.2, -f20 * 0.2)
+
+            gl.glTranslatef(0.7 * 0.8, -0.65 * 0.8 - (1.0 - progress) * 0.6, -0.9 * 0.8)
+            gl.glRotatef(45.0, 0.0, 1.0, 0.0)
+            gl.glEnable(gl.GL_NORMALIZE)
+            if tileRenderer.move:
+                slot = (tileRenderer.rot + alpha) / 7.0
+                f20 = math.sin((slot * slot) * math.pi)
+                f3 = math.sin(math.sqrt(slot) * math.pi)
+                gl.glRotatef(f3 * 80.0, 0.0, 1.0, 0.0)
+                gl.glRotatef(-f20 * 20.0, 1.0, 0.0, 0.0)
+
+            brightness = self.level.getBrightness(int(self.player.x), int(self.player.y), int(self.player.z))
+            gl.glColor4f(brightness, brightness, brightness, 1.0)
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            t = tesselator
+            if tileRenderer.tile:
+                gl.glScalef(0.4, 0.4, 0.4)
+                gl.glTranslatef(-0.5, -0.5, -0.5)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('terrain.png'))
+                tileRenderer.tile.renderGuiTile(t)
+            else:
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('char.png'))
+                gl.glScalef(1.0, -1.0, -1.0)
+                gl.glTranslatef(0.0, 0.2, 0.0)
+                gl.glRotatef(-120.0, 0.0, 0.0, 1.0)
+                gl.glScalef(1.0, 1.0, 1.0)
+                cube = self.player.getModel().leftArm
+                if not cube.isHidden:
+                    if not cube.compiled:
+                        cube.translateTo(0.0625)
+
+                    gl.glCallList(cube.list)
+
+            gl.glDisable(gl.GL_NORMALIZE)
+            gl.glDisable(gl.GL_TEXTURE_2D)
+            gl.glPopMatrix()
+            self.lighting.toggleLight(False)
+            if not self.options.anaglyph3d:
+                break
+
+        gl.glColorMask(True, True, True, False)
 
     def generateLevel(self, i):
         name = self.user.name if self.user else 'anonymous'
-        self.setLevel(self.__levelGen.generateLevel(name, 128 << i, 128 << i, 64))
+        self.loadLevel(LevelGen(self.loadingScreen).generateLevel(name,
+                                                                  128 << i,
+                                                                  128 << i, 64))
 
-    def saveLevel(self, i, name):
+    def saveLevel(self):
         return self.levelIo.save(self.level, gzip.open('level.dat', 'wb'))
 
-    def loadLevel(self, name, i):
-        level = self.levelIo.load(self.level, gzip.open('level.dat', 'rb'))
-        if not level:
-            return False
-        else:
-            self.setLevel(level)
-            return True
-
-    def setLevel(self, level):
+    def loadLevel(self, level):
         self.level = level
         if level:
             level.rendererContext = self
@@ -791,11 +969,12 @@ class Minecraft(window.Window):
             self.levelRenderer.setLevel(level)
 
         if self.particleEngine:
+            self.level.particleEngine = self.particleEngine
             self.particleEngine.particles.clear()
 
-        if self.player:
-            self.player.setLevel(level)
-            self.player.resetPos()
+        self.player = Player(level, KeyboardInput(self.options))
+        self.player.resetPos()
+        level.player = self.player
 
         gc.collect()
 
@@ -815,7 +994,7 @@ if __name__ == '__main__':
         elif arg == '-mppass':
             mpPass = sys.argv[i + 1]
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft 0.0.23a_01')
+    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft')
     game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))

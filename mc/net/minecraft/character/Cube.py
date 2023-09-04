@@ -4,28 +4,41 @@ from mc.net.minecraft.character.Vec3 import Vec3
 from pyglet import gl
 
 class Cube:
-    __vertices = []
-    __polygons = []
-    __x = 0.0
-    __y = 0.0
-    __z = 0.0
-    xRot = 0.0
-    yRot = 0.0
-    zRot = 0.0
-    __compiled = False
-    __list = 0
 
     def __init__(self, xTexOffs, yTexOffs):
+        self.vertices = []
+        self.polygons = []
         self.__xTexOffs = xTexOffs
         self.__yTexOffs = yTexOffs
+        self.__x = 0.0
+        self.__y = 0.0
+        self.__z = 0.0
+        self.xRot = 0.0
+        self.yRot = 0.0
+        self.zRot = 0.0
+        self.compiled = False
+        self.list = 0
+        self.mirror = False
+        self.showModel = True
+        self.isHidden = False
 
-    def addBox(self, x0, y0, z0, w, h, d):
-        self.__vertices = [None] * 8
-        self.__polygons = [None] * 6
+    def addBox(self, x0, y0, z0, w, h, d, f):
+        self.vertices = [None] * 8
+        self.polygons = [None] * 6
 
         x1 = x0 + w
         y1 = y0 + h
         z1 = z0 + d
+        x0 -= f
+        y0 -= f
+        z0 -= f
+        x1 += f
+        y1 += f
+        z1 += f
+        if self.mirror:
+            f = x1
+            x1 = x0
+            x0 = f
 
         u0 = Vertex.fromPos(x0, y0, z0, 0.0, 0.0)
         u1 = Vertex.fromPos(x1, y0, z0, 0.0, 8.0)
@@ -37,56 +50,92 @@ class Cube:
         l2 = Vertex.fromPos(x1, y1, z1, 8.0, 8.0)
         l3 = Vertex.fromPos(x0, y1, z1, 8.0, 0.0)
 
-        self.__vertices[0] = u0
-        self.__vertices[1] = u1
-        self.__vertices[2] = u2
-        self.__vertices[3] = u3
-        self.__vertices[4] = l0
-        self.__vertices[5] = l1
-        self.__vertices[6] = l2
-        self.__vertices[7] = l3
+        self.vertices[0] = u0
+        self.vertices[1] = u1
+        self.vertices[2] = u2
+        self.vertices[3] = u3
+        self.vertices[4] = l0
+        self.vertices[5] = l1
+        self.vertices[6] = l2
+        self.vertices[7] = l3
 
-        self.__polygons[0] = Polygon([l1, u1, u2, l2], self.__xTexOffs + d + w, self.__yTexOffs + d, self.__xTexOffs + d + w + d, self.__yTexOffs + d + h)
-        self.__polygons[1] = Polygon([u0, l0, l3, u3], self.__xTexOffs + 0, self.__yTexOffs + d, self.__xTexOffs + d, self.__yTexOffs + d + h)
+        self.polygons[0] = Polygon([l1, u1, u2, l2],
+                                   self.__xTexOffs + d + w,
+                                   self.__yTexOffs + d,
+                                   self.__xTexOffs + d + w + d,
+                                   self.__yTexOffs + d + h)
+        self.polygons[1] = Polygon([u0, l0, l3, u3],
+                                   self.__xTexOffs + 0,
+                                   self.__yTexOffs + d,
+                                   self.__xTexOffs + d,
+                                   self.__yTexOffs + d + h)
+        self.polygons[2] = Polygon([l1, l0, u0, u1],
+                                   self.__xTexOffs + d,
+                                   self.__yTexOffs + 0,
+                                   self.__xTexOffs + d + w,
+                                   self.__yTexOffs + d)
+        self.polygons[3] = Polygon([u2, u3, l3, l2],
+                                   self.__xTexOffs + d + w,
+                                   self.__yTexOffs + 0,
+                                   self.__xTexOffs + d + w + w,
+                                   self.__yTexOffs + d)
+        self.polygons[4] = Polygon([u1, u0, u3, u2],
+                                   self.__xTexOffs + d,
+                                   self.__yTexOffs + d,
+                                   self.__xTexOffs + d + w,
+                                   self.__yTexOffs + d + h)
+        self.polygons[5] = Polygon([l0, l1, l2, l3],
+                                   self.__xTexOffs + d + w + d,
+                                   self.__yTexOffs + d,
+                                   self.__xTexOffs + d + w + d + w,
+                                   self.__yTexOffs + d + h)
 
-        self.__polygons[2] = Polygon([l1, l0, u0, u1], self.__xTexOffs + d, self.__yTexOffs + 0, self.__xTexOffs + d + w, self.__yTexOffs + d)
-        self.__polygons[3] = Polygon([u2, u3, l3, l2], self.__xTexOffs + d + w, self.__yTexOffs + 0, self.__xTexOffs + d + w + w, self.__yTexOffs + d)
+        if self.mirror:
+            for face in self.polygons:
+                vertexPos = []
+                for i in range(len(face.vertices)):
+                    vertexPos.append(face.vertices[len(face.vertices) - i - 1])
 
-        self.__polygons[4] = Polygon([u1, u0, u3, u2], self.__xTexOffs + d, self.__yTexOffs + d, self.__xTexOffs + d + w, self.__yTexOffs + d + h)
-        self.__polygons[5] = Polygon([l0, l1, l2, l3], self.__xTexOffs + d + w + d, self.__yTexOffs + d, self.__xTexOffs + d + w + d + w, self.__yTexOffs + d + h)
+                face.vertices = vertexPos
 
     def setPos(self, x, y, z):
         self.__x = x
         self.__y = y
-        self.__z = 0.0
+        self.__z = z
 
-    def render(self, a):
-        if not self.__compiled:
-            self.__list = gl.glGenLists(1)
-            gl.glNewList(self.__list, gl.GL_COMPILE)
-            gl.glBegin(gl.GL_QUADS)
-            for polygon in self.__polygons:
-                vec37 = polygon.vertices[1].pos.subtract(polygon.vertices[0].pos).normalize()
-                vec38 = polygon.vertices[1].pos.subtract(polygon.vertices[2].pos).normalize()
-                vec37 = Vec3(vec37.y * vec38.z - vec37.z * vec38.y,
-                             vec37.z * vec38.x - vec37.x * vec38.z,
-                             vec37.x * vec38.y - vec37.y * vec38.x).normalize()
-                gl.glNormal3f(vec37.x, vec37.y, vec37.z)
-
-                for i in range(4):
-                    v = polygon.vertices[i]
-                    gl.glTexCoord2f(v.u / 64.0, v.v / 32.0)
-                    gl.glVertex3f(v.pos.x * a, v.pos.y * a, v.pos.z * a)
-            gl.glEnd()
-            gl.glEndList()
-            self.__compiled = True
+    def render(self, translation):
+        if self.isHidden:
+            return
+        if not self.showModel:
+            return
+        if not self.compiled:
+            self.translateTo(translation)
 
         c = 57.29578
         gl.glPushMatrix()
-        gl.glTranslatef(self.__x * a, self.__y * a, self.__z * a)
+        gl.glTranslatef(self.__x * translation, self.__y * translation, self.__z * translation)
         gl.glRotatef(self.zRot * c, 0.0, 0.0, 1.0)
         gl.glRotatef(self.yRot * c, 0.0, 1.0, 0.0)
         gl.glRotatef(self.xRot * c, 1.0, 0.0, 0.0)
-
-        gl.glCallList(self.__list)
+        gl.glCallList(self.list)
         gl.glPopMatrix()
+
+    def translateTo(self, translation):
+        self.list = gl.glGenLists(1)
+        gl.glNewList(self.list, gl.GL_COMPILE)
+        gl.glBegin(gl.GL_QUADS)
+        for face in self.polygons:
+            vec1 = face.vertices[1].pos.subtract(face.vertices[0].pos).normalize()
+            vec2 = face.vertices[1].pos.subtract(face.vertices[2].pos).normalize()
+            vec = Vec3(vec1.y * vec2.z - vec1.z * vec2.y,
+                       vec1.z * vec2.x - vec1.x * vec2.z,
+                       vec1.x * vec2.y - vec1.y * vec2.x).normalize()
+            gl.glNormal3f(vec.x, vec.y, vec.z)
+            for i in range(4):
+                v = face.vertices[i]
+                gl.glTexCoord2f(v.u, v.v)
+                gl.glVertex3f(v.pos.x * translation, v.pos.y * translation, v.pos.z * translation)
+
+        gl.glEnd()
+        gl.glEndList()
+        self.compiled = True

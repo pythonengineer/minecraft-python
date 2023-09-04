@@ -1,39 +1,32 @@
 # cython: language_level=3
 
 from mc.net.minecraft.level.tile.Tile cimport Tile
-from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.level.liquid.Liquid cimport Liquid
 
 cdef class FallingTile(Tile):
 
-    def onBlockAdded(self, Level level, int x, int y, int z):
+    def onPlace(self, level, int x, int y, int z):
         self.__tryToFall(level, x, y, z)
 
-    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *:
+    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *:
         self.__tryToFall(level, x, y, z)
 
-    cdef __tryToFall(self, Level level, int x, int y, int z):
-        cdef int lastY, nextY, tile
-        cdef bint isFallable
+    cdef __tryToFall(self, level, int x, int y, int z):
+        cdef int lastY, tile, liquid
 
         lastY = y
         while True:
-            isFallable = False
-            nextY = lastY - 1
-            tile = level.getTile(x, nextY, z)
-            if tile == 0:
-                isFallable = True
-            else:
-                liquid = (<Tile>self.tiles.tiles[tile]).getLiquidType()
-                if liquid == Liquid.water:
-                    isFallable = True
-                elif liquid == Liquid.lava:
-                    isFallable = True
+            tile = level.getTile(x, lastY - 1, z)
+            liquid = self.tiles.tiles[tile].getLiquidType() if tile > 0 else Liquid.none
 
-            if not isFallable or lastY <= 0:
+            if not (tile == 0 or liquid == Liquid.water or liquid == Liquid.lava) or lastY <= 0:
                 if lastY != y:
+                    tile = level.getTile(x, lastY, z)
+                    if tile > 0 and self.tiles.tiles[tile].getLiquidType() != Liquid.none:
+                        level.setTileNoUpdate(x, lastY, z, 0)
+
                     level.swap(x, y, z, x, lastY, z)
 
-                break
+                return
 
             lastY -= 1

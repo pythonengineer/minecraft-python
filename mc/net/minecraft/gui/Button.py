@@ -1,16 +1,16 @@
-from mc.net.minecraft.gui.Gui import Gui
+from mc.net.minecraft.gui.GuiComponent import GuiComponent
 
-class Button(Gui):
+class Button(GuiComponent):
 
-    def __init__(self, id_, w, h, x, y=None, msg=None):
-        if y is None:
-            msg = x
-            x = 200
-            y = 20
+    def __init__(self, id_, x, y, w, h=None, msg=None):
+        if h is None:
+            msg = w
+            w = 200
+            h = 20
 
         self.id = id_
         self.w = w
-        self.h = h
+        self.h = 20
         self.x = x
         self.y = y
         self.msg = msg

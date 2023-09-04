@@ -152,20 +152,44 @@ cdef class Frustum:
         self.__m_Frustum[side][self._c] /= magnitude
         self.__m_Frustum[side][self._d] /= magnitude
 
+    cdef bint cubeFullyInFrustum(self, float x0, float y0, float z0,
+                                 float x1, float y1, float z1):
+        for i in range(6):
+            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
+                return False
+            if not self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
+                return False
+            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
+                return False
+            if not self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0:
+                return False
+            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
+                return False
+            if not self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
+                return False
+            if not self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
+                return False
+            if self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
+                continue
+
+            return False
+
+        return True
+
     cdef bint cubeInFrustum(self, float x0, float y0, float z0,
                             float x1, float y1, float z1):
-        cdef int i
-
         for i in range(6):
-            if self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] <= 0.0 and \
-               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] <= 0.0 and \
-               self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] <= 0.0 and \
-               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] <= 0.0 and \
-               self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] <= 0.0 and \
-               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] <= 0.0 and \
-               self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] <= 0.0 and \
-               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] <= 0.0:
-                return False
+            if self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0 or \
+               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0 or \
+               self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0 or \
+               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z0 + self.__m_Frustum[i][self._d] > 0.0 or \
+               self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0 or \
+               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y0 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0 or \
+               self.__m_Frustum[i][self._a] * x0 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0 or \
+               self.__m_Frustum[i][self._a] * x1 + self.__m_Frustum[i][self._b] * y1 + self.__m_Frustum[i][self._c] * z1 + self.__m_Frustum[i][self._d] > 0.0:
+                continue
+
+            return False
 
         return True
 

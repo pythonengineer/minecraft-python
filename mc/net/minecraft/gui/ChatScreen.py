@@ -15,12 +15,13 @@ class ChatScreen(Screen):
     def _keyPressed(self, key, char, motion):
         if char == 'SPACE':
             char = ' '
+
         if key == window.key.ESCAPE:
             self._minecraft.setScreen(None)
         elif key == window.key.ENTER:
             string = self.__typedMsg.strip().strip()
             if len(string) > 0:
-                self._minecraft.connectionManager.connection.sendPacket(Packets.CHAT_MESSAGE, [-1, string])
+                self._minecraft.networkClient.serverConnection.sendPacket(Packets.CHAT_MESSAGE, [-1, string])
 
             self._minecraft.setScreen(None)
         else:
@@ -33,12 +34,12 @@ class ChatScreen(Screen):
         self._fill(2, self._height - 14, self._width - 2, self._height - 2, -2 ** 31)
         self.drawString(self._font, '> ' + self.__typedMsg + ('_' if self.__counter // 6 % 2 == 0 else ''), 4, self._height - 12, 14737632)
 
-    def _mousePressed(self, xm, ym, button):
-        if button == window.mouse.LEFT and self._minecraft.hud.hoveredUsername:
+    def _mouseClicked(self, xm, ym, button):
+        if button == window.mouse.LEFT and self._minecraft.gui.hoveredUsername:
             if len(self.__typedMsg) > 0 and self.__typedMsg[-1:] != ' ':
                 self.__typedMsg += ' '
 
-            self.__typedMsg = self.__typedMsg + self._minecraft.hud.hoveredUsername
+            self.__typedMsg = self.__typedMsg + self._minecraft.gui.hoveredUsername
             i = 64 - (len(self._minecraft.user.name) + 2)
             if len(self.__typedMsg) > i:
                 self.__typedMsg = self.__typedMsg[0:i]

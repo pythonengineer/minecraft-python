@@ -1,0 +1,2 @@
+class StopGameException(Exception):
+    pass

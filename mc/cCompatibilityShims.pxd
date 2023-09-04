@@ -4,4 +4,4 @@ cdef class Random:
 
     cdef float randFloatM(self, float multiply)
     cdef float randFloat(self)
-    cdef int randInt(self, int limit)
+    cdef int nextInt(self, int limit)
