@@ -5,13 +5,8 @@ cimport cython
 from libc.stdlib cimport malloc
 from libc.math cimport floor, sin, cos, pi
 
-from mc.net.minecraft.mob.Skeleton import Skeleton
-from mc.net.minecraft.mob.Zombie import Zombie
-from mc.net.minecraft.mob.Pig import Pig
-from mc.net.minecraft.mob.Creeper import Creeper
 from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.level.tile.Tiles import tiles
-from mc.net.minecraft.level.liquid.Liquid cimport Liquid
 from mc.net.minecraft.level.levelgen.synth.Distort cimport Distort
 from mc.net.minecraft.level.levelgen.synth.PerlinNoise cimport PerlinNoise
 from mc.CompatibilityShims import getMillis, getNs
@@ -39,7 +34,7 @@ cdef class LevelGen:
     def generateLevel(self, str userName, int width, int height, int depth):
         cdef int *heightmap
         cdef int i, i13, i34, i5, i15, i41, w, h, d, ix, iy, iz, i42, i16, i46, \
-                 id_, rock, count, length, l, xx, yy, zz, ii, target, i37
+                 id_, rock, count, length, l, xx, yy, zz, ii, target, i37, mobs
         cdef float f6, x, y, z, dir1, dira1, dir2, dira2, dir3, size, xd, yd, zd
         cdef double d14, d16, d21, start, end, d36
         cdef long tileCount
@@ -179,12 +174,12 @@ cdef class LevelGen:
         target = tiles.calmWater.id
 
         for ix in range(self.__width):
-            tileCount += self.__floodFillLiquid(ix, self.__depth // 2 - 1, 0, 0, target)
-            tileCount += self.__floodFillLiquid(ix, self.__depth // 2 - 1, self.__height - 1, 0, target)
+            tileCount += self.__floodFillWithLiquid(ix, self.__depth // 2 - 1, 0, 0, target)
+            tileCount += self.__floodFillWithLiquid(ix, self.__depth // 2 - 1, self.__height - 1, 0, target)
 
         for iy in range(self.__height):
-            tileCount += self.__floodFillLiquid(0, self.__depth // 2 - 1, iy, 0, target)
-            tileCount += self.__floodFillLiquid(self.__width - 1, self.__depth // 2 - 1, iy, 0, target)
+            tileCount += self.__floodFillWithLiquid(0, self.__depth // 2 - 1, iy, 0, target)
+            tileCount += self.__floodFillWithLiquid(self.__width - 1, self.__depth // 2 - 1, iy, 0, target)
 
         i37 = self.__width * self.__height // 8000
         for i in range(i37):
@@ -192,7 +187,7 @@ cdef class LevelGen:
             iy = self.__waterLevel - 1 - self.__random.nextInt(2)
             iz = self.__random.nextInt(self.__height)
             if self.__blocks[(iy * self.__height + iz) * self.__width + ix] == 0:
-                tileCount += self.__floodFillLiquid(ix, iy, iz, 0, target)
+                tileCount += self.__floodFillWithLiquid(ix, iy, iz, 0, target)
 
         after = getNs()
         print('Flood filled ' + str(tileCount) + ' tiles in ' + str((after - before) / 1000000.0) + ' ms')
@@ -214,7 +209,10 @@ cdef class LevelGen:
 
         self.__generateTrees(level, heightmap)
         self.__levelLoaderListener.levelLoadUpdate('Spawning..')
-        self.__spawnEntities(level)
+
+        count = width * height * depth // 800
+        mobs = level.maybeSpawnMobs(count, None)
+        print(mobs, 'mobs')
 
         return level
 
@@ -265,57 +263,6 @@ cdef class LevelGen:
                         y = heightmap[x + z * w] + 1
                         if self.__random.nextInt(4) == 0:
                             level.maybeGrowTree(x, y, z)
-
-    cdef __spawnEntities(self, Level level):
-        cdef int i, j, k, n, mobs, mobType, n4, n5, n6, n7, n8, n9
-        cdef float x, y, z
-
-        n = self.__width * self.__height * self.__depth // 800
-        mobs = 0
-        for i in range(n):
-            mobType = self.__random.nextInt(4)
-            n4 = self.__random.nextInt(self.__width)
-            n5 = <int>(min(self.__random.randFloat(), self.__random.randFloat()) * self.__depth)
-            n6 = self.__random.nextInt(self.__height)
-            if level.isSolidTile(n4, n5, n6) or level.getLiquid(n4, n5, n6) != Liquid.none or \
-               level.isLit(n4, n5, n6) and self.__random.nextInt(5) != 0:
-                continue
-
-            for j in range(3):
-                n7 = n4
-                n8 = n5
-                n9 = n6
-                for k in range(3):
-                    n7 += self.__random.nextInt(6) - self.__random.nextInt(6)
-                    n8 += self.__random.nextInt(1) - self.__random.nextInt(1)
-                    n9 += self.__random.nextInt(6) - self.__random.nextInt(6)
-                    if n7 < 0 or n9 < 1 or n8 < 0 or \
-                       n8 >= self.__depth - 2 or n7 >= self.__width or n9 >= self.__height or not \
-                       level.isSolidTile(n7, n8 - 1, n9) or level.isSolidTile(n7, n8, n9) or \
-                       level.isSolidTile(n7, n8 + 1, n9):
-                        continue
-
-                    x = n7 + 0.5
-                    y = n8 + 1.0
-                    z = n9 + 0.5
-
-                    mob = None
-                    if mobType == 0:
-                        mob = Zombie(level, x, y, z)
-                    elif mobType == 1:
-                        mob = Skeleton(level, x, y, z)
-                    elif mobType == 2:
-                        mob = Pig(level, x, y, z)
-                    elif mobType == 3:
-                        mob = Creeper(level, x, y, z)
-
-                    if not level.isFree(mob.bb):
-                        continue
-
-                    mobs += 1
-                    level.addEntity(mob)
-
-        print(mobs, 'mobs')
 
     cdef __addFlowers(self, int* heightmap):
         cdef int i, j, k, n2, n3, n4, n5, x, y, z, tile
@@ -437,11 +384,11 @@ cdef class LevelGen:
             z = self.__random.nextInt(self.__height)
             if self.__blocks[(y * self.__height + z) * self.__width + x] == 0:
                 lavaCount += 1
-                self.__floodFillLiquid(x, y, z, 0, tiles.calmLava.id)
+                self.__floodFillWithLiquid(x, y, z, 0, tiles.calmLava.id)
 
         print('LavaCount:', lavaCount)
 
-    cdef long __floodFillLiquid(self, int x, int y, int z, int source, int tt):
+    cdef long __floodFillWithLiquid(self, int x, int y, int z, int source, int tt):
         cdef int target, p, wBits, hBits, hMask, wMask, upStep, cl, i, z0, y0, x0, x1
         cdef int z1, y1
         cdef bint lastNorth, lastSouth, lastBelow, north, south, below

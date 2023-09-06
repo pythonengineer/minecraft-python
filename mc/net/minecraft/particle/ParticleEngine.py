@@ -19,7 +19,7 @@ class ParticleEngine:
             if p.removed:
                 self.particles.remove(p)
 
-    def render(self, player, a):
+    def render(self, player, translation):
         if not len(self.particles):
             return
 
@@ -36,9 +36,9 @@ class ParticleEngine:
         t = tesselator
         t.begin()
         for p in self.particles:
-            f10 = 0.6 * p.getBrightness(a)
+            f10 = 0.6 * p.getBrightness(translation)
             t.colorFloat(f10, f10, f10)
-            p.render(t, a, xa, ya, za, xa2, za2)
+            p.render(t, translation, xa, ya, za, xa2, za2)
 
         t.end()
         gl.glDisable(gl.GL_TEXTURE_2D)

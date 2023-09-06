@@ -2,6 +2,7 @@
 
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 from mc.net.minecraft.level.liquid.Liquid cimport Liquid
+from mc.net.minecraft.level.Level cimport Level
 from mc.net.minecraft.phys.AABB import AABB
 
 import random
@@ -14,60 +15,6 @@ cdef list Tile_isLiquid
 cdef list Tile_tickSpeed
 
 cdef class Tile:
-
-    property isNormalTile:
-
-        def __get__(self):
-            return Tile_isNormalTile
-
-        def __set__(self, x):
-            global Tile_isNormalTile
-            Tile_isNormalTile = x
-
-    property shouldTick:
-
-        def __get__(self):
-            return Tile_shouldTick
-
-        def __set__(self, x):
-            global Tile_shouldTick
-            Tile_shouldTick = x
-
-    property opaqueTileLookup:
-
-        def __get__(self):
-            return Tile_opaqueTileLookup
-
-        def __set__(self, x):
-            global Tile_opaqueTileLookup
-            Tile_opaqueTileLookup = x
-
-    property lightOpacity:
-
-        def __get__(self):
-            return Tile_lightOpacity
-
-        def __set__(self, x):
-            global Tile_lightOpacity
-            Tile_lightOpacity = x
-
-    property isLiquid:
-
-        def __get__(self):
-            return Tile_isLiquid
-
-        def __set__(self, x):
-            global Tile_isLiquid
-            Tile_isLiquid = x
-
-    property tickSpeed:
-
-        def __get__(self):
-            return Tile_tickSpeed
-
-        def __set__(self, x):
-            global Tile_tickSpeed
-            Tile_tickSpeed = x
 
     def __cinit__(self):
         if not self.isNormalTile:
@@ -93,6 +40,60 @@ cdef class Tile:
         self.lightOpacity[id_] = self.isOpaque()
         self.isLiquid[id_] = False
 
+    @property
+    def isNormalTile(self):
+        return Tile_isNormalTile
+
+    @isNormalTile.setter
+    def isNormalTile(self, x):
+        global Tile_isNormalTile
+        Tile_isNormalTile = x
+
+    @property
+    def shouldTick(self):
+        return Tile_shouldTick
+
+    @shouldTick.setter
+    def shouldTick(self, x):
+        global Tile_shouldTick
+        Tile_shouldTick = x
+
+    @property
+    def opaqueTileLookup(self):
+        return Tile_opaqueTileLookup
+
+    @opaqueTileLookup.setter
+    def opaqueTileLookup(self, x):
+        global Tile_opaqueTileLookup
+        Tile_opaqueTileLookup = x
+
+    @property
+    def lightOpacity(self):
+        return Tile_lightOpacity
+
+    @lightOpacity.setter
+    def lightOpacity(self, x):
+        global Tile_lightOpacity
+        Tile_lightOpacity = x
+
+    @property
+    def isLiquid(self):
+        return Tile_isLiquid
+
+    @isLiquid.setter
+    def isLiquid(self, x):
+        global Tile_isLiquid
+        Tile_isLiquid = x
+
+    @property
+    def tickSpeed(self):
+        return Tile_tickSpeed
+
+    @tickSpeed.setter
+    def tickSpeed(self, x):
+        global Tile_tickSpeed
+        Tile_tickSpeed = x
+
     cdef bint isOpaque(self):
         return True
 
@@ -117,7 +118,7 @@ cdef class Tile:
     cdef setTickSpeed(self, int rate):
         self.tickSpeed[self.id] = 16
 
-    cpdef bint render(self, Tesselator t, level, int layer, int x, int y, int z) except *:
+    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *:
         cdef float f8, f9, f10, b
         cdef bint layerOk
 
@@ -158,10 +159,10 @@ cdef class Tile:
 
         return layerOk
 
-    cdef float _getBrightness(self, level, int x, int y, int z):
+    cdef float _getBrightness(self, Level level, int x, int y, int z):
         return level.getBrightness(x, y, z)
 
-    cpdef bint shouldRenderFace(self, level, int x, int y, int z, int layer, int face):
+    cpdef bint shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
         return False if layer == 1 else not level.isSolidTile(x, y, z)
 
     cpdef int _getTexture(self, int face):
@@ -334,10 +335,10 @@ cdef class Tile:
     cpdef bint isSolid(self):
         return True
 
-    cpdef void tick(self, level, int x, int y, int z, random) except *:
+    cpdef void tick(self, Level level, int x, int y, int z, random) except *:
         pass
 
-    def destroy(self, level, int x, int y, int z, particleEngine):
+    def destroy(self, Level level, int x, int y, int z, particleEngine):
         from mc.net.minecraft.particle.Particle import Particle
         cdef int SD, xx, yy, zz
         cdef float xp, yp, zp
@@ -354,7 +355,7 @@ cdef class Tile:
                                                         yp - y - 0.5,
                                                         zp - z - 0.5, self))
 
-    def addParticleOnBlockBreaking(self, level, int x, int y, int z,
+    def addParticleOnBlockBreaking(self, Level level, int x, int y, int z,
                                    int sideHit, particleEngine):
         from mc.net.minecraft.particle.Particle import Particle
         cdef float f, xp, yp, zp
@@ -383,22 +384,22 @@ cdef class Tile:
     cpdef int getLiquidType(self):
         return Liquid.none
 
-    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *:
+    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *:
         pass
 
-    def onPlace(self, level, int x, int y, int z):
+    def onPlace(self, Level level, int x, int y, int z):
         pass
 
     cdef int getTickDelay(self):
         return 0
 
-    def onTileAdded(self, level, int x, int y, int z):
+    def onTileAdded(self, Level level, int x, int y, int z):
         pass
 
-    def onTileRemoved(self, level, int x, int y, int z):
+    def onTileRemoved(self, Level level, int x, int y, int z):
         pass
 
-    cpdef int getResourceCount(self):
+    cpdef int resourceCount(self):
         return 1
 
     cpdef int getId(self):
@@ -407,15 +408,15 @@ cdef class Tile:
     def getDestroyProgress(self):
         return self.__destroyProgress
 
-    def spawnResources(self, level, int x, int y, int z):
+    def spawnResources(self, Level level, int x, int y, int z):
         self.wasExploded(level, x, y, z, 1.0)
 
-    cdef wasExploded(self, level, int x, int y, int z, float f):
+    cdef wasExploded(self, Level level, int x, int y, int z, float f):
         from mc.net.minecraft.item.Item import Item
         cdef int i
         cdef float f2, xx, yy, zz
 
-        for i in range(self.getResourceCount()):
+        for i in range(self.resourceCount()):
             if random.random() > f:
                 continue
 

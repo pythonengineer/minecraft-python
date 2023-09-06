@@ -1,6 +1,6 @@
 from mc.net.minecraft.net.NetworkPlayerTextureLoader import NetworkPlayerTextureLoader
 from mc.net.minecraft.mob.HumanoidMob import HumanoidMob
-from mc.net.minecraft.net.PlayerPos import PlayerPos
+from mc.net.minecraft.net.EntityPos import EntityPos
 from mc.net.minecraft.gui.Font import Font
 from collections import deque
 from pyglet import gl
@@ -17,7 +17,7 @@ class NetworkPlayer(HumanoidMob):
         self.__yp = yp
         self.__zp = zp
         self.__moveQueue = deque()
-        self.__skin = -1
+        self.__texture = -1
         self.newTexture = None
         self.__textures = None
         self.setPos(xp / 32.0, yp / 32.0, zp / 32.0)
@@ -71,18 +71,13 @@ class NetworkPlayer(HumanoidMob):
                 break
 
             self.hasHair = hasHair
-            textures.ib.clear()
-            gl.glGenTextures(1, textures.ib)
-            id_ = textures.ib.get(0)
-            textures.addTextureId(self.newTexture, id_)
-            textures.pixelsMap[id_] = self.newTexture
-            self.__skin = id_
+            self.__texture = textures.loadTextureImg(self.newTexture)
             self.newTexture = None
 
-        if self.__skin < 0:
+        if self.__texture < 0:
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__textures.loadTexture('char.png'))
         else:
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__skin)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__texture)
 
     def render(self, textures, translation):
         super().render(textures, translation)
@@ -127,13 +122,13 @@ class NetworkPlayer(HumanoidMob):
 
         rotX = self.yRot + rotX * 0.5
         rotY = self.xRot + rotY * 0.5
-        self.__moveQueue.append(PlayerPos((self.__xp + xa / 2.0) / 32.0,
+        self.__moveQueue.append(EntityPos((self.__xp + xa / 2.0) / 32.0,
                                           (self.__yp + ya / 2.0) / 32.0,
                                           (self.__zp + za / 2.0) / 32.0, rotX, rotY))
         self.__xp += xa
         self.__yp += ya
         self.__zp += za
-        self.__moveQueue.append(PlayerPos(self.__xp / 32.0,
+        self.__moveQueue.append(EntityPos(self.__xp / 32.0,
                                           self.__yp / 32.0,
                                           self.__zp / 32.0, xr, yr))
 
@@ -154,24 +149,24 @@ class NetworkPlayer(HumanoidMob):
 
         xr = self.yRot + xr * 0.5
         zr = self.xRot + zr * 0.5
-        self.__moveQueue.append(PlayerPos((self.__xp + xa) / 64.0,
+        self.__moveQueue.append(EntityPos((self.__xp + xa) / 64.0,
                                           (self.__yp + ya) / 64.0,
                                           (self.__zp + za) / 64.0, xr, zr))
         self.__xp = xa
         self.__yp = ya
         self.__zp = za
-        self.__moveQueue.append(PlayerPos(self.__xp / 32.0,
+        self.__moveQueue.append(EntityPos(self.__xp / 32.0,
                                           self.__yp / 32.0,
                                           self.__zp / 32.0, rotX, rotZ))
 
     def queue3(self, xa, ya, za):
-        self.__moveQueue.append(PlayerPos((self.__xp + xa / 2.0) / 32.0,
+        self.__moveQueue.append(EntityPos((self.__xp + xa / 2.0) / 32.0,
                                           (self.__yp + ya / 2.0) / 32.0,
                                           (self.__zp + za / 2.0) / 32.0))
         self.__xp += xa
         self.__yp += ya
         self.__zp += za
-        self.__moveQueue.append(PlayerPos(self.__xp / 32.0,
+        self.__moveQueue.append(EntityPos(self.__xp / 32.0,
                                           self.__yp / 32.0,
                                           self.__zp / 32.0))
 
@@ -192,13 +187,13 @@ class NetworkPlayer(HumanoidMob):
 
         xr = self.yRot + xr * 0.5
         yr = self.xRot + yr * 0.5
-        self.__moveQueue.append(PlayerPos(xr, yr))
-        self.__moveQueue.append(PlayerPos(rotX, rotY))
+        self.__moveQueue.append(EntityPos(xr, yr))
+        self.__moveQueue.append(EntityPos(rotX, rotY))
 
     def clear(self):
-        if self.__skin >= 0:
-            del self.__textures.pixelsMap[self.__skin]
+        if self.__texture >= 0:
+            del self.__textures.pixelsMap[self.__texture]
             self.__textures.ib.clear()
-            self.__textures.ib.put(self.__skin)
+            self.__textures.ib.put(self.__texture)
             self.__textures.ib.flip()
             gl.glDeleteTextures(self.__textures.ib.capacity(), self.__textures.ib)

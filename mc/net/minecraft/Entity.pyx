@@ -70,14 +70,14 @@ cdef class Entity:
         self.bbWidth = w
         self.bbHeight = h
 
-    def setMovePos(self, playerMove):
-        if playerMove.moving:
-            self.setPos(playerMove.x, playerMove.y, playerMove.z)
+    def setMovePos(self, pos):
+        if pos.moving:
+            self.setPos(pos.x, pos.y, pos.z)
         else:
             self.setPos(self.x, self.y, self.z)
 
-        if playerMove.rotating:
-            self.setRot(playerMove.yRot, playerMove.xRot)
+        if pos.rotating:
+            self.setRot(pos.yRot, pos.xRot)
         else:
             self.setRot(self.yRot, self.xRot)
 
@@ -212,7 +212,7 @@ cdef class Entity:
         return self.level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), Liquid.water)
 
     def isUnderWater(self):
-        tile = self.level.getTile(self.x, self.y + 0.12, self.z)
+        tile = self.level.getTile(<int>self.x, <int>(self.y + 0.12), <int>self.z)
         if tile != 0:
             return tiles.tiles[tile].getLiquidType() == Liquid.water
 
@@ -310,15 +310,15 @@ cdef class Entity:
             z /= d
             x *= 0.05
             z *= 0.05
-            self._pushEntity(-x, 0.0, -z)
-            entity._pushEntity(x, 0.0, z)
+            self._push(-x, 0.0, -z)
+            entity._push(x, 0.0, z)
 
-    def _pushEntity(self, float x, float y, float z):
+    def _push(self, float x, float y, float z):
         self.xd += x
         self.yd += y
         self.zd += z
 
-    def hurt(self, entity, n):
+    def hurt(self, entity, hp):
         pass
 
     def intersects(self, float x0, float y0, float z0,
@@ -334,5 +334,5 @@ cdef class Entity:
     def isShootable(self):
         return False
 
-    def awardKillScore(self, entity, n):
+    def awardKillScore(self, entity, score):
         pass

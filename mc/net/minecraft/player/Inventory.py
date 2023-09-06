@@ -1,4 +1,5 @@
 class Inventory:
+    POP_TIME_DURATION = 5
 
     def __init__(self):
         self.selected = 0
@@ -12,12 +13,17 @@ class Inventory:
     def getSelected(self):
         return self.slots[self.selected]
 
-    def containsTileAt(self, slot):
+    def __containsTileAt(self, slot):
         for i in range(len(self.slots)):
             if slot == self.slots[i]:
                 return i
 
         return -1
+
+    def grabTexture(self, index):
+        index = self.__containsTileAt(index)
+        if index >= 0:
+            self.selected = index
 
     def swapPaint(self, dy):
         if dy > 0:
@@ -32,8 +38,28 @@ class Inventory:
         while self.selected >= len(self.slots):
             self.selected -= len(self.slots)
 
+    def addResource(self, index):
+        slot = self.__containsTileAt(index)
+        if slot < 0:
+            slot = self.__containsTileAt(-1)
+
+        if slot < 0:
+            return False
+        elif self.count[slot] >= 99:
+            return False
+
+        self.slots[slot] = index
+        self.count[slot] += 1
+        self.popTime[slot] = Inventory.POP_TIME_DURATION
+        return True
+
+    def tick(self):
+        for i in range(len(self.popTime)):
+            if self.popTime[i] > 0:
+                self.popTime[i] -= 1
+
     def removeResource(self, index):
-        index = self.containsTileAt(index)
+        index = self.__containsTileAt(index)
         if index < 0:
             return False
 

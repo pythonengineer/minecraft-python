@@ -4,6 +4,7 @@ from libc.math cimport sin, cos, pi
 
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 from mc.net.minecraft.level.tile.Tile cimport Tile
+from mc.net.minecraft.level.Level cimport Level
 
 cdef class Flower(Tile):
 
@@ -14,12 +15,12 @@ cdef class Flower(Tile):
         cdef float f = 0.2
         self._setShape(0.5 - f, 0.0, 0.5 - f, f + 0.5, f * 2.0, f + 0.5)
 
-    cpdef void tick(self, level, int x, int y, int z, random) except *:
+    cpdef void tick(self, Level level, int x, int y, int z, random) except *:
         cdef int below = level.getTile(x, y - 1, z)
         if not level.isLit(x, y, z) or (below != self.tiles.dirt.id and below != self.tiles.grass.id):
             level.setTile(x, y, z, 0)
 
-    cpdef bint render(self, Tesselator t, level, int layer, int x, int y, int z) except *:
+    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *:
         cdef float b = level.getBrightness(x, y, z)
         t.colorFloat(b, b, b)
         self.__renderFlower(t, x, y, z)

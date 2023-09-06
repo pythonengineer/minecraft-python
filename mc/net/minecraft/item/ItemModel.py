@@ -1,10 +1,10 @@
-from mc.net.minecraft.character.Cube import Cube
-from mc.net.minecraft.character.Vertex import Vertex
-from mc.net.minecraft.character.Polygon import Polygon
+from mc.net.minecraft.model.Cube import Cube
+from mc.net.minecraft.model.Vertex import Vertex
+from mc.net.minecraft.model.Polygon import Polygon
 
 class ItemModel:
 
-    def __init__(self, i):
+    def __init__(self, tex):
         self.__cube = Cube(0, 0)
         self.__cube.vertices = [None] * 8
         self.__cube.polygons = [None] * 6
@@ -26,10 +26,10 @@ class ItemModel:
         self.__cube.vertices[7] = ptx8
         f4 = 0.25
         f5 = 0.25
-        f6 = ((i % 16) + (1.0 - f4)) / 16.0
-        f7 = ((i // 16) + (1.0 - f5)) / 16.0
-        f4 = ((i % 16) + f4) / 16.0
-        f8 = ((i // 16) + f5) / 16.0
+        f6 = ((tex % 16) + (1.0 - f4)) / 16.0
+        f7 = ((tex // 16) + (1.0 - f5)) / 16.0
+        f4 = ((tex % 16) + f4) / 16.0
+        f8 = ((tex // 16) + f5) / 16.0
         self.__cube.polygons[0] = Polygon([ptx6, ptx2, ptx3, ptx7], f6, f7, f4, f8)
         self.__cube.polygons[1] = Polygon([ptx, ptx5, ptx8, ptx4], f6, f7, f4, f8)
         self.__cube.polygons[2] = Polygon([ptx6, ptx5, ptx, ptx2], f6, f7, f4, f8)

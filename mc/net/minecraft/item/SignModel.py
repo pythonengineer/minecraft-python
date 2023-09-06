@@ -1,4 +1,4 @@
-from mc.net.minecraft.character.Cube import Cube
+from mc.net.minecraft.model.Cube import Cube
 
 class SignModel:
 

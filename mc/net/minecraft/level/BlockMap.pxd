@@ -21,7 +21,14 @@ cdef class BlockMap:
 
         public list entityGrid
 
+    cdef insert(self, entity)
+    cdef remove(self, entity)
     cdef list getEntities(self, oEntity, float x0, float y0, float z0,
                           float x1, float y1, float z1, list l)
+    cdef list getEntitiesExcludingEntity(self, entity, float x0, float y0,
+                                         float z0, float x1, float y1, float z1)
     cpdef list getEntitiesWithinAABBExcludingEntity(self, entity, aabb)
+    cdef list getEntitiesWithinAABBExcludingEntityList(self, entity, aabb, l)
+    cdef clear(self)
+    cdef tickAll(self)
     cpdef render(self, Frustum frustum, textures, float a)

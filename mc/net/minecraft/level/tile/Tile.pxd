@@ -1,6 +1,7 @@
 # cython: language_level=3
 
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
+from mc.net.minecraft.level.Level cimport Level
 
 cdef class Tile:
 
@@ -21,9 +22,9 @@ cdef class Tile:
 
     cdef bint isOpaque(self)
     cdef setTickSpeed(self, int speed)
-    cpdef bint render(self, Tesselator t, level, int layer, int x, int y, int z) except *
-    cdef float _getBrightness(self, level, int x, int y, int z)
-    cpdef bint shouldRenderFace(self, level, int x, int y, int z, int layer, int face)
+    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *
+    cdef float _getBrightness(self, Level level, int x, int y, int z)
+    cpdef bint shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face)
     cpdef int _getTexture(self, int face)
     cpdef void renderFace(self, Tesselator t, int x, int y, int z, int face)
     cpdef void renderFaceNoTexture(self, Tesselator t, int x, int y, int z, int face, int tex)
@@ -31,10 +32,10 @@ cdef class Tile:
     cdef renderBackFace(self, Tesselator t, int x, int y, int z, int face)
     cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
-    cpdef void tick(self, level, int x, int y, int z, random) except *
+    cpdef void tick(self, Level level, int x, int y, int z, random) except *
     cpdef int getLiquidType(self)
-    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *
+    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *
     cdef int getTickDelay(self)
-    cpdef int getResourceCount(self)
+    cpdef int resourceCount(self)
     cpdef int getId(self)
-    cdef wasExploded(self, level, int x, int y, int z, float f)
+    cdef wasExploded(self, Level level, int x, int y, int z, float f)

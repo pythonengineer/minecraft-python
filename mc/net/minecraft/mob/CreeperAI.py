@@ -7,13 +7,12 @@ import math
 
 class CreeperAI(BasicAttackAI):
 
-    def __init__(self, creeper):
-        super().__init__()
-        self.__creeper = creeper
-
-    def _hurt(self, entity):
-        super().hurt(entity)
-        self.__creeper.hurt(entity, 4)
+    def _attack(self, entity):
+        if super().attack(entity):
+            self.mob.hurt(entity, 6)
+            return True
+        else:
+            return False
 
     def beforeRemove(self):
         f = 4.0

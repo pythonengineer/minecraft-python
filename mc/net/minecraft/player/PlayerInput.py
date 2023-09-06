@@ -2,11 +2,11 @@ from mc.net.minecraft.mob.ai.BasicAI import BasicAI
 
 class PlayerInput(BasicAI):
 
-    def __init__(self, player, keyboardInput):
+    def __init__(self, player):
         super().__init__()
-        self.__input = keyboardInput
+        self.__player = player
 
-    def _tick(self):
-        self.jumping = self.__input.jumping
-        self.xxa = self.__input.ya
-        self.yya = self.__input.xa
+    def _update(self):
+        self.jumping = self.__player.input.jumping
+        self.xxa = self.__player.input.ya
+        self.yya = self.__player.input.xa

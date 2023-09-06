@@ -9,7 +9,7 @@ class LogTile(Tile):
         super().__init__(tiles, 17)
         self.tex = 20
 
-    def getResourceCount(self):
+    def resourceCount(self):
         return math.floor(3 * random.random()) + 3
 
     def getId(self):

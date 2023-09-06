@@ -12,7 +12,7 @@ class ConnectionThread(Thread):
         self.__port = port
         self.__username = username
         self.__mpPass = mpPass
-        self.__mc = minecraft
+        self.__minecraft = minecraft
 
     def run(self):
         try:
@@ -22,7 +22,7 @@ class ConnectionThread(Thread):
             connection.sendPacket(Packets.LOGIN, [6, self.__username, self.__mpPass, 0])
             self.__networkClient.processData = True
         except ConnectionRefusedError:
-            self.__mc.hideScreen = False
-            self.__mc.networkClient = None
-            self.__mc.setScreen(ErrorScreen('Failed to connect', 'You failed to connect to the server. It\'s probably down!'))
+            self.__minecraft.hideScreen = False
+            self.__minecraft.networkClient = None
+            self.__minecraft.setScreen(ErrorScreen('Failed to connect', 'You failed to connect to the server. It\'s probably down!'))
             self.__networkClient.processData = False

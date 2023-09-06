@@ -1,6 +1,7 @@
 # cython: language_level=3
 
 from mc.net.minecraft.phys.AABB cimport AABB
+from mc.net.minecraft.level.Level cimport Level
 
 cdef class Entity:
 
@@ -19,7 +20,7 @@ cdef class Entity:
         public float yRotO
         public float xRotO
 
-        public object level
+        public Level level
         public AABB bb
         public bint onGround
         public bint horizontalCollision

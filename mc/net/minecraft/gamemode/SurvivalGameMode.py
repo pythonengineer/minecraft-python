@@ -29,7 +29,7 @@ class SurvivalGameMode(GameMode):
         self.__oDestroyProgress = 0
         self.__delay = 0
 
-    def stopDestroyBlock(self, x, y, z, sideHit):
+    def stopDestroyingBlock(self, x, y, z, sideHit):
         if self.__delay > 0:
             self.__delay -= 1
             return

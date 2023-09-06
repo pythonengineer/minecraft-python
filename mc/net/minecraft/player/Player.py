@@ -1,30 +1,34 @@
 from mc.net.minecraft.player.Inventory import Inventory
 from mc.net.minecraft.player.PlayerInput import PlayerInput
-from mc.net.minecraft.model.PlayerModel import PlayerModel
 from mc.net.minecraft.mob.Mob import Mob
+from pyglet import gl
 
 import math
 
 class Player(Mob):
     MAX_HEALTH = 20
+    MAX_ARROWS = 99
+    __texture = -1
+    newTexture = None
 
-    def __init__(self, level, keyboardInput):
+    def __init__(self, level):
         super().__init__(level)
         level.player = self
         level.removeEntity(self)
         level.addEntity(self)
         print(level.player)
         self.heightOffset = 1.62
-        self.__input = keyboardInput
+        self.input = None
         self.inventory = Inventory()
         self.health = Player.MAX_HEALTH
-        self.model = PlayerModel()
+        self.modelName = 'humanoid'
         self.rotOffs = 180.0
-        self.ai = PlayerInput(self, keyboardInput)
+        self.ai = PlayerInput(self)
         self.userType = 0
         self.oBob = 0.0
         self.bob = 0.0
         self.score = 0
+        self.arrows = 20
 
     def resetPos(self):
         self.heightOffset = 1.62
@@ -35,14 +39,9 @@ class Player(Mob):
         self.deathTime = 0
 
     def aiStep(self):
-        for i in range(len(self.inventory.popTime)):
-            if self.inventory.popTime[i] <= 0:
-                continue
-
-            self.inventory.popTime[i] = self.inventory.popTime[i] - 1
-
+        self.inventory.tick()
         self.oBob = self.bob
-        self.__input.tick()
+        self.input.tick()
         super().aiStep()
 
         d = math.sqrt(self.xd * self.xd + self.zd * self.zd)
@@ -57,7 +56,7 @@ class Player(Mob):
         self.bob += (d - self.bob) * 0.4
         self.tilt += (t - self.tilt) * 0.8
         entities = self.level.findEntities(self, self.bb.grow(1.0, 0.0, 1.0))
-        if entities:
+        if self.health > 0 and entities:
             for entity in entities:
                 entity.playerTouch(self)
 
@@ -65,31 +64,19 @@ class Player(Mob):
         pass
 
     def releaseAllKeys(self):
-        self.__input.releaseAllKeys()
+        self.input.releaseAllKeys()
 
     def setKey(self, symbol, state):
-        self.__input.setKey(symbol, state)
+        self.input.setKey(symbol, state)
 
     def addResource(self, index):
-        slot = self.inventory.containsTileAt(index)
-        if slot < 0:
-            slot = self.inventory.containsTileAt(-1)
-
-        if slot < 0:
-            return False
-        elif self.inventory.count[slot] >= 99:
-            return False
-
-        self.inventory.slots[slot] = index
-        self.inventory.count[slot] += 1
-        self.inventory.popTime[slot] = 5
-        return True
+        return self.inventory.addResource(index)
 
     def getScore(self):
         return self.score
 
     def getModel(self):
-        return self.model
+        return self.modelCache.getModel(self.modelName)
 
     def die(self, entity):
         self.setSize(0.2, 0.2)
@@ -109,3 +96,16 @@ class Player(Mob):
 
     def awardKillScore(self, entity, score):
         self.score += score
+
+    def isShootable(self):
+        return True
+
+    def bindTexture(self, textures):
+        if self.newTexture:
+            self.__texture = textures.loadTextureImg(self.newTexture)
+            self.newTexture = None
+
+        if self.__texture < 0:
+            gl.glBindTexture(gl.GL_TEXTURE_2D, textures.loadTexture('char.png'))
+        else:
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__texture)

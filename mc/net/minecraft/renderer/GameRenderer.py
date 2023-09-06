@@ -1,7 +1,7 @@
-from mc.net.minecraft.character.Vec3 import Vec3
+from mc.net.minecraft.model.Vec3 import Vec3
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.level.liquid.Liquid import Liquid
-from mc.net.minecraft.tilerenderer.TileRenderer import TileRenderer
+from mc.net.minecraft.renderer.TileRenderer import TileRenderer
 from mc.CompatibilityShims import BufferUtils
 from pyglet import gl
 
@@ -14,8 +14,8 @@ class GameRenderer:
 
     renderDistance = 0.0
 
-    __unusedInt1 = 0
-    __unusedInt2 = 0
+    __u1 = 0
+    __u2 = 0
 
     __lb = BufferUtils.createFloatBuffer(16)
 
@@ -69,7 +69,7 @@ class GameRenderer:
             gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, self.__getBuffer(0.0, 0.0, 0.0, 1.0))
             gl.glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT, self.__getBuffer(light1, light1, light1, 1.0))
 
-    def init(self):
+    def tick(self):
         screenWidth = self.minecraft.width * 240 // self.minecraft.height
         screenHeight = self.minecraft.height * 240 // self.minecraft.height
 

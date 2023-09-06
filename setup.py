@@ -56,7 +56,7 @@ extensions = [
 
 setup(
     name='minecraft-python',
-    version='0.24',
+    version='0.25',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

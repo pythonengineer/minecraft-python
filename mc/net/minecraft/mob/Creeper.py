@@ -1,18 +1,16 @@
 from mc.net.minecraft.mob.Mob import Mob
 from mc.net.minecraft.mob.CreeperAI import CreeperAI
-from mc.net.minecraft.model.CreeperModel import CreeperModel
 
 import math
 
 class Creeper(Mob):
-    __model = CreeperModel()
 
     def __init__(self, level, x, y, z):
         super().__init__(level)
         self.heightOffset = 1.62
-        self.model = Creeper.__model
+        self.modelName = 'creeper'
         self._textureName = 'mob/creeper.png'
-        self.ai = CreeperAI(self)
+        self.ai = CreeperAI()
         self.ai.defaultLookAngle = 45
         self.setPos(x, y, z)
 

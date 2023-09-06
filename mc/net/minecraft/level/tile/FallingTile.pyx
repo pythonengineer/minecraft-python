@@ -2,16 +2,17 @@
 
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.liquid.Liquid cimport Liquid
+from mc.net.minecraft.level.Level cimport Level
 
 cdef class FallingTile(Tile):
 
-    def onPlace(self, level, int x, int y, int z):
+    def onPlace(self, Level level, int x, int y, int z):
         self.__tryToFall(level, x, y, z)
 
-    cpdef void neighborChanged(self, level, int x, int y, int z, int type_) except *:
+    cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *:
         self.__tryToFall(level, x, y, z)
 
-    cdef __tryToFall(self, level, int x, int y, int z):
+    cdef __tryToFall(self, Level level, int x, int y, int z):
         cdef int lastY, tile, liquid
 
         lastY = y

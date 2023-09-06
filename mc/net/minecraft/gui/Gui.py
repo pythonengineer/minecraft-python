@@ -19,8 +19,8 @@ class Gui(GuiComponent):
         self.hoveredUsername = None
         self.tickCounter = 0
 
-    def render(self, itemScale, isScreen, xm, ym):
-        self.__minecraft.lighting.init()
+    def render(self, scale, playerAlive, xm, ym):
+        self.__minecraft.gameRenderer.tick()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__minecraft.textures.loadTexture('gui/gui.png'))
         gl.glEnable(gl.GL_TEXTURE_2D)
         t = tesselator
@@ -28,7 +28,8 @@ class Gui(GuiComponent):
         gl.glEnable(gl.GL_BLEND)
         self._blitOffset = -90.0
         self.blit(self.__scaledWidth / 2 - 91, self.__scaledHeight - 22, 0, 0, 182, 22)
-        self.blit(self.__scaledWidth / 2 - 91 - 1 + self.__minecraft.player.inventory.selected * 20, self.__scaledHeight - 22 - 1, 0, 22, 24, 22)
+        self.blit(self.__scaledWidth / 2 - 91 - 1 + self.__minecraft.player.inventory.selected * 20,
+                  self.__scaledHeight - 22 - 1, 0, 22, 24, 22)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__minecraft.textures.loadTexture('gui/icons.png'))
         self.blit(self.__scaledWidth / 2 - 7, self.__scaledHeight / 2 - 7, 0, 0, 16, 16)
         invulnerable = 1 if self.__minecraft.player.invulnerableTime // 3 % 2 == 1 else 0
@@ -69,10 +70,12 @@ class Gui(GuiComponent):
             n5 = math.ceil(self.__minecraft.player.airSupply * 10.0 / 300.0) - n6
             for n4 in range(n6 + n5):
                 if n4 < n6:
-                    self.blit(self.__scaledWidth / 2 - 91 + (n4 << 3), self.__scaledHeight - 32 - 9, 16, 18, 9, 9)
+                    self.blit(self.__scaledWidth / 2 - 91 + (n4 << 3),
+                              self.__scaledHeight - 32 - 9, 16, 18, 9, 9)
                     continue
 
-                self.blit(self.__scaledWidth / 2 - 91 + (n4 << 3), self.__scaledHeight - 32 - 9, 25, 18, 9, 9)
+                self.blit(self.__scaledWidth / 2 - 91 + (n4 << 3),
+                          self.__scaledHeight - 32 - 9, 25, 18, 9, 9)
 
         gl.glDisable(gl.GL_BLEND)
 
@@ -86,7 +89,7 @@ class Gui(GuiComponent):
             gl.glPushMatrix()
             gl.glTranslatef(width, height, -50.0)
             if self.__minecraft.player.inventory.popTime[slot] > 0:
-                f2 = (self.__minecraft.player.inventory.popTime[slot] - itemScale) / 5.0
+                f2 = (self.__minecraft.player.inventory.popTime[slot] - scale) / 5.0
                 f3 = -(math.sin((f2 * f2) * math.pi)) * 8.0
                 f4 = math.sin((f2 * f2) * math.pi) + 1.0
                 f5 = math.sin(f2 * math.pi) + 1.0
@@ -110,11 +113,20 @@ class Gui(GuiComponent):
             gl.glPopMatrix()
             if self.__minecraft.player.inventory.count[slot] > 1:
                 string = '' + str(self.__minecraft.player.inventory.count[slot])
-                self.__minecraft.font.drawShadow(string, width + 19 - self.__minecraft.font.width(string), height + 6, 0xFFFFFF)
+                self.__minecraft.font.drawShadow(string,
+                                                 width + 19 - self.__minecraft.font.width(string),
+                                                 height + 6, 0xFFFFFF)
 
         self.__minecraft.font.drawShadow(self.__minecraft.VERSION_STRING, 2, 2, 0xFFFFFF)
         if self.__minecraft.options.showFramerate:
             self.__minecraft.font.drawShadow(self.__minecraft.fpsString, 2, 12, 0xFFFFFF)
+
+        score = 'Score: &e' + str(self.__minecraft.player.getScore())
+        self.__minecraft.font.drawShadow(score,
+                                         self.__scaledWidth - self.__minecraft.font.width(score) - 2,
+                                         2, 16777215)
+        self.__minecraft.font.drawShadow('Arrows: ' + str(self.__minecraft.player.arrows),
+                                         self.__scaledWidth // 2 + 8, self.__scaledHeight - 33, 16777215)
 
         b13 = 10
         z5 = False
@@ -151,7 +163,7 @@ class Gui(GuiComponent):
             for i, name in enumerate(players):
                 width = screenWidth + i % 2 * 120 - 120
                 height = screenHeight - 64 + (i // 2 << 3)
-                if isScreen and xm >= width and ym >= height and xm < width + 120 and ym < height + 8:
+                if playerAlive and xm >= width and ym >= height and xm < width + 120 and ym < height + 8:
                     self.hoveredUsername = name
                     self.__minecraft.font.draw(name, width + 2, height, 0xFFFFFF)
                 else:

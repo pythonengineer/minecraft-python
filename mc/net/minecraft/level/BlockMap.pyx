@@ -29,6 +29,31 @@ cdef class BlockMap:
                 for h in range(self.height):
                     self.entityGrid[(h * self.depth + d) * self.width + w] = []
 
+    cdef insert(self, entity):
+        self.all.append(entity)
+        self.slot1.init(entity.x, entity.y, entity.z).add(entity)
+        entity.xOld = entity.x
+        entity.yOld = entity.y
+        entity.zOld = entity.z
+        entity.blockMap = self
+
+    cdef remove(self, entity):
+        self.slot1.init(entity.xOld, entity.yOld, entity.zOld).remove(entity)
+        try:
+            self.all.remove(entity)
+        except ValueError:
+            pass
+
+    def moved(self, entity):
+        cdef Slot oldSlot = self.slot1.init(entity.xOld, entity.yOld, entity.zOld)
+        cdef Slot newSlot = self.slot2.init(entity.x, entity.y, entity.z)
+        if oldSlot != newSlot:
+            oldSlot.remove(entity)
+            newSlot.add(entity)
+            entity.xOld = entity.x
+            entity.yOld = entity.y
+            entity.zOld = entity.z
+
     cdef list getEntities(self, oEntity, float x0, float y0, float z0,
                           float x1, float y1, float z1, list l):
         cdef int x, y, z
@@ -47,10 +72,44 @@ cdef class BlockMap:
 
         return l
 
+    cdef list getEntitiesExcludingEntity(self, entity, float x0, float y0,
+                                         float z0, float x1, float y1, float z1):
+        self.tmp.clear()
+        return self.getEntities(entity, x0, y0, z0, x1, y1, z1, self.tmp)
+
     cpdef list getEntitiesWithinAABBExcludingEntity(self, entity, aabb):
         self.tmp.clear()
         return self.getEntities(entity, aabb.x0, aabb.y0, aabb.z0,
                                 aabb.x1, aabb.y1, aabb.z1, self.tmp)
+
+    cdef list getEntitiesWithinAABBExcludingEntityList(self, entity, aabb, l):
+        return self.getEntities(entity, aabb.x0, aabb.y0, aabb.z0,
+                                aabb.x1, aabb.y1, aabb.z1, l)
+
+    cdef clear(self):
+        for w in range(self.width):
+            for d in range(self.depth):
+                for h in range(self.height):
+                    self.entityGrid[(h * self.depth + d) * self.width + w].clear()
+
+    cdef tickAll(self):
+        cdef int xOld, yOld, zOld, x, y, z
+
+        for entity in list(self.all):
+            entity.tick()
+            if entity.removed:
+                self.all.remove(entity)
+                self.slot1.init(entity.xOld, entity.yOld, entity.zOld).remove(entity)
+                continue
+
+            xOld = entity.xOld // 16.0
+            yOld = entity.yOld // 16.0
+            zOld = entity.zOld // 16.0
+            x = entity.x // 16.0
+            y = entity.y // 16.0
+            z = entity.z // 16.0
+            if xOld != x or yOld != y or zOld != z:
+                self.moved(entity)
 
     cpdef render(self, Frustum frustum, textures, float a):
         cdef int x, y, z

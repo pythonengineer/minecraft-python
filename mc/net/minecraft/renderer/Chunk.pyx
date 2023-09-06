@@ -29,14 +29,14 @@ cdef class Chunk:
         bint[8] __skipRenderPass
         public bint isInFrustum
 
-    property updates:
+    @property
+    def updates(self):
+        return Chunk_updates
 
-        def __get__(self):
-            return Chunk_updates
-
-        def __set__(self, x):
-            global Chunk_updates
-            Chunk_updates = x
+    @updates.setter
+    def updates(self, x):
+        global Chunk_updates
+        Chunk_updates = x
 
     def __cinit__(self):
         self.__tiles = tiles

@@ -44,6 +44,7 @@ cdef class Level:
 
         public object player
         public object particleEngine
+        public object font
 
         public int width
         public int depth
@@ -56,7 +57,7 @@ cdef class Level:
     cdef findSpawn(self)
     cdef void calcLightDepths(self, int x0, int y0, int x1, int y1) except *
     cdef inline bint isLightBlocker(self, int x, int y, int z)
-    cpdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1)
+    cdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1)
     cpdef bint setTileNoNeighborChange(self, int x, int y, int z, int type_)
     cdef bint netSetTileNoNeighborChange(self, int x, int y, int z, int type_)
     cpdef bint setTile(self, int x, int y, int z, int type_)
@@ -67,12 +68,12 @@ cdef class Level:
     cpdef inline int getTile(self, int x, int y, int z)
     cpdef void tickEntities(self)
     cpdef tick(self)
-    cpdef inline bint isSolidTile(self, int x, int y, int z)
+    cdef inline bint isSolidTile(self, int x, int y, int z)
     cdef inline bint __isInLevelBounds(self, int x, int y, int z)
     cpdef inline float getGroundLevel(self)
     cpdef inline float getWaterLevel(self)
-    cpdef bint containsAnyLiquid(self, box)
-    cpdef bint containsLiquid(self, box, int liquidId)
+    cdef bint containsAnyLiquid(self, box)
+    cdef bint containsLiquid(self, box, int liquidId)
     cpdef inline addToTickNextTick(self, int x, int y, int z, int type_)
     cpdef bint isFree(self, aabb)
     cpdef inline bint isSolid(self, int x, int y, int z, int f4)
@@ -82,5 +83,6 @@ cdef class Level:
     cpdef inline float getBrightness(self, int x, int y, int z)
     cdef inline int getLiquid(self, int x, int y, int z)
     cpdef inline bint isWater(self, int x, int y, int z)
+    cdef int maybeSpawnMobs(self, int count, entity)
     cpdef bint maybeGrowTree(self, int x, int y, int z)
     cpdef explode(self, entity, float x, float y, float z, float radius)

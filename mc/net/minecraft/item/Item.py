@@ -1,6 +1,6 @@
 from mc.net.minecraft.Entity import Entity
 from mc.net.minecraft.item.ItemModel import ItemModel
-from mc.net.minecraft.item.TakeItemAnim import TakeItemAnim
+from mc.net.minecraft.item.TakeEntityAnim import TakeEntityAnim
 from mc.net.minecraft.level.tile.Tiles import tiles
 from pyglet import gl
 
@@ -8,17 +8,16 @@ import random
 import math
 
 class Item(Entity):
-    __models = []
+    __models = [None] * 256
+
+    @staticmethod
+    def initModels():
+        for i in range(256):
+            tile = tiles.tiles[i]
+            if tile:
+                Item.__models[i] = ItemModel(tile.tex)
 
     def __init__(self, level, x, y, z, res):
-        if not Item.__models:
-            Item.__models = [None] * 256
-
-            for i in range(256):
-                tile = tiles.tiles[i]
-                if tile:
-                    Item.__models[i] = ItemModel(tile.tex)
-
         super().__init__(level)
         self.setSize(0.25, 0.25)
         self.heightOffset = self.bbHeight / 2.0
@@ -81,5 +80,5 @@ class Item(Entity):
 
     def playerTouch(self, player):
         if player.addResource(self.__resource):
-            self.level.addEntity(TakeItemAnim(self.level, self, player))
+            self.level.addEntity(TakeEntityAnim(self.level, self, player))
             self.remove()

@@ -12,12 +12,14 @@ cdef class BasicAI:
         Random __rand
         public float xxa
         public float yya
-        float __yRotA
+        public float _yRotA
         public Level level
         public Mob mob
         public bint jumping
-        int __attackDelay
+        public int _attackDelay
+        public float runSpeed
+        public int _noActionTime
+        public Entity attackTarget
 
-    cdef tick(self, Level level, Mob mob)
-    cpdef _tick(self)
-    cpdef _attack(self, Entity entity)
+    cpdef tick(self, Level level, Mob mob)
+    cpdef _update(self)

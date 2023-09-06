@@ -27,6 +27,14 @@ class Textures:
             self.idMap[resourceName] = id_
             return id_
 
+    def loadTextureImg(self, img):
+        self.ib.clear()
+        gl.glGenTextures(1, self.ib)
+        id_ = self.ib.get(0)
+        self.addTextureId(img, id_)
+        self.pixelsMap[id_] = img
+        return id_
+
     @staticmethod
     def addTexture(img):
         return img

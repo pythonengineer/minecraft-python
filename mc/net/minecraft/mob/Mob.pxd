@@ -21,7 +21,7 @@ cdef class Mob(Entity):
         public bint hasHair
         public str _textureName
         public bint allowAlpha
-        public object model
+        public str modelName
         public float rotOffs
         public int health
         public int lastHealth

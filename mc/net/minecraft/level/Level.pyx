@@ -7,7 +7,13 @@ from libc.math cimport floor, isnan
 
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.level.liquid.Liquid import Liquid
-from mc.net.minecraft.character.Vec3 import Vec3
+from mc.net.minecraft.model.Vec3 import Vec3
+from mc.net.minecraft.mob.Mob import Mob
+from mc.net.minecraft.mob.Zombie import Zombie
+from mc.net.minecraft.mob.Skeleton import Skeleton
+from mc.net.minecraft.mob.Pig import Pig
+from mc.net.minecraft.mob.Creeper import Creeper
+from mc.net.minecraft.player.Player import Player
 from mc.net.minecraft.level.BlockMap cimport BlockMap
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
@@ -233,7 +239,7 @@ cdef class Level:
 
         return boxes
 
-    cpdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1):
+    cdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1):
         cdef int i7, i8
 
         if not self.__networkMode:
@@ -322,43 +328,31 @@ cdef class Level:
         else:
             return 0
 
-    cpdef inline bint isSolidTile(self, int x, int y, int z):
+    cdef inline bint isSolidTile(self, int x, int y, int z):
         cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
         return False if tile is None else tile.isSolid()
 
     cpdef void tickEntities(self):
-        cdef int xOld, yOld, zOld, x, y, z
-
-        for entity in list(self.blockMap.all):
-            entity.tick()
-            if entity.removed:
-                self.blockMap.all.remove(entity)
-                self.blockMap.slot1.init(entity.xOld, entity.yOld, entity.zOld).remove(entity)
-                continue
-
-            xOld = entity.xOld // 16.0
-            yOld = entity.yOld // 16.0
-            zOld = entity.zOld // 16.0
-            x = entity.x // 16.0
-            y = entity.y // 16.0
-            z = entity.z // 16.0
-            if xOld != x or yOld != y or zOld != z:
-                oldSlot = self.blockMap.slot1.init(entity.xOld, entity.yOld, entity.zOld)
-                newSlot = self.blockMap.slot2.init(entity.x, entity.y, entity.z)
-                if oldSlot != newSlot:
-                    oldSlot.remove(entity)
-                    newSlot.add(entity)
-                    entity.xOld = entity.x
-                    entity.yOld = entity.y
-                    entity.zOld = entity.z
+        self.blockMap.tickAll()
 
     @cython.cdivision(True)
     cpdef tick(self):
-        cdef int i1, i2, h, w, d, ticks, i, i12, x, z, y, id_
+        cdef int count, mobs, i1, i2, h, w, d, ticks, i, i12, x, z, y, id_
         cdef char b
         cdef Coord posType
 
         self.__tickCount += 1
+
+        count = self.width * self.height * self.depth // 64 // 64 // 64
+        if <int>floor(self.rand.random() * 100) < count:
+            mobs = 0
+
+            for entity in self.blockMap.all:
+                if isinstance(entity, Mob):
+                    mobs += 1
+
+            if mobs < count * 20:
+                self.maybeSpawnMobs(count, self.player)
 
         i1 = 1
         i2 = 1
@@ -406,7 +400,7 @@ cdef class Level:
     cpdef inline float getWaterLevel(self):
         return self.waterLevel
 
-    cpdef bint containsAnyLiquid(self, box):
+    cdef bint containsAnyLiquid(self, box):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
         cdef Tile tile
 
@@ -438,7 +432,7 @@ cdef class Level:
 
         return False
 
-    cpdef bint containsLiquid(self, box, int liquid):
+    cdef bint containsLiquid(self, box, int liquid):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
         cdef Tile tile
 
@@ -638,19 +632,19 @@ cdef class Level:
             x1 = <int>posVec.x
             if sideHit == 5:
                 x1 -= 1
-                posVec.x -= 1.0
+                posVec.x += 1.0
 
             posVec.y = floor(vec1.y)
             y1 = <int>posVec.y
             if sideHit == 1:
                 y1 -= 1
-                posVec.y -= 1.0
+                posVec.y += 1.0
 
             posVec.z = floor(vec1.z)
             z1 = <int>posVec.z
             if sideHit == 3:
                 z1 -= 1
-                posVec.z -= 1.0
+                posVec.z += 1.0
 
             tile = self.getTile(x1, y1, z1)
             if tile <= 0 or (<Tile>tiles.tiles[tile]).getLiquidType() != Liquid.none:
@@ -676,6 +670,62 @@ cdef class Level:
             if audioInfo:
                 if self.rendererContext.player.getDistanceSq(x, y, z) < dist * dist:
                     self.rendererContext.soundPlayer.play(audioInfo, SoundPos(x, y, z))
+
+    cdef int maybeSpawnMobs(self, int count, entity):
+        cdef int mobs, i5, i6, i7, i8, i9, i10, xx, yy, zz, i14
+        cdef float x, y, z, xd, yd, zd
+
+        mobs = 0
+        for i5 in range(count):
+            i6 = <int>floor(self.rand.random() * 4)
+            i7 = <int>floor(self.rand.random() * self.width)
+            i8 = <int>(min(self.rand.random(), self.rand.random()) * self.depth)
+            i9 = <int>floor(self.rand.random() * self.height)
+            if not self.isSolidTile(i7, i8, i9) and self.getLiquid(i7, i8, i9) == Liquid.none and \
+               (not self.isLit(i7, i8, i9) or <int>floor(self.rand.random() * 5) == 0):
+                for i10 in range(3):
+                    xx = i7
+                    yy = i8
+                    zz = i9
+                    for i14 in range(3):
+                        xx += <int>floor(self.rand.random() * 6) - <int>floor(self.rand.random() * 6)
+                        yy += <int>floor(self.rand.random() * 1) - <int>floor(self.rand.random() * 1)
+                        zz += <int>floor(self.rand.random() * 6) - <int>floor(self.rand.random() * 6)
+                        if xx >= 0 and zz >= 1 and yy >= 0 and \
+                           yy < self.depth - 2 and xx < self.width and zz < self.height and \
+                           self.isSolidTile(xx, yy - 1, zz) and not \
+                           self.isSolidTile(xx, yy, zz) and not \
+                           self.isSolidTile(xx, yy + 1, zz):
+                            x = xx + 0.5
+                            y = yy + 1.0
+                            z = zz + 0.5
+                            if entity:
+                                xd = x - entity.x
+                                yd = y - entity.y
+                                zd = z - entity.z
+                                if xd * xd + yd * yd + zd * zd < 256.0:
+                                    continue
+                            else:
+                                xd = x - self.xSpawn
+                                yd = y - self.ySpawn
+                                zd = z - self.zSpawn
+                                if xd * xd + yd * yd + zd * zd < 256.0:
+                                    continue
+
+                            if i6 == 0:
+                                mob = Zombie(self, x, y, z)
+                            elif i6 == 1:
+                                mob = Skeleton(self, x, y, z)
+                            elif i6 == 2:
+                                mob = Pig(self, x, y, z)
+                            elif i6 == 3:
+                                mob = Creeper(self, x, y, z)
+
+                            if self.isFree(mob.bb):
+                                mobs += 1
+                                self.addEntity(mob)
+
+        return mobs
 
     cpdef bint maybeGrowTree(self, int x, int y, int z):
         cdef int xx, yy, zz, tile, n5, n6, n7, n9, n10, n11
@@ -738,20 +788,11 @@ cdef class Level:
         return self.player
 
     def addEntity(self, entity):
-        self.blockMap.all.append(entity)
-        self.blockMap.slot1.init(entity.x, entity.y, entity.z).add(entity)
-        entity.xOld = entity.x
-        entity.yOld = entity.y
-        entity.zOld = entity.z
-        entity.blockMap = self.blockMap
+        self.blockMap.insert(entity)
         entity.setLevel(self)
 
     def removeEntity(self, entity):
-        self.blockMap.slot1.init(entity.xOld, entity.yOld, entity.zOld).remove(entity)
-        try:
-            self.blockMap.all.remove(entity)
-        except ValueError:
-            pass
+        self.blockMap.remove(entity)
 
     cpdef explode(self, entity, float x, float y, float z, float radius):
         cdef int x0, x1, y0, y1, z0, z1, i, n, j, tile
@@ -779,12 +820,16 @@ cdef class Level:
                     (<Tile>tiles.tiles[tile]).wasExploded(self, i, n, j, 0.3)
                     self.setTile(i, n, j, 0)
 
-        self.blockMap.tmp.clear()
-        entities = self.blockMap.getEntities(entity, x0, y0, z0, x1, y1, z1, self.blockMap.tmp)
+        entities = self.blockMap.getEntitiesExcludingEntity(entity, x0, y0, z0, x1, y1, z1)
         for e in entities:
             d = e.distanceTo(entity) / radius
             if d <= 1.0:
                 e.hurt(entity, <int>((1.0 - d) * 15.0 + 1.0))
+
+    def findPlayer(self):
+        for entity in self.blockMap.all:
+            if isinstance(entity, Player):
+                return entity
 
 cpdef object rebuild(str name, str creator, object createTime, float rotSpawn,
                      set entities, int unprocessed, int tickCount, int multiplier,

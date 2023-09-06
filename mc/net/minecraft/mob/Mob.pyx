@@ -10,6 +10,8 @@ from pyglet import gl
 
 import random
 
+cdef object Tile_modelCache
+
 cdef class Mob(Entity):
     ATTACK_DURATION = 5
     TOTAL_AIR_SUPPLY = 300
@@ -31,7 +33,7 @@ cdef class Mob(Entity):
         self.hasHair = True
         self._textureName = 'char.png'
         self.allowAlpha = True
-        self.model = None
+        self.modelName = ''
         self.rotOffs = 0.0
         self.health = 20
         self.lastHealth = 0
@@ -47,6 +49,15 @@ cdef class Mob(Entity):
         self._dead = False
         self.ai = BasicAI()
         self.setPos(self.x, self.y, self.z)
+
+    @property
+    def modelCache(self):
+        return Mob_modelCache
+
+    @modelCache.setter
+    def modelCache(self, x):
+        global Mob_modelCache
+        Mob_modelCache = x
 
     def isPickable(self):
         return not self.removed
@@ -160,7 +171,7 @@ cdef class Mob(Entity):
     cpdef render(self, textures, float translation):
         cdef float at, yBodyRot, run, rotX, rotY, step, b, rotZ, f10, ht, dt
 
-        if not self.model:
+        if not self.modelCache:
             return
 
         at = self.attackTime - translation
@@ -227,7 +238,7 @@ cdef class Mob(Entity):
         else:
             gl.glDisable(gl.GL_CULL_FACE)
         gl.glScalef(-1.0, 1.0, 1.0)
-        self.model.rot = at / 5.0
+        self.modelCache.getModel(self.modelName).rot = at / 5.0
         gl.glEnable(gl.GL_TEXTURE_2D)
 
         self._bindTexture(textures)
@@ -250,7 +261,7 @@ cdef class Mob(Entity):
 
     def renderModel(self, textures, float x, float y, float z,
                     float rotX, float rotY, float rotZ):
-        self.model.render(x, z, self._tickCount + y, rotX, rotY, rotZ)
+        self.modelCache.getModel(self.modelName).render(x, z, self._tickCount + y, rotX, rotY, rotZ)
 
     def heal(self, int hp):
         if self.health <= 0:
@@ -268,6 +279,7 @@ cdef class Mob(Entity):
         if self.health <= 0:
             return
 
+        self.ai.hurt(entity, hp)
         if self.invulnerableTime > self.invulnerableDuration // 2.0:
             if self.lastHealth - hp >= self.health:
                 return

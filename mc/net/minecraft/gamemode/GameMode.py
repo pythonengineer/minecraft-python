@@ -26,7 +26,7 @@ class GameMode:
 
             tile.destroy(self._mc.level, x, y, z, self._mc.particleEngine)
 
-    def stopDestroyBlock(self, x, y, z, sideHit):
+    def stopDestroyingBlock(self, x, y, z, sideHit):
         pass
 
     def tick(self):

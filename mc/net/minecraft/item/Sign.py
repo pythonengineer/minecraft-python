@@ -6,13 +6,12 @@ import math
 class Sign(Entity):
     __model = SignModel()
 
-    def __init__(self, minecraft, x, y, z, rot):
-        super().__init__(minecraft.level)
+    def __init__(self, level, x, y, z, rot):
+        super().__init__(level)
         self.__messages = ['This is a test', 'of the signs.', 'Each line can', 'be 15 chars!']
         self.setSize(0.5, 1.5)
         self.heightOffset = self.bbHeight / 2.0
         self.setPos(x, y, z)
-        self.__font = minecraft.font
         self.__rot = -rot
         self.heightOffset = 1.5
         self.__xd = -(math.sin(self.__rot * math.pi / 180.0)) * 0.05
@@ -60,8 +59,8 @@ class Sign(Entity):
         gl.glEnable(gl.GL_BLEND)
         for i in range(len(self.__messages)):
             string = self.__messages[i]
-            self.__font.draw(string, -self.__font.width(string) // 2,
-                             i * 10 - len(self.__messages) * 5, 0x202020)
+            self.level.font.draw(string, -self.level.font.width(string) // 2,
+                                 i * 10 - len(self.__messages) * 5, 0x202020)
         gl.glDisable(gl.GL_BLEND)
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
