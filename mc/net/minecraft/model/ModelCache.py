@@ -2,6 +2,7 @@ from mc.net.minecraft.model.HumanoidModel import HumanoidModel
 from mc.net.minecraft.model.CreeperModel import CreeperModel
 from mc.net.minecraft.model.SkeletonModel import SkeletonModel
 from mc.net.minecraft.model.ZombieModel import ZombieModel
+from mc.net.minecraft.model.SpiderModel import SpiderModel
 from mc.net.minecraft.model.QuadrupedModel import QuadrupedModel
 
 class ModelCache:
@@ -13,6 +14,7 @@ class ModelCache:
         self.__skeletonModel = SkeletonModel()
         self.__zombieModel = ZombieModel()
         self.__quadrupedModel = QuadrupedModel()
+        self.__spiderModel = SpiderModel()
 
     def getModel(self, name):
         if name == 'humanoid':
@@ -27,3 +29,5 @@ class ModelCache:
             return self.__zombieModel
         elif name == 'pig':
             return self.__quadrupedModel
+        elif name == 'spider':
+            return self.__spiderModel

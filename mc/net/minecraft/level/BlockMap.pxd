@@ -2,6 +2,8 @@
 
 cimport cython
 
+from mc.net.minecraft.Entity cimport Entity
+from mc.net.minecraft.phys.AABB cimport AABB
 from mc.net.minecraft.level.Slot cimport Slot
 from mc.net.minecraft.renderer.Frustum cimport Frustum
 
@@ -21,14 +23,14 @@ cdef class BlockMap:
 
         public list entityGrid
 
-    cdef insert(self, entity)
-    cdef remove(self, entity)
-    cdef list getEntities(self, oEntity, float x0, float y0, float z0,
+    cdef insert(self, Entity entity)
+    cdef remove(self, Entity entity)
+    cdef list getEntities(self, Entity oEntity, float x0, float y0, float z0,
                           float x1, float y1, float z1, list l)
-    cdef list getEntitiesExcludingEntity(self, entity, float x0, float y0,
+    cdef list getEntitiesExcludingEntity(self, Entity entity, float x0, float y0,
                                          float z0, float x1, float y1, float z1)
-    cpdef list getEntitiesWithinAABBExcludingEntity(self, entity, aabb)
-    cdef list getEntitiesWithinAABBExcludingEntityList(self, entity, aabb, l)
+    cpdef list getEntitiesWithinAABBExcludingEntity(self, Entity entity, AABB aabb)
+    cdef list getEntitiesWithinAABBExcludingEntityList(self, Entity entity, AABB aabb, l)
     cdef clear(self)
     cdef tickAll(self)
-    cpdef render(self, Frustum frustum, textures, float a)
+    cpdef render(self, vec, Frustum frustum, textures, float a)

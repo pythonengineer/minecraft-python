@@ -18,14 +18,14 @@ class GrassTile(Tile):
         if math.floor(4 * random.random()) != 0:
             return
 
-        if not level.isLit(x, y + 1, z):
+        if not level.isLit(x, y, z):
             level.setTile(x, y, z, self.tiles.dirt.id)
         else:
             for i in range(4):
                 xt = x + math.floor(3 * random.random()) - 1
                 yt = y + math.floor(5 * random.random()) - 3
                 zt = z + math.floor(3 * random.random()) - 1
-                if level.getTile(xt, yt, zt) == self.tiles.dirt.id and level.isLit(xt, yt + 1, zt):
+                if level.getTile(xt, yt, zt) == self.tiles.dirt.id and level.isLit(xt, yt, zt):
                     level.setTile(xt, yt, zt, self.id)
 
     def getId(self):

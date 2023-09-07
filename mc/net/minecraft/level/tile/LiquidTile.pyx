@@ -27,7 +27,7 @@ cdef class LiquidTile(Tile):
         if liquid == Liquid.lava:
             self.setTickSpeed(16)
 
-    cdef bint isOpaque(self):
+    cpdef bint isOpaque(self):
         return False
 
     def onPlace(self, Level level, int x, int y, int z):
@@ -134,7 +134,7 @@ cdef class LiquidTile(Tile):
     cdef int getTickDelay(self):
         return 5 if self._liquid == Liquid.lava else 0
 
-    cdef wasExploded(self, Level level, int x, int y, int z, float f):
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance):
         pass
 
     def spawnResources(self, Level level, int x, int y, int z):

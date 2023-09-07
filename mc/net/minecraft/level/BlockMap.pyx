@@ -2,6 +2,8 @@
 
 cimport cython
 
+from mc.net.minecraft.Entity cimport Entity
+from mc.net.minecraft.phys.AABB cimport AABB
 from mc.net.minecraft.level.Slot cimport Slot
 from mc.net.minecraft.renderer.Frustum cimport Frustum
 
@@ -29,7 +31,7 @@ cdef class BlockMap:
                 for h in range(self.height):
                     self.entityGrid[(h * self.depth + d) * self.width + w] = []
 
-    cdef insert(self, entity):
+    cdef insert(self, Entity entity):
         self.all.append(entity)
         self.slot1.init(entity.x, entity.y, entity.z).add(entity)
         entity.xOld = entity.x
@@ -37,14 +39,14 @@ cdef class BlockMap:
         entity.zOld = entity.z
         entity.blockMap = self
 
-    cdef remove(self, entity):
+    cdef remove(self, Entity entity):
         self.slot1.init(entity.xOld, entity.yOld, entity.zOld).remove(entity)
         try:
             self.all.remove(entity)
         except ValueError:
             pass
 
-    def moved(self, entity):
+    def moved(self, Entity entity):
         cdef Slot oldSlot = self.slot1.init(entity.xOld, entity.yOld, entity.zOld)
         cdef Slot newSlot = self.slot2.init(entity.x, entity.y, entity.z)
         if oldSlot != newSlot:
@@ -54,9 +56,10 @@ cdef class BlockMap:
             entity.yOld = entity.y
             entity.zOld = entity.z
 
-    cdef list getEntities(self, oEntity, float x0, float y0, float z0,
+    cdef list getEntities(self, Entity oEntity, float x0, float y0, float z0,
                           float x1, float y1, float z1, list l):
         cdef int x, y, z
+        cdef Entity entity
 
         slot = self.slot1.init(x0, y0, z0)
         slot2 = self.slot2.init(x1, y1, z1)
@@ -72,17 +75,17 @@ cdef class BlockMap:
 
         return l
 
-    cdef list getEntitiesExcludingEntity(self, entity, float x0, float y0,
+    cdef list getEntitiesExcludingEntity(self, Entity entity, float x0, float y0,
                                          float z0, float x1, float y1, float z1):
         self.tmp.clear()
         return self.getEntities(entity, x0, y0, z0, x1, y1, z1, self.tmp)
 
-    cpdef list getEntitiesWithinAABBExcludingEntity(self, entity, aabb):
+    cpdef list getEntitiesWithinAABBExcludingEntity(self, Entity entity, AABB aabb):
         self.tmp.clear()
         return self.getEntities(entity, aabb.x0, aabb.y0, aabb.z0,
                                 aabb.x1, aabb.y1, aabb.z1, self.tmp)
 
-    cdef list getEntitiesWithinAABBExcludingEntityList(self, entity, aabb, l):
+    cdef list getEntitiesWithinAABBExcludingEntityList(self, Entity entity, AABB aabb, l):
         return self.getEntities(entity, aabb.x0, aabb.y0, aabb.z0,
                                 aabb.x1, aabb.y1, aabb.z1, l)
 
@@ -94,6 +97,7 @@ cdef class BlockMap:
 
     cdef tickAll(self):
         cdef int xOld, yOld, zOld, x, y, z
+        cdef Entity entity
 
         for entity in list(self.all):
             entity.tick()
@@ -102,19 +106,20 @@ cdef class BlockMap:
                 self.slot1.init(entity.xOld, entity.yOld, entity.zOld).remove(entity)
                 continue
 
-            xOld = entity.xOld // 16.0
-            yOld = entity.yOld // 16.0
-            zOld = entity.zOld // 16.0
-            x = entity.x // 16.0
-            y = entity.y // 16.0
-            z = entity.z // 16.0
+            xOld = <int>(entity.xOld // 16.0)
+            yOld = <int>(entity.yOld // 16.0)
+            zOld = <int>(entity.zOld // 16.0)
+            x = <int>(entity.x // 16.0)
+            y = <int>(entity.y // 16.0)
+            z = <int>(entity.z // 16.0)
             if xOld != x or yOld != y or zOld != z:
                 self.moved(entity)
 
-    cpdef render(self, Frustum frustum, textures, float a):
+    cpdef render(self, vec, Frustum frustum, textures, float a):
         cdef int x, y, z
         cdef float x0, x1, y0, y1, z0, z1
         cdef bint li, exists
+        cdef Entity entity
 
         for x in range(self.width):
             x0 = (x << 4) - 2
@@ -129,13 +134,8 @@ cdef class BlockMap:
 
                     z0 = (z << 4) - 2
                     z1 = (z + 1 << 4) + 2
-                    li = frustum.cubeInFrustum(x0, y0, z0, x1, y1, z1)
-                    exists = li and frustum.cubeFullyInFrustum(x0, y0, z0, x1, y1, z1)
-                    if not li:
-                        continue
-
-                    for entity in entities:
-                        if not exists and not frustum.isVisible(entity.bb):
-                            continue
-
-                        entity.render(textures, a)
+                    if frustum.cubeInFrustum(x0, y0, z0, x1, y1, z1):
+                        exists = frustum.cubeFullyInFrustum(x0, y0, z0, x1, y1, z1)
+                        for entity in entities:
+                            if entity.shouldRender(vec) and (exists or frustum.isVisible(entity.bb)):
+                                entity.render(textures, a)

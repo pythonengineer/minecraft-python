@@ -20,9 +20,8 @@ class Gui(GuiComponent):
         self.tickCounter = 0
 
     def render(self, scale, playerAlive, xm, ym):
-        self.__minecraft.gameRenderer.tick()
+        self.__minecraft.gameRenderer.render()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__minecraft.textures.loadTexture('gui/gui.png'))
-        gl.glEnable(gl.GL_TEXTURE_2D)
         t = tesselator
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glEnable(gl.GL_BLEND)
@@ -105,11 +104,9 @@ class Gui(GuiComponent):
             gl.glScalef(-1.0, -1.0, -1.0)
             tex = self.__minecraft.textures.loadTexture('terrain.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-            gl.glEnable(gl.GL_TEXTURE_2D)
             t.begin()
             tiles.tiles[tile].render(t, self.__minecraft.level, 0, -2, 0, 0)
             t.end()
-            gl.glDisable(gl.GL_TEXTURE_2D)
             gl.glPopMatrix()
             if self.__minecraft.player.inventory.count[slot] > 1:
                 string = '' + str(self.__minecraft.player.inventory.count[slot])

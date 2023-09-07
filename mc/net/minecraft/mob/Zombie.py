@@ -9,11 +9,6 @@ class Zombie(HumanoidMob):
         self._textureName = 'mob/zombie.png'
         self.heightOffset = 1.62
         self.ai = BasicAttackAI()
+        self._deathScore = 80
         self.ai.defaultLookAngle = 30
         self.ai.runSpeed = 1.0
-
-    def die(self, entity):
-        if entity:
-            entity.awardKillScore(self, 100)
-
-        super().die(entity)

@@ -6,6 +6,8 @@ class Bush(Flower):
 
     def __init__(self, tiles, id_, tex):
         super().__init__(tiles, 6, 15)
+        f = 0.4
+        self._setShape(0.5 - f, 0.0, 0.5 - f, f + 0.5, f * 2.0, f + 0.5)
 
     def tick(self, level, x, y, z, random):
         below = level.getTile(x, y - 1, z)

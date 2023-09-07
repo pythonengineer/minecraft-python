@@ -50,24 +50,24 @@ class Item(Entity):
             self.remove()
 
     def render(self, textures, translation):
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        tex = textures.loadTexture('terrain.png')
-        gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+        self.textureId = textures.loadTexture('terrain.png')
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureId)
         b = self.level.getBrightness(self.x, self.y, self.z)
         f3 = self.__rot + (self.__tickCount + translation) * 3.0
         gl.glPushMatrix()
         gl.glColor4f(b, b, b, 1.0)
-        f2 = math.sin(f3 / 10.0) * 0.1 + 0.1
+        f2 = math.sin(f3 / 10.0)
+        f4 = f2 * 0.1 + 0.1
         gl.glTranslatef(self.xo + (self.x - self.xo) * translation,
-                        self.yo + (self.y - self.yo) * translation + f2,
+                        self.yo + (self.y - self.yo) * translation + f4,
                         self.zo + (self.z - self.zo) * translation)
         gl.glRotatef(f3, 0.0, 1.0, 0.0)
         Item.__models[self.__resource].render()
-        gl.glDisable(gl.GL_TEXTURE_2D)
-        f2 = math.sin(f3 / 10.0) * 0.5 + 0.5
+        f2 = f2 * 0.5 + 0.5
         f2 *= f2
         f2 *= f2
         gl.glColor4f(1.0, 1.0, 1.0, f2 * 0.4)
+        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE)
         gl.glDisable(gl.GL_ALPHA_TEST)
@@ -77,6 +77,7 @@ class Item(Entity):
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glPopMatrix()
+        gl.glEnable(gl.GL_TEXTURE_2D)
 
     def playerTouch(self, player):
         if player.addResource(self.__resource):

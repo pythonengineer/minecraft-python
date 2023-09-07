@@ -13,7 +13,7 @@ cdef class Flower(Tile):
         self.tex = tex
         self._setTicking(True)
         cdef float f = 0.2
-        self._setShape(0.5 - f, 0.0, 0.5 - f, f + 0.5, f * 2.0, f + 0.5)
+        self._setShape(0.5 - f, 0.0, 0.5 - f, f + 0.5, f * 3.0, f + 0.5)
 
     cpdef void tick(self, Level level, int x, int y, int z, random) except *:
         cdef int below = level.getTile(x, y - 1, z)
@@ -82,5 +82,5 @@ cdef class Flower(Tile):
         self.__renderFlower(t, 0.0, 0.4, -0.3)
         t.end()
 
-    cdef bint isOpaque(self):
+    cpdef bint isOpaque(self):
         return False

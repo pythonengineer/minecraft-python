@@ -18,7 +18,7 @@ cdef class Mob(Entity):
 
     def __init__(self, level):
         super().__init__(level)
-        self.invulnerableDuration = 30
+        self.invulnerableDuration = 20
         self.rot = random.random() * pi * 2.0
         self.timeOffs = random.random() * 12398.0
         self.speed = 1.0
@@ -34,6 +34,8 @@ cdef class Mob(Entity):
         self._textureName = 'char.png'
         self.allowAlpha = True
         self.modelName = ''
+        self._bobStrength = 1.0
+        self._deathScore = 0
         self.rotOffs = 0.0
         self.health = 20
         self.lastHealth = 0
@@ -48,6 +50,7 @@ cdef class Mob(Entity):
         self.tilt = 0.0
         self._dead = False
         self.ai = BasicAI()
+        self.footSize = 0.5
         self.setPos(self.x, self.y, self.z)
 
     @property
@@ -165,7 +168,8 @@ cdef class Mob(Entity):
             self.ai.tick(self.level, self)
 
     def _bindTexture(self, textures):
-        gl.glBindTexture(gl.GL_TEXTURE_2D, textures.loadTexture(self._textureName))
+        self.textureId = textures.loadTexture(self._textureName)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureId)
 
     @cython.cdivision(True)
     cpdef render(self, textures, float translation):
@@ -183,7 +187,6 @@ cdef class Mob(Entity):
         while self._yBodyRotO - self._yBodyRot >= 180.0:
             self._yBodyRotO -= 360.0
 
-        yBodyRot = self._yBodyRotO + (self._yBodyRot - self._yBodyRotO) * translation
         while self.xRotO - self.xRot < -180.0:
             self.xRotO += 360.0
         while self.xRotO - self.xRot >= 180.0:
@@ -193,8 +196,8 @@ cdef class Mob(Entity):
         while self.yRotO - self.yRot >= 180.0:
             self.yRotO -= 360.0
 
+        yBodyRot = self._yBodyRotO + (self._yBodyRot - self._yBodyRotO) * translation
         run = self._oRun + (self._run - self._oRun) * translation
-        gl.glEnable(gl.GL_TEXTURE_2D)
         rotX = self.yRotO + (self.yRot - self.yRotO) * translation
         rotY = self.xRotO + (self.xRot - self.xRotO) * translation
         rotX -= yBodyRot
@@ -203,7 +206,7 @@ cdef class Mob(Entity):
         b = self.getBrightness(translation)
         gl.glColor3f(b, b, b)
         rotZ = 0.0625
-        f10 = -abs(cos(step * 0.6662)) * 5.0 * run - 23.0
+        f10 = -abs(cos(step * 0.6662)) * 5.0 * run * self._bobStrength - 23.0
         gl.glTranslatef(self.xo + (self.x - self.xo) * translation,
                         self.yo + (self.y - self.yo) * translation - 1.62,
                         self.zo + (self.z - self.zo) * translation)
@@ -230,8 +233,8 @@ cdef class Mob(Entity):
             gl.glRotatef(dt, 0.0, 1.0, 0.0)
             gl.glRotatef(-(180.0 - yBodyRot + self.rotOffs), 0.0, 1.0, 0.0)
 
+        gl.glTranslatef(0.0, -f10 * rotZ, 0.0)
         gl.glScalef(1.0, -1.0, 1.0)
-        gl.glTranslatef(0.0, f10 * rotZ, 0.0)
         gl.glRotatef(180.0 - yBodyRot + self.rotOffs, 0.0, 1.0, 0.0)
         if not self.allowAlpha:
             gl.glDisable(gl.GL_ALPHA_TEST)
@@ -239,7 +242,6 @@ cdef class Mob(Entity):
             gl.glDisable(gl.GL_CULL_FACE)
         gl.glScalef(-1.0, 1.0, 1.0)
         self.modelCache.getModel(self.modelName).rot = at / 5.0
-        gl.glEnable(gl.GL_TEXTURE_2D)
 
         self._bindTexture(textures)
         self.renderModel(textures, step, translation, run, rotX, rotY, rotZ)
@@ -251,12 +253,10 @@ cdef class Mob(Entity):
             self.renderModel(textures, step, translation, run, rotX, rotY, rotZ)
             gl.glDisable(gl.GL_BLEND)
 
-        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_ALPHA_TEST)
         if self.allowAlpha:
             gl.glEnable(gl.GL_CULL_FACE)
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glPopMatrix()
 
     def renderModel(self, textures, float x, float y, float z,
@@ -319,6 +319,9 @@ cdef class Mob(Entity):
             self.yd = 0.4
 
     def die(self, Entity entity):
+        if self._deathScore > 0 and entity:
+            entity.awardKillScore(self, self._deathScore)
+
         self._dead = True
 
     cdef _causeFallDamage(self, float d):

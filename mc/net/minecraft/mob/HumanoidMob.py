@@ -12,8 +12,8 @@ class HumanoidMob(Mob):
         self.setPos(x, y, z)
 
     def renderModel(self, textures, x, y, z, rotX, rotY, rotZ):
+        super().renderModel(textures, x, y, z, rotX, rotY, rotZ)
         model = self.modelCache.getModel(self.modelName)
-        model.render(x, z, self._tickCount + y, rotX, rotY, rotZ)
         gl.glEnable(gl.GL_ALPHA_TEST)
         if self.allowAlpha:
             gl.glEnable(gl.GL_CULL_FACE)

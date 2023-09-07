@@ -109,14 +109,30 @@ class Cube:
         if not self.compiled:
             self.translateTo(translation)
 
-        c = 57.29578
-        gl.glPushMatrix()
-        gl.glTranslatef(self.__x * translation, self.__y * translation, self.__z * translation)
-        gl.glRotatef(self.zRot * c, 0.0, 0.0, 1.0)
-        gl.glRotatef(self.yRot * c, 0.0, 1.0, 0.0)
-        gl.glRotatef(self.xRot * c, 1.0, 0.0, 0.0)
-        gl.glCallList(self.list)
-        gl.glPopMatrix()
+        if self.xRot == 0.0 and self.yRot == 0.0 and self.zRot == 0.0:
+            if self.__x == 0.0 and self.__y == 0.0 and self.__z == 0.0:
+                gl.glCallList(self.list)
+            else:
+                gl.glTranslatef(self.__x * translation,
+                                self.__y * translation,
+                                self.__z * translation)
+                gl.glCallList(self.list)
+                gl.glTranslatef(-self.__x * translation,
+                                -self.__y * translation,
+                                -self.__z * translation)
+        else:
+            c = 57.29578
+            gl.glPushMatrix()
+            gl.glTranslatef(self.__x * translation, self.__y * translation, self.__z * translation)
+            if self.zRot != 0.0:
+                gl.glRotatef(self.zRot * c, 0.0, 0.0, 1.0)
+            if self.yRot != 0.0:
+                gl.glRotatef(self.yRot * c, 0.0, 1.0, 0.0)
+            if self.xRot != 0.0:
+                gl.glRotatef(self.xRot * c, 1.0, 0.0, 0.0)
+
+            gl.glCallList(self.list)
+            gl.glPopMatrix()
 
     def translateTo(self, translation):
         self.list = gl.glGenLists(1)

@@ -2,9 +2,11 @@ from mc.net.minecraft.model.Vec3 import Vec3
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.level.liquid.Liquid import Liquid
 from mc.net.minecraft.renderer.TileRenderer import TileRenderer
+from mc.net.minecraft.renderer.Tesselator import tesselator
 from mc.CompatibilityShims import BufferUtils
 from pyglet import gl
 
+import random
 import math
 
 class GameRenderer:
@@ -13,6 +15,8 @@ class GameRenderer:
     displayActive = False
 
     renderDistance = 0.0
+    rainTicks = 0
+    rand = random.Random()
 
     __u1 = 0
     __u2 = 0
@@ -26,6 +30,12 @@ class GameRenderer:
     def __init__(self, minecraft):
         self.minecraft = minecraft
         self.tileRenderer = TileRenderer(self.minecraft)
+
+    def getPlayerRotVec(self, rot):
+        x = self.minecraft.player.xo + (self.minecraft.player.x - self.minecraft.player.xo) * rot
+        y = self.minecraft.player.yo + (self.minecraft.player.y - self.minecraft.player.yo) * rot
+        z = self.minecraft.player.zo + (self.minecraft.player.z - self.minecraft.player.zo) * rot
+        return Vec3(x, y, z)
 
     def renderHurtFrames(self, a):
         ht = self.minecraft.player.hurtTime - a
@@ -52,6 +62,47 @@ class GameRenderer:
         gl.glRotatef(abs(math.cos(d * math.pi + 0.2) * bob) * 5.0, 1.0, 0.0, 0.0)
         gl.glRotatef(tilt, 1.0, 0.0, 0.0)
 
+    def renderRain(self, a):
+        x = int(self.minecraft.player.x)
+        y = int(self.minecraft.player.y)
+        z = int(self.minecraft.player.z)
+        t = tesselator
+        gl.glDisable(gl.GL_CULL_FACE)
+        gl.glNormal3f(0.0, 1.0, 0.0)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.minecraft.textures.loadTexture('rain.png'))
+
+        for xx in range(x - 5, x + 6):
+            for zz in range(z - 5, z + 6):
+                tile = self.minecraft.level.getHighestTile(xx, zz)
+                i11 = y - 5
+                i12 = y + 5
+                if i11 < tile:
+                    i11 = tile
+                if i12 < tile:
+                    i12 = tile
+
+                if i11 != i12:
+                    f15 = (((self.rainTicks + xx * 3121 + zz * 418711) % 32) + a) / 32.0
+                    f13 = xx + 0.5 - self.minecraft.player.x
+                    f14 = zz + 0.5 - self.minecraft.player.z
+                    f13 = math.sqrt(f13 * f13 + f14 * f14) / 5
+                    gl.glColor4f(1.0, 1.0, 1.0, (1.0 - f13 * f13) * 0.7)
+                    t.begin()
+                    t.vertexUV(xx, i11, zz, 0.0, i11 * 2.0 / 8.0 + f15 * 2.0)
+                    t.vertexUV(xx + 1, i11, zz + 1, 2.0, i11 * 2.0 / 8.0 + f15 * 2.0)
+                    t.vertexUV(xx + 1, i12, zz + 1, 2.0, i12 * 2.0 / 8.0 + f15 * 2.0)
+                    t.vertexUV(xx, i12, zz, 0.0, i12 * 2.0 / 8.0 + f15 * 2.0)
+                    t.vertexUV(xx, i11, zz + 1, 0.0, i11 * 2.0 / 8.0 + f15 * 2.0)
+                    t.vertexUV(xx + 1, i11, zz, 2.0, i11 * 2.0 / 8.0 + f15 * 2.0)
+                    t.vertexUV(xx + 1, i12, zz, 2.0, i12 * 2.0 / 8.0 + f15 * 2.0)
+                    t.vertexUV(xx, i12, zz + 1, 0.0, i12 * 2.0 / 8.0 + f15 * 2.0)
+                    t.end()
+
+        gl.glEnable(gl.GL_CULL_FACE)
+        gl.glDisable(gl.GL_BLEND)
+
     def toggleLight(self, light):
         if not light:
             gl.glDisable(gl.GL_LIGHTING)
@@ -69,7 +120,7 @@ class GameRenderer:
             gl.glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT, self.__getBuffer(0.0, 0.0, 0.0, 1.0))
             gl.glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT, self.__getBuffer(light1, light1, light1, 1.0))
 
-    def tick(self):
+    def render(self):
         screenWidth = self.minecraft.width * 240 // self.minecraft.height
         screenHeight = self.minecraft.height * 240 // self.minecraft.height
 

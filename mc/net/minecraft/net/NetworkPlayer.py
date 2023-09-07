@@ -103,7 +103,6 @@ class NetworkPlayer(HumanoidMob):
         gl.glTranslatef(1.0, 1.0, -0.05)
         Font.draw(self.name, 0, 0, 5263440)
         gl.glPopMatrix()
-        gl.glDisable(gl.GL_TEXTURE_2D)
 
     def queue1(self, xa, ya, za, xr, yr):
         rotX = xr - self.yRot

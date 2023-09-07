@@ -11,6 +11,7 @@ class Skeleton(Zombie):
         self.modelName = 'skeleton'
         self._textureName = 'mob/skeleton.png'
         self.ai = SkeletonAI()
+        self._deathScore = 120
         self.ai.runSpeed = 0.3
         self.ai.damage = 8
 

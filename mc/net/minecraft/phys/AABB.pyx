@@ -118,6 +118,13 @@ cdef class AABB:
 
         return True
 
+    def intersectsInner(self, c):
+        if c.x1 >= self.x0 and c.x0 <= self.x1:
+            if c.y1 >= self.y0 and c.y0 <= self.y1:
+                return c.z1 >= self.z0 and c.z0 <= self.z1
+
+        return False
+
     cpdef void move(self, float xa, float ya, float za):
         self.x0 += xa
         self.y0 += ya
@@ -170,3 +177,34 @@ cdef class AABB:
         gl.glVertex3f(self.x0, self.y0, self.z1)
         gl.glVertex3f(self.x0, self.y1, self.z1)
         gl.glEnd()
+
+    def getSize(self):
+        xd = self.x1 - self.x0
+        yd = self.y1 - self.y0
+        zd = self.z1 - self.z0
+        return (xd + yd + zd) / 3.0
+
+    def shrink(self, xa, ya, za):
+        x0 = self.x0
+        y0 = self.y0
+        z0 = self.z0
+        x1 = self.x1
+        y1 = self.y1
+        z1 = self.z1
+        if xa < 0.0:
+            x0 -= xa
+        if xa > 0.0:
+            x1 -= xa
+        if ya < 0.0:
+            y0 -= ya
+        if ya > 0.0:
+            y1 -= ya
+        if za < 0.0:
+            z0 -= za
+        if za > 0.0:
+            z1 -= za
+
+        return AABB(x0, y0, z0, x1, y1, z1)
+
+    cdef AABB copy(self):
+        return AABB(self.x0, self.y0, self.z0, self.x1, self.y1, self.z1)

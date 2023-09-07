@@ -26,6 +26,7 @@ cdef class Chunk:
         int __y1
         int __z1
 
+        bint __skippedRenderPass
         bint[8] __skipRenderPass
         public bint isInFrustum
 
@@ -42,6 +43,7 @@ cdef class Chunk:
         self.__tiles = tiles
         self.__t = tesselator
         self.__lists = -1
+        self.__skippedRenderPass = True
         for i in range(8):
             self.__skipRenderPass[i] = False
         self.isInFrustum = False
@@ -62,7 +64,8 @@ cdef class Chunk:
         self.__reset()
 
     cpdef rebuild(self, bint isLit):
-        cdef int renderPass, x0, y0, z0, xx, yy, zz, xa, ya, za, x, y, z, tileId, tileId2, tileId3, tileId4, inc
+        cdef int renderPass, x0, y0, z0, xx, yy, zz, xa, ya, za, x, y, z
+        cdef int tileId, tileId2, tileId3, tileId4, inc
         cdef float m, b, br
         cdef Tile rock, tile
 
@@ -81,10 +84,13 @@ cdef class Chunk:
         cdef Level l = self.__level
 
         for renderPass in range(8):
-            self.__skipRenderPass[renderPass] = True
-
-            gl.glNewList(self.__lists + renderPass, gl.GL_COMPILE)
-            self.__t.begin()
+            layer = renderPass
+            if not self.__skippedRenderPass or renderPass == 0 or renderPass == 7:
+                self.__skipRenderPass[renderPass] = True
+                gl.glNewList(self.__lists + renderPass, gl.GL_COMPILE)
+                self.__t.begin()
+            elif self.__skippedRenderPass and renderPass > 0 and renderPass < 7:
+                layer = 0
 
             xa = 0
             ya = 0
@@ -120,12 +126,12 @@ cdef class Chunk:
                                 if tileId > 0 and not rock.lightOpacity[tileId] and not \
                                    rock.isLiquid[tileId] and \
                                    tiles.tiles[tileId].render(t, l, 0, x, y, z):
-                                    self.__skipRenderPass[renderPass] = False
+                                    self.__skipRenderPass[layer] = False
                                 x += 1
                             elif renderPass == 7:
                                 if rock.isLiquid[tileId] and \
                                    tiles.tiles[tileId].render(t, l, 1, x, y, z):
-                                    self.__skipRenderPass[renderPass] = False
+                                    self.__skipRenderPass[layer] = False
                                 x += 1
                             else:
                                 tileId2 = l.getTile(x + xa, y + ya, z + za)
@@ -150,7 +156,7 @@ cdef class Chunk:
                                     tile = self.__tiles.tiles[tileId]
                                     t.colorFloat(b, b, b)
                                     tile.renderBlockFromSide(t, x, y, z, renderPass, inc - 1)
-                                    self.__skipRenderPass[renderPass] = False
+                                    self.__skipRenderPass[layer] = False
                                     x += inc
                                 else:
                                     x += 1
@@ -181,13 +187,14 @@ cdef class Chunk:
                                 tile = self.__tiles.tiles[tileId]
                                 t.colorFloat(b, b, b)
                                 tile.renderBlockFromSide(t, x, y, z, renderPass, inc - 1)
-                                self.__skipRenderPass[renderPass] = False
+                                self.__skipRenderPass[layer] = False
                                 z += inc
                             else:
                                 z += 1
 
-            self.__t.end()
-            gl.glEndList()
+            if not self.__skippedRenderPass or renderPass == 6 or renderPass == 7:
+                self.__t.end()
+                gl.glEndList()
 
         rock.isNormalTile = False
 
@@ -212,27 +219,32 @@ cdef class Chunk:
             return startingIndex
 
         if renderPass == 0:
-            if not self.__skipRenderPass[0] and y < self.__y0 + self.__y1 + 0.5:
-                chunkBuffer[startingIndex] = self.__lists
-                startingIndex += 1
-            if not self.__skipRenderPass[1] and y > self.__y0 - 0.5:
-                chunkBuffer[startingIndex] = self.__lists + 1
-                startingIndex += 1
-            if not self.__skipRenderPass[2] and z < self.__z0 + self.__z1 + 0.5:
-                chunkBuffer[startingIndex] = self.__lists + 2
-                startingIndex += 1
-            if not self.__skipRenderPass[3] and z > self.__z0 - 0.5:
-                chunkBuffer[startingIndex] = self.__lists + 3
-                startingIndex += 1
-            if not self.__skipRenderPass[4] and x < self.__x0 + self.__x1 + 0.5:
-                chunkBuffer[startingIndex] = self.__lists + 4
-                startingIndex += 1
-            if not self.__skipRenderPass[5] and x > self.__x0 - 0.5:
-                chunkBuffer[startingIndex] = self.__lists + 5
-                startingIndex += 1
-            if not self.__skipRenderPass[6]:
-                chunkBuffer[startingIndex] = self.__lists + 6
-                startingIndex += 1
+            if self.__skippedRenderPass:
+                if not self.__skipRenderPass[0]:
+                    chunkBuffer[startingIndex] = self.__lists
+                    startingIndex += 1
+            else:
+                if not self.__skipRenderPass[0] and y < self.__y0 + self.__y1 + 0.5:
+                    chunkBuffer[startingIndex] = self.__lists
+                    startingIndex += 1
+                if not self.__skipRenderPass[1] and y > self.__y0 - 0.5:
+                    chunkBuffer[startingIndex] = self.__lists + 1
+                    startingIndex += 1
+                if not self.__skipRenderPass[2] and z < self.__z0 + self.__z1 + 0.5:
+                    chunkBuffer[startingIndex] = self.__lists + 2
+                    startingIndex += 1
+                if not self.__skipRenderPass[3] and z > self.__z0 - 0.5:
+                    chunkBuffer[startingIndex] = self.__lists + 3
+                    startingIndex += 1
+                if not self.__skipRenderPass[4] and x < self.__x0 + self.__x1 + 0.5:
+                    chunkBuffer[startingIndex] = self.__lists + 4
+                    startingIndex += 1
+                if not self.__skipRenderPass[5] and x > self.__x0 - 0.5:
+                    chunkBuffer[startingIndex] = self.__lists + 5
+                    startingIndex += 1
+                if not self.__skipRenderPass[6]:
+                    chunkBuffer[startingIndex] = self.__lists + 6
+                    startingIndex += 1
         elif not self.__skipRenderPass[7]:
             chunkBuffer[startingIndex] = self.__lists + 7
             startingIndex += 1

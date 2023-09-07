@@ -10,7 +10,6 @@ class Screen(GuiComponent):
             if not button.visible:
                 continue
 
-            gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self._minecraft.textures.loadTexture('gui/gui.png'))
             gl.glColor4f(1.0, 1.0, 1.0, 1.0)
             z6 = True if xMouse >= button.x and yMouse >= button.y and xMouse < button.x + button.w and yMouse < button.y + button.h else False

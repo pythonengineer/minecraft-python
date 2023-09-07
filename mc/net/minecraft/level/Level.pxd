@@ -78,7 +78,7 @@ cdef class Level:
     cpdef bint isFree(self, aabb)
     cpdef inline bint isSolid(self, int x, int y, int z, int f4)
     cdef inline bint __isBlockOpaque(self, int x, int y, int z)
-    cdef int getHighestTile(self, int x, int z)
+    cpdef getHighestTile(self, int x, int z)
     cpdef setSpawnPos(self, int x, int y, int z, float yRot)
     cpdef inline float getBrightness(self, int x, int y, int z)
     cdef inline int getLiquid(self, int x, int y, int z)

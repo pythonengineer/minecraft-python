@@ -11,4 +11,4 @@ cdef class Flower(Tile):
     cdef void __renderFlower(self, Tesselator t, float x, float y, float z) except *
     cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
-    cdef bint isOpaque(self)
+    cpdef bint isOpaque(self)

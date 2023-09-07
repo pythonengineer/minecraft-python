@@ -63,7 +63,7 @@ cdef class BasicAI:
             elif isInLava:
                 mob.yd += 0.04
             elif mob.onGround:
-                mob.yd = 0.42
+                self._jumpFromGround()
 
         self.xxa *= 0.98
         self.yya *= 0.98
@@ -76,6 +76,9 @@ cdef class BasicAI:
                     continue
 
                 entity.push(mob)
+
+    def _jumpFromGround(self):
+        self.mob.yd = 0.42
 
     cpdef _update(self):
         if self.__rand.randFloat() < 0.07:

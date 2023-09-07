@@ -12,15 +12,16 @@ cdef class Tile:
         public float particleGravity
         public object soundType
         int __destroyProgress
+        public bint explodeable
 
-        float __xx0
-        float __yy0
-        float __zz0
-        float __xx1
-        float __yy1
-        float __zz1
+        public float xx0
+        public float yy0
+        public float zz0
+        public float xx1
+        public float yy1
+        public float zz1
 
-    cdef bint isOpaque(self)
+    cpdef bint isOpaque(self)
     cdef setTickSpeed(self, int speed)
     cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *
     cdef float _getBrightness(self, Level level, int x, int y, int z)
@@ -38,4 +39,10 @@ cdef class Tile:
     cdef int getTickDelay(self)
     cpdef int resourceCount(self)
     cpdef int getId(self)
-    cdef wasExploded(self, Level level, int x, int y, int z, float f)
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance)
+    cdef bint isExplodeable(self)
+    cdef clip(self, int x, int y, int z, v0, v1)
+    cdef bint __containsX(self, vec)
+    cdef bint __containsY(self, vec)
+    cdef bint __containsZ(self, vec)
+    cpdef wasExploded(self, Level level, int x, int y, int z)

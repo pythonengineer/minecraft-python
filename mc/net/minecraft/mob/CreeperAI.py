@@ -1,5 +1,5 @@
 from mc.net.minecraft.mob.ai.BasicAttackAI import BasicAttackAI
-from mc.net.minecraft.particle.Particle import Particle
+from mc.net.minecraft.particle.TerrainParticle import TerrainParticle
 from mc.net.minecraft.level.tile.Tiles import tiles
 
 import random
@@ -25,9 +25,9 @@ class CreeperAI(BasicAttackAI):
             xp = x / f5 / f5
             yp = y / f5 / f5
             zp = z / f5 / f5
-            self.level.particleEngine.addParticle(Particle(self.level,
-                                                           self.mob.x + x,
-                                                           self.mob.y + y,
-                                                           self.mob.z + z,
-                                                           xp, yp, zp,
-                                                           tiles.leaf))
+            self.level.particleEngine.addParticle(TerrainParticle(self.level,
+                                                                  self.mob.x + x,
+                                                                  self.mob.y + y,
+                                                                  self.mob.z + z,
+                                                                  xp, yp, zp,
+                                                                  tiles.leaf))

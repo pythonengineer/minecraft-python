@@ -12,15 +12,10 @@ class Creeper(Mob):
         self._textureName = 'mob/creeper.png'
         self.ai = CreeperAI()
         self.ai.defaultLookAngle = 45
+        self._deathScore = 200
         self.setPos(x, y, z)
 
     def getBrightness(self, a):
         f = (20 - self.health) / 20.0
         f = (math.sin(self._tickCount + a) * 0.5 + 0.5) * f * 0.5 + 0.25 + f * 0.25
         return f * super().getBrightness(a)
-
-    def die(self, entity):
-        if entity:
-            entity.awardKillScore(self, 250)
-
-        super().die(entity)

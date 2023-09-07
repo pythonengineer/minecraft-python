@@ -48,4 +48,11 @@ cdef class Tiles:
         public Tile rose
         public Tile mushroomBrown
         public Tile mushroomRed
-        public Tile goldBlock
+        public Tile gold
+        public Tile iron
+        public Tile slabFull
+        public Tile slabHalf
+        public Tile brick
+        public Tile tnt
+        public Tile bookshelf
+        public Tile mossStone

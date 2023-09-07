@@ -13,6 +13,8 @@ from mc.net.minecraft.mob.Zombie import Zombie
 from mc.net.minecraft.mob.Skeleton import Skeleton
 from mc.net.minecraft.mob.Pig import Pig
 from mc.net.minecraft.mob.Creeper import Creeper
+from mc.net.minecraft.mob.Spider import Spider
+from mc.net.minecraft.fx.Smolder import Smolder
 from mc.net.minecraft.player.Player import Player
 from mc.net.minecraft.level.BlockMap cimport BlockMap
 from mc.net.minecraft.level.tile.Tile cimport Tile
@@ -184,7 +186,7 @@ cdef class Level:
                 while y > 0 and not self.isLightBlocker(x, y, z):
                     y -= 1
 
-                self.__heightMap[x + z * self.width] = y + 1
+                self.__heightMap[x + z * self.width] = y
 
                 if oldDepth != y:
                     yl0 = oldDepth if oldDepth < y else y
@@ -230,11 +232,11 @@ cdef class Level:
                         tile = tiles.tiles[self.getTile(x, y, z)]
                         if tile:
                             aabb = tile.getTileAABB(x, y, z)
-                            if aabb:
+                            if aabb and box.intersectsInner(aabb):
                                 boxes.append(aabb)
                     elif x < 0 or y < 0 or z < 0 or x >= self.width or z >= self.height:
                         aabb = tiles.unbreakable.getTileAABB(x, y, z)
-                        if aabb:
+                        if aabb and box.intersectsInner(aabb):
                             boxes.append(aabb)
 
         return boxes
@@ -504,7 +506,7 @@ cdef class Level:
         cdef int tile = self.getTile(int(x), int(y), int(z))
         return tile > 0 and (<Tile>tiles.tiles[tile]).isSolid()
 
-    cdef int getHighestTile(self, int x, int z):
+    cpdef getHighestTile(self, int x, int z):
         cdef int i
         i = self.depth
         while (self.getTile(x, i - 1, z) == 0 or (<Tile>tiles.tiles[self.getTile(x, i - 1, z)]).getLiquidType() != Liquid.none) and i > 0:
@@ -536,9 +538,10 @@ cdef class Level:
         self.__networkMode = mode
 
     def clip(self, vec1, vec2):
-        cdef int x0, y0, z0, x1, y1, z1, i, tile
+        cdef int x0, y0, z0, x1, y1, z1, i, tileId
         cdef float f9, f10, f11, f12, f13, f14, f15, f16, f17
         cdef char sideHit
+        cdef Tile tile
 
         if isnan(vec1.x) or isnan(vec1.y) or isnan(vec1.z):
             return None
@@ -552,11 +555,8 @@ cdef class Level:
         y1 = <int>floor(vec1.y)
         z1 = <int>floor(vec1.z)
         i = 20
-        tile = self.getTile(x1, y1, z1)
-        while tile >= 0:
-            if i < 0:
-                return None
-
+        tileId = self.getTile(x1, y1, z1)
+        while i >= 0:
             i -= 1
 
             if isnan(vec1.x) or isnan(vec1.y) or isnan(vec1.z):
@@ -646,18 +646,25 @@ cdef class Level:
                 z1 -= 1
                 posVec.z += 1.0
 
-            tile = self.getTile(x1, y1, z1)
-            if tile <= 0 or (<Tile>tiles.tiles[tile]).getLiquidType() != Liquid.none:
-                continue
+            tileId = self.getTile(x1, y1, z1)
+            if tileId > 0:
+                tile = tiles.tiles[tileId]
+                if tile.getLiquidType() == Liquid.none:
+                    if tile.isOpaque():
+                        return HitResult(x1, y1, z1, sideHit, posVec)
 
-            return HitResult(x1, y1, z1, sideHit, posVec)
+                    hitResult = tile.clip(x1, y1, z1, vec1, vec2)
+                    if hitResult:
+                        return hitResult
 
     def playSoundAtEntity(self, name, entity, float volume, float pitch):
         cdef float dist = 16.0 * volume
         if self.rendererContext and self.rendererContext.soundPlayer and self.rendererContext.options.sound:
             audioInfo = self.rendererContext.soundEngine.getAudioInfo(name, volume, pitch)
             if audioInfo:
-                if self.rendererContext.player.distanceTo(entity) < dist * dist:
+                if self.rendererContext.player.distanceTo(entity.x,
+                                                          entity.y,
+                                                          entity.z) < dist * dist:
                     self.rendererContext.soundPlayer.play(audioInfo,
                                                           SoundPos(entity.x,
                                                                    entity.y - entity.heightOffset,
@@ -677,7 +684,7 @@ cdef class Level:
 
         mobs = 0
         for i5 in range(count):
-            i6 = <int>floor(self.rand.random() * 4)
+            i6 = <int>floor(self.rand.random() * 5)
             i7 = <int>floor(self.rand.random() * self.width)
             i8 = <int>(min(self.rand.random(), self.rand.random()) * self.depth)
             i9 = <int>floor(self.rand.random() * self.height)
@@ -720,6 +727,8 @@ cdef class Level:
                                 mob = Pig(self, x, y, z)
                             elif i6 == 3:
                                 mob = Creeper(self, x, y, z)
+                            elif i6 == 4:
+                                mob = Spider(self, x, y, z)
 
                             if self.isFree(mob.bb):
                                 mobs += 1
@@ -795,8 +804,9 @@ cdef class Level:
         self.blockMap.remove(entity)
 
     cpdef explode(self, entity, float x, float y, float z, float radius):
-        cdef int x0, x1, y0, y1, z0, z1, i, n, j, tile
+        cdef int x0, x1, y0, y1, z0, z1, i, n, j, tileId
         cdef float f5, f6, f7, d
+        cdef Tile tile
 
         x0 = <int>(x - radius - 1.0)
         x1 = <int>(x + radius + 1.0)
@@ -808,21 +818,28 @@ cdef class Level:
         for i in range(x0, x1):
             for n in range(y1 - 1, y0 - 1, -1):
                 for j in range(z0, z1):
-                    tile = self.getTile(i, n, j)
                     f6 = i + 0.5 - x
                     f5 = n + 0.5 - y
                     f7 = j + 0.5 - z
                     if i < 0 or n < 0 or j < 0 or \
                        i >= self.width or n >= self.depth or j >= self.height or \
-                       not (f6 * f6 + f5 * f5 + f7 * f7 < radius * radius) or tile <= 0:
+                       not (f6 * f6 + f5 * f5 + f7 * f7 < radius * radius):
                         continue
 
-                    (<Tile>tiles.tiles[tile]).wasExploded(self, i, n, j, 0.3)
-                    self.setTile(i, n, j, 0)
+                    tileId = self.getTile(i, n, j)
+                    if tileId > 0:
+                        tile = tiles.tiles[tileId]
+                        if tile.isExplodeable():
+                            self.addEntity(Smolder(self, i, n, j))
+                            tile.wasExplodedResources(self, i, n, j, 0.3)
+                            self.setTile(i, n, j, 0)
+                            tile.wasExploded(self, i, n, j)
+                    else:
+                        self.addEntity(Smolder(self, i, n, j))
 
         entities = self.blockMap.getEntitiesExcludingEntity(entity, x0, y0, z0, x1, y1, z1)
         for e in entities:
-            d = e.distanceTo(entity) / radius
+            d = e.distanceTo(x, y, z) / radius
             if d <= 1.0:
                 e.hurt(entity, <int>((1.0 - d) * 15.0 + 1.0))
 

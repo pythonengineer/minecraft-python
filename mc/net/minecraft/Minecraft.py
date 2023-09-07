@@ -29,10 +29,10 @@ from mc.net.minecraft.gui.PauseScreen import PauseScreen
 from mc.net.minecraft.gui.DeathScreen import DeathScreen
 from mc.net.minecraft.gui.Gui import Gui
 from mc.net.minecraft.item.Arrow import Arrow
-from mc.net.minecraft.item.Sign import Sign
 from mc.net.minecraft.item.Item import Item
 from mc.net.minecraft.mob.Mob import Mob
 from mc.net.minecraft.particle.ParticleEngine import ParticleEngine
+from mc.net.minecraft.particle.WaterDropParticle import WaterDropParticle
 from mc.net.minecraft.renderer.texture.WaterTexture import WaterTexture
 from mc.net.minecraft.renderer.texture.LavaTexture import LavaTexture
 from mc.net.minecraft.renderer.DirtyChunkSorter import DirtyChunkSorter
@@ -52,6 +52,7 @@ from mc.CompatibilityShims import BufferUtils, gluPerspective, getMillis, getNs
 from pyglet import window, app, canvas, clock, media, gl, compat_platform
 
 import traceback
+import random
 import math
 import time
 import gzip
@@ -62,7 +63,7 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.25_05   SURVIVAL TEST'
+    VERSION_STRING = '0.27   SURVIVAL TEST'
     level = None
     levelRenderer = None
     player = None
@@ -94,6 +95,7 @@ class Minecraft(window.Window):
         self.__timer = Timer(20.0)
         self.user = None
         self.guiScreen = None
+        self.raining = False
         self.loadingScreen = LevelLoaderListener(self)
         self.gameRenderer = GameRenderer(self)
         self.levelIo = LevelIO(self.loadingScreen)
@@ -103,6 +105,7 @@ class Minecraft(window.Window):
         self.loadMapId = 0
         self.hideScreen = False
         self.hitResult = None
+        self.__clickCounter = 0
 
         self.server = ''
         self.port = 0
@@ -250,9 +253,8 @@ class Minecraft(window.Window):
 
                     if symbol == window.key.ESCAPE:
                         self.pauseScreen()
-                    elif symbol == self.options.build.key and not self.networkClient:
-                        self.level.addEntity(Sign(self.level, self.player.x, self.player.y,
-                                                  self.player.z, self.player.yRot))
+                    elif symbol == window.key.F5 and not self.networkClient:
+                        self.raining = not self.raining
                     elif symbol == window.key.TAB and not self.networkClient and self.player.arrows > 0:
                         self.level.addEntity(Arrow(self.level, self.player, self.player.x, self.player.y,
                                                    self.player.z, self.player.yRot, self.player.xRot, 1.2))
@@ -363,10 +365,13 @@ class Minecraft(window.Window):
                     gl.glLoadIdentity()
                     gl.glMatrixMode(gl.GL_MODELVIEW)
                     gl.glLoadIdentity()
-                    self.gameRenderer.init()
+                    self.gameRenderer.render()
 
                 if self.guiScreen:
                     self.guiScreen.render(xMouse, yMouse)
+
+            if self.options.i:
+                time.sleep(0.005)
 
             self.__checkGlError('Post render')
         except Exception as e:
@@ -428,7 +433,7 @@ class Minecraft(window.Window):
         self.textures = Textures(self.options)
         self.textures.addDynamicTexture(LavaTexture())
         self.textures.addDynamicTexture(WaterTexture())
-        self.font = Font('default.png', self.textures)
+        self.font = Font(self.options, 'default.png', self.textures)
 
         imgData = BufferUtils.createIntBuffer(256)
         imgData.clear().limit(256)
@@ -528,6 +533,9 @@ class Minecraft(window.Window):
     def __clickMouse(self, editMode):
         item = self.player.inventory.getSelected()
         if editMode == 0:
+            if self.__clickCounter > 0:
+                return
+
             self.gameRenderer.tileRenderer.rot = -1
             self.gameRenderer.tileRenderer.move = True
         elif editMode == 1 and item > 0 and self.gamemode.removeResource(self.player, item):
@@ -535,6 +543,9 @@ class Minecraft(window.Window):
             return
 
         if not self.hitResult:
+            if editMode == 0:
+                self.__clickCounter = 10
+
             return
 
         if self.hitResult.typeOfHit == 1:
@@ -635,6 +646,9 @@ class Minecraft(window.Window):
         if not self.guiScreen and self.player.health <= 0:
             self.setScreen(None)
         if not self.guiScreen:
+            if self.__clickCounter > 0:
+                self.__clickCounter -= 1
+
             if self.msh[window.mouse.LEFT] and float(self.__frames - self.__oFrames) >= self.__timer.ticksPerSecond / 4.0 and self.mouseGrabbed:
                 self.__clickMouse(0)
                 self.__oFrames = self.__frames
@@ -643,18 +657,20 @@ class Minecraft(window.Window):
                 self.__oFrames = self.__frames
 
             leftHeld = not self.guiScreen and self.msh[window.mouse.LEFT] and self.mouseGrabbed
-            if leftHeld and self.hitResult and self.hitResult.typeOfHit == 0:
-                x = self.hitResult.x
-                y = self.hitResult.y
-                z = self.hitResult.z
-                self.gamemode.stopDestroyingBlock(x, y, z, self.hitResult.sideHit)
-            else:
-                self.gamemode.tick()
+            if self.__clickCounter <= 0:
+                if leftHeld and self.hitResult and self.hitResult.typeOfHit == 0:
+                    x = self.hitResult.x
+                    y = self.hitResult.y
+                    z = self.hitResult.z
+                    self.gamemode.stopDestroyingBlock(x, y, z, self.hitResult.sideHit)
+                else:
+                    self.gamemode.tick()
         else:
             self.__oFrames = self.__frames + 10000
             self.guiScreen.tick()
 
         if self.level:
+            self.gameRenderer.rainTicks += 1
             tileRenderer = self.gameRenderer.tileRenderer
             tileRenderer.oProgress = tileRenderer.progress
             if tileRenderer.move:
@@ -676,6 +692,20 @@ class Minecraft(window.Window):
             tileRenderer.progress += progress
             if tileRenderer.progress < 0.1:
                 tileRenderer.tile = block
+
+            if self.raining:
+                x = self.player.x
+                y = self.player.y
+                z = self.player.z
+                for i in range(50):
+                    xr = x + int(random.random() * 9) - 4
+                    zr = z + int(random.random() * 9) - 4
+                    highest = self.level.getHighestTile(xr, zr)
+                    if highest <= y + 4 and highest >= y - 4:
+                        self.particleEngine.addParticle(WaterDropParticle(self.level,
+                                                                          xr + random.random(),
+                                                                          highest + 0.1,
+                                                                          zr + random.random()))
 
             self.levelRenderer.cloudTickCounter += 1
             self.level.tickEntities()
@@ -724,11 +754,8 @@ class Minecraft(window.Window):
     def __pick(self, alpha):
         xRot = self.player.xRotO + (self.player.xRot - self.player.xRotO) * alpha
         yRot = self.player.yRotO + (self.player.yRot - self.player.yRotO) * alpha
-        x = self.player.xo + (self.player.x - self.player.xo) * alpha
-        y = self.player.yo + (self.player.y - self.player.yo) * alpha
-        z = self.player.zo + (self.player.z - self.player.zo) * alpha
 
-        vec1 = Vec3(x, y, z)
+        rotVec = self.gameRenderer.getPlayerRotVec(alpha)
         y1 = math.cos((-yRot) * math.pi / 180.0 + math.pi)
         y2 = math.sin((-yRot) * math.pi / 180.0 + math.pi)
         x1 = math.cos((-xRot) * math.pi / 180.0)
@@ -736,15 +763,12 @@ class Minecraft(window.Window):
         xy = y2 * x1
         y1 *= x1
         d = self.gamemode.getPickRange()
-        vec2 = vec1.addVector(xy * d, x2 * d, y1 * d)
-        self.hitResult = self.level.clip(vec1, vec2)
+        vec2 = rotVec.add(xy * d, x2 * d, y1 * d)
+        self.hitResult = self.level.clip(rotVec, vec2)
 
-        vec = Vec3(x, y, z)
+        vec = self.gameRenderer.getPlayerRotVec(alpha)
         if self.hitResult:
-            x = vec.x - self.hitResult.vec.x
-            y = vec.y - self.hitResult.vec.y
-            z = vec.z - self.hitResult.vec.z
-            d = math.sqrt(x * x + y * y + z * z)
+            d = self.hitResult.vec.distanceTo(vec)
 
         entities = self.level.blockMap.getEntitiesWithinAABBExcludingEntity(self.player, self.player.bb.expand(xy * d, x2 * d, y1 * d))
         for entity in entities:
@@ -754,7 +778,7 @@ class Minecraft(window.Window):
             axisAlignedBB = entity.bb.grow(0.1, 0.1, 0.1)
             di = 0.0
             while di < d:
-                if not axisAlignedBB.contains(vec.addVector(xy * di, x2 * di, y1 * di)):
+                if not axisAlignedBB.contains(vec.add(xy * di, x2 * di, y1 * di)):
                     di += 0.05
                     continue
 
@@ -838,11 +862,13 @@ class Minecraft(window.Window):
                             self.levelRenderer.renderBasicTile(xx, yy, zz)
 
             self.gameRenderer.toggleLight(True)
-            self.level.blockMap.render(self.__frustum, self.levelRenderer.textures, alpha)
+            vec = self.gameRenderer.getPlayerRotVec(alpha)
+            self.level.blockMap.render(vec, self.__frustum, self.levelRenderer.textures, alpha)
             self.gameRenderer.toggleLight(False)
             self.gameRenderer.setupFog()
             self.particleEngine.render(self.player, alpha)
             gl.glCallList(self.levelRenderer.surroundLists)
+            gl.glDisable(gl.GL_BLEND)
             gl.glDisable(gl.GL_LIGHTING)
             self.gameRenderer.setupFog()
             self.levelRenderer.renderClouds(alpha)
@@ -857,14 +883,16 @@ class Minecraft(window.Window):
                 gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
                 gl.glColor4f(0.0, 0.0, 0.0, 0.4)
                 gl.glLineWidth(2.0)
+                gl.glDisable(gl.GL_TEXTURE_2D)
                 gl.glDepthMask(False)
-                AABB(self.hitResult.x,
-                     self.hitResult.y,
-                     self.hitResult.z,
-                     self.hitResult.x + 1,
-                     self.hitResult.y + 1,
-                     self.hitResult.z + 1).grow(0.002, 0.002, 0.002).render()
+                tile = self.levelRenderer.level.getTile(self.hitResult.x,
+                                                        self.hitResult.y,
+                                                        self.hitResult.z)
+                tiles.tiles[tile].getAABB(self.hitResult.x,
+                                          self.hitResult.y,
+                                          self.hitResult.z).grow(0.002, 0.002, 0.002).render()
                 gl.glDepthMask(True)
+                gl.glEnable(gl.GL_TEXTURE_2D)
                 gl.glDisable(gl.GL_BLEND)
                 gl.glEnable(gl.GL_ALPHA_TEST)
                 gl.glEnable(gl.GL_LIGHTING)
@@ -872,6 +900,7 @@ class Minecraft(window.Window):
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
             self.gameRenderer.setupFog()
             gl.glCallList(self.levelRenderer.surroundLists + 1)
+            gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_BLEND)
             gl.glColorMask(False, False, False, False)
             remaining = self.levelRenderer.render(self.player, 1)
@@ -883,16 +912,16 @@ class Minecraft(window.Window):
                     gl.glColorMask(True, False, False, False)
 
             if remaining > 0:
-                gl.glEnable(gl.GL_TEXTURE_2D)
                 gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.loadTexture('terrain.png'))
                 gl.glCallLists(self.levelRenderer.ib.capacity(), gl.GL_INT, self.levelRenderer.ib)
-                gl.glDisable(gl.GL_TEXTURE_2D)
 
             gl.glDepthMask(True)
             gl.glDisable(gl.GL_BLEND)
             gl.glDisable(gl.GL_LIGHTING)
             gl.glDisable(gl.GL_FOG)
-            gl.glDisable(gl.GL_TEXTURE_2D)
+            if self.raining:
+                self.gameRenderer.renderRain(alpha)
+
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
             gl.glLoadIdentity()
             if self.options.anaglyph3d:
@@ -931,7 +960,6 @@ class Minecraft(window.Window):
 
             brightness = self.level.getBrightness(int(self.player.x), int(self.player.y), int(self.player.z))
             gl.glColor4f(brightness, brightness, brightness, 1.0)
-            gl.glEnable(gl.GL_TEXTURE_2D)
             t = tesselator
             if tileRenderer.tile:
                 gl.glScalef(0.4, 0.4, 0.4)
@@ -951,7 +979,6 @@ class Minecraft(window.Window):
                 gl.glCallList(cube.list)
 
             gl.glDisable(gl.GL_NORMALIZE)
-            gl.glDisable(gl.GL_TEXTURE_2D)
             gl.glPopMatrix()
             self.gameRenderer.toggleLight(False)
             if not self.options.anaglyph3d:
@@ -979,12 +1006,14 @@ class Minecraft(window.Window):
 
         if self.particleEngine:
             self.level.particleEngine = self.particleEngine
-            self.particleEngine.particles.clear()
+            for i in range(2):
+                self.particleEngine.particles[i].clear()
 
         self.player = level.findPlayer()
         if not self.player:
             self.player = Player(level)
             self.player.resetPos()
+            self.gamemode.initPlayer(self.player)
 
         self.player.input = KeyboardInput(self.options)
         level.player = self.player

@@ -40,3 +40,6 @@ class GameMode:
 
     def removeResource(self, player, quantity):
         return False
+
+    def initPlayer(self, player):
+        pass

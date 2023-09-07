@@ -22,6 +22,8 @@ cdef class Mob(Entity):
         public str _textureName
         public bint allowAlpha
         public str modelName
+        public float _bobStrength
+        public int _deathScore
         public float rotOffs
         public int health
         public int lastHealth

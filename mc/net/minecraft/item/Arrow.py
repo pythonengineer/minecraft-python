@@ -115,9 +115,8 @@ class Arrow(Entity):
                 self.__yRotO += 360.0
 
     def render(self, textures, translation):
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        tex = textures.loadTexture('item/arrows.png')
-        gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+        self.textureId = textures.loadTexture('item/arrows.png')
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureId)
         br = self.level.getBrightness(int(self.x), int(self.y), int(self.z))
         gl.glPushMatrix()
         gl.glColor4f(br, br, br, 1.0)

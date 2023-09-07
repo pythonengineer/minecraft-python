@@ -42,7 +42,6 @@ class LevelLoaderListener:
             gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
 
             t = tesselator
-            gl.glEnable(gl.GL_TEXTURE_2D)
             id_ = self.__minecraft.textures.loadTexture('dirt.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
             s = 32.0

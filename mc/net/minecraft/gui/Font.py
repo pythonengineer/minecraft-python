@@ -4,7 +4,8 @@ from pyglet import gl
 
 class Font:
 
-    def __init__(self, name, textures):
+    def __init__(self, options, name, textures):
+        self.__options = options
         self.__charWidths = [0] * 256
         self.__fontTexture = textures.loadTexture(name + '2')
         texture = Resources.textures[name + '1']
@@ -46,7 +47,6 @@ class Font:
             if darken:
                 color = (color & 0xFCFCFC) >> 2
 
-            gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fontTexture)
             t = tesselator
             t.begin()
@@ -63,6 +63,13 @@ class Font:
                     b = (cc & 1) * 191 + br
                     g = ((cc & 2) >> 1) * 191 + br
                     r = ((cc & 4) >> 2) * 191 + br
+                    color = r
+                    if self.__options.anaglyph3d:
+                        br = (color * 30 + g * 59 + b * 11) // 100
+                        g = (color * 30 + g * 70) // 100
+                        b = (color * 30 + b * 70) // 100
+                        g = g
+
                     color = r << 16 | g << 8 | b
                     i += 2
                     if darken:
@@ -82,7 +89,6 @@ class Font:
                 i += 1
 
             t.end()
-            gl.glDisable(gl.GL_TEXTURE_2D)
 
     def width(self, string):
         if string is None:

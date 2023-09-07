@@ -22,6 +22,8 @@ class PlayerTextureLoader(Thread):
 
     def run(self):
         username = self.__minecraft.user.name
+        if not username:
+            return
 
         try:
             with urllib.request.urlopen(f'https://api.mojang.com/users/profiles/minecraft/{username}') as r:

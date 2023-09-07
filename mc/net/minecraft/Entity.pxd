@@ -40,14 +40,19 @@ cdef class Entity:
         public float xOld
         public float yOld
         public float zOld
+        public int textureId
+        public float ySlideOffset
+        public float footSize
 
     cpdef tick(self)
     cpdef bint isFree(self, float xa, float ya, float za)
-    cpdef move(self, float xa, float ya, float za)
+    cpdef move(self, float x, float y, float z)
     cdef _causeFallDamage(self, float distance)
     cdef bint isInWater(self)
     cdef bint isInLava(self)
-    cdef moveRelative(self, float xa, float za, float speed)
+    cpdef moveRelative(self, float xa, float za, float speed)
     cpdef float getBrightness(self, float a)
     cpdef render(self, textures, float translation)
     cdef push(self, entity)
+    cdef bint shouldRender(self, vec)
+    cdef bint shouldRenderAtSqrDistance(self, float d)

@@ -119,7 +119,6 @@ class LevelRenderer:
 
         t.end()
         gl.glDisable(gl.GL_BLEND)
-        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glEndList()
         gl.glNewList(self.surroundLists + 1, gl.GL_COMPILE)
         gl.glEnable(gl.GL_TEXTURE_2D)
@@ -153,7 +152,6 @@ class LevelRenderer:
                     t.vertexUV(xx + 0, yy, zz + s, 0.0, s)
         t.end()
         gl.glDisable(gl.GL_BLEND)
-        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glEndList()
         self.setDirty(0, 0, 0, self.level.width, self.level.depth, self.level.height)
 
@@ -175,16 +173,14 @@ class LevelRenderer:
         self.ib.put(self.__chunkBuffer, 0, startingIndex)
         self.ib.flip()
         if self.ib.remaining() > 0:
-            gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('terrain.png'))
             gl.glCallLists(self.ib.capacity(), gl.GL_INT, self.ib)
-            gl.glDisable(gl.GL_TEXTURE_2D)
 
         return self.ib.remaining()
 
     def renderClouds(self, partialTicks):
-        gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('clouds.png'))
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         r = (self.level.cloudColor >> 16 & 0xFF) / 255.0
         g = (self.level.cloudColor >> 8 & 0xFF) / 255.0
         b = (self.level.cloudColor & 0xFF) / 255.0
@@ -237,13 +233,13 @@ class LevelRenderer:
                 t.vertex(i7, f3, i8 + 512.)
 
         t.end()
+        gl.glEnable(gl.GL_TEXTURE_2D)
 
     def renderBasicTile(self, x, y, z):
         tile = self.level.getTile(x, y, z)
         if tile == 0 or not tiles.tiles[tile].isSolid():
             return
 
-        gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glColor4f(0.2, 0.2, 0.2, 1.0)
         gl.glDepthFunc(gl.GL_LESS)
         t = tesselator
@@ -259,7 +255,6 @@ class LevelRenderer:
 
         t.end()
         gl.glCullFace(gl.GL_BACK)
-        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glDepthFunc(gl.GL_LEQUAL)
 
     def renderHit(self, h, mode, tileType):
@@ -270,24 +265,30 @@ class LevelRenderer:
         gl.glColor4f(1.0, 1.0, 1.0, (math.sin(getMillis() / 100.0) * 0.2 + 0.4) * 0.5)
         if self.hurtTime > 0.0:
             gl.glBlendFunc(gl.GL_DST_COLOR, gl.GL_SRC_COLOR)
-            gl.glEnable(gl.GL_TEXTURE_2D)
             id_ = self.textures.loadTexture('terrain.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
             gl.glColor4f(1.0, 1.0, 1.0, 0.5)
             gl.glPushMatrix()
-            gl.glTranslatef(h.x + 0.5, h.y + 0.5, h.z + 0.5)
+            tile = self.level.getTile(h.x, h.y, h.z)
+            tile = tiles.tiles[tile] if tile > 0 else None
+            x = (tile.xx0 + tile.xx1) / 2.0
+            y = (tile.yy0 + tile.yy1) / 2.0
+            z = (tile.zz0 + tile.zz1) / 2.0
+            gl.glTranslatef(h.x + x, h.y + y, h.z + z)
             gl.glScalef(1.01, 1.01, 1.01)
-            gl.glTranslatef(-(h.x + 0.5), -(h.y + 0.5), -(h.z + 0.5))
+            gl.glTranslatef(-(h.x + x), -(h.y + y), -(h.z + z))
             t.begin()
             t.noColor()
             gl.glDepthMask(False)
+            if not tile:
+                tile = tiles.rock
+
             for face in range(6):
-                tiles.rock.renderFaceNoTexture(t, h.x, h.y, h.z,
-                                               face, 240 + int(self.hurtTime * 10.0))
+                tile.renderFaceNoTexture(t, h.x, h.y, h.z,
+                                         face, 240 + int(self.hurtTime * 10.0))
             t.end()
             gl.glDepthMask(True)
             gl.glPopMatrix()
-            gl.glDisable(gl.GL_TEXTURE_2D)
 
         gl.glDisable(gl.GL_BLEND)
         gl.glDisable(gl.GL_ALPHA_TEST)

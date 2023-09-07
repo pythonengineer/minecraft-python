@@ -12,7 +12,7 @@ class OptionsScreen(Screen):
 
     def init(self, minecraft, width, height):
         super().init(minecraft, width, height)
-        for i in range(7):
+        for i in range(self.__options.optionCount):
             self._buttons.append(SmallButton(i, self._width // 2 - 155 + i % 2 * 160, self._height // 6 + 24 * (i >> 1), self.__options.getMessage(i)))
 
         self._buttons.append(Button(100, self._width // 2 - 100, self._height // 6 + 120 + 12, 'Controls...'))

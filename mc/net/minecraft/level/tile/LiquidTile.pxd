@@ -11,7 +11,7 @@ cdef class LiquidTile(Tile):
         public int _calmTileId
         public int _tileId
 
-    cdef bint isOpaque(self)
+    cpdef bint isOpaque(self)
     cpdef void tick(self, Level level, int x, int y, int z, random) except *
     cdef bint __checkSponge(self, Level level, int x, int y, int z)
     cdef bint __checkWater(self, Level level, int x, int y, int z)
@@ -23,5 +23,5 @@ cdef class LiquidTile(Tile):
     cpdef int getLiquidType(self)
     cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *
     cdef int getTickDelay(self)
-    cdef wasExploded(self, Level level, int x, int y, int z, float f)
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance)
     cpdef int resourceCount(self)

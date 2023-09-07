@@ -20,3 +20,4 @@ cdef class AABB:
     cdef float clipYCollide(self, AABB c, float ya)
     cdef float clipZCollide(self, AABB c, float za)
     cpdef void move(self, float xa, float ya, float za)
+    cdef AABB copy(self)

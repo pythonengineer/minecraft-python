@@ -40,6 +40,9 @@ cdef class Entity:
         self.xOld = 0.0
         self.yOld = 0.0
         self.zOld = 0.0
+        self.textureId = 0
+        self.ySlideOffset = 0.0
+        self.footSize = 0.0
 
     def __init__(self, level):
         self.level = level
@@ -122,6 +125,14 @@ cdef class Entity:
         self.xRotO = self.xRot
         self.yRotO = self.yRot
 
+    def isFreeGrow(self, xa, ya, za, b):
+        cdef AABB axisAlignedBB = self.bb.grow(b, b, b).cloneMove(xa, ya, za)
+        aABBs = self.level.getCubes(axisAlignedBB)
+        if len(aABBs) > 0:
+            return False
+
+        return not self.level.containsAnyLiquid(axisAlignedBB)
+
     cpdef bint isFree(self, float xa, float ya, float za):
         cdef AABB axisAlignedBB = self.bb.cloneMove(xa, ya, za)
         aABBs = self.level.getCubes(axisAlignedBB)
@@ -130,67 +141,114 @@ cdef class Entity:
 
         return not self.level.containsAnyLiquid(axisAlignedBB)
 
-    cpdef move(self, float xa, float ya, float za):
+    cpdef move(self, float x, float y, float z):
         cdef int tile
-        cdef float xOrg, zOrg, xaOrg, yaOrg, zaOrg, xd, zd
+        cdef float xOrg, zOrg, xaOrg, yaOrg, zaOrg, xo, yo, zo, xd, zd
         cdef bint onGround
-        cdef AABB aABB
+        cdef AABB aabbOrg, aABB, aabb
 
         xOrg = self.x
         zOrg = self.z
-        xaOrg = xa
-        yaOrg = ya
-        zaOrg = za
+        xaOrg = x
+        yaOrg = y
+        zaOrg = z
 
-        aABBs = self.level.getCubes(self.bb.expand(xa, ya, za))
+        aabbOrg = self.bb.copy()
+        aABBs = self.level.getCubes(self.bb.expand(x, y, z))
         for aABB in aABBs:
-            ya = aABB.clipYCollide(self.bb, ya)
+            y = aABB.clipYCollide(self.bb, y)
 
-        self.bb.move(0.0, ya, 0.0)
-        if not self.slide and yaOrg != ya:
-            za = 0.0
-            ya = 0.0
-            xa = 0.0
+        self.bb.move(0.0, y, 0.0)
+        if not self.slide and yaOrg != y:
+            z = 0.0
+            y = 0.0
+            x = 0.0
+
+        onGround = self.onGround or yaOrg != y and yaOrg < 0.0
+        for aABB in aABBs:
+            x = aABB.clipXCollide(self.bb, x)
+
+        self.bb.move(x, 0.0, 0.0)
+        if not self.slide and xaOrg != x:
+            z = 0.0
+            y = 0.0
+            x = 0.0
 
         for aABB in aABBs:
-            xa = aABB.clipXCollide(self.bb, xa)
+            z = aABB.clipZCollide(self.bb, z)
 
-        self.bb.move(xa, 0.0, 0.0)
-        if not self.slide and xaOrg != xa:
-            za = 0.0
-            ya = 0.0
-            xa = 0.0
+        self.bb.move(0.0, 0.0, z)
+        if not self.slide and zaOrg != z:
+            z = 0.0
+            y = 0.0
+            x = 0.0
 
-        for aABB in aABBs:
-            za = aABB.clipZCollide(self.bb, za)
+        if self.footSize > 0.0 and onGround and self.ySlideOffset < 0.05 and (xaOrg != x or zaOrg != z):
+            xo = x
+            yo = y
+            zo = z
+            x = xaOrg
+            y = self.footSize
+            z = zaOrg
+            aabb = self.bb.copy()
+            self.bb = aabbOrg.copy()
+            aABBs = self.level.getCubes(self.bb.expand(xaOrg, y, zaOrg))
+            for aABB in aABBs:
+                y = aABB.clipYCollide(self.bb, y)
 
-        self.bb.move(0.0, 0.0, za)
-        if not self.slide and zaOrg != za:
-            za = 0.0
-            ya = 0.0
-            xa = 0.0
+            self.bb.move(0.0, y, 0.0)
+            if not self.slide and yaOrg != y:
+                z = 0.0
+                y = 0.0
+                x = 0.0
 
-        self.horizontalCollision = xaOrg != xa or zaOrg != za
-        self.onGround = yaOrg != ya and yaOrg < 0.0
-        self.collision = self.horizontalCollision or yaOrg != ya
+            for aABB in aABBs:
+                x = aABB.clipXCollide(self.bb, x)
+
+            self.bb.move(x, 0.0, 0.0)
+            if not self.slide and xaOrg != x:
+                z = 0.0
+                y = 0.0
+                x = 0.0
+
+            for aABB in aABBs:
+                z = aABB.clipZCollide(self.bb, z)
+
+            self.bb.move(0.0, 0.0, z)
+            if not self.slide and zaOrg != z:
+                z = 0.0
+                y = 0.0
+                x = 0.0
+
+            if xo * xo + zo * zo >= x * x + z * z:
+                x = xo
+                y = yo
+                z = zo
+                self.bb = aabb.copy()
+            else:
+                self.ySlideOffset += 0.5
+
+        self.horizontalCollision = xaOrg != x or zaOrg != z
+        self.onGround = yaOrg != y and yaOrg < 0.0
+        self.collision = self.horizontalCollision or yaOrg != y
 
         if self.onGround:
             if self.fallDistance > 0.0:
                 self._causeFallDamage(self.fallDistance)
                 self.fallDistance = 0.0
-        elif ya < 0.0:
-            self.fallDistance -= ya
+        elif y < 0.0:
+            self.fallDistance -= y
 
-        if xaOrg != xa:
+        if xaOrg != x:
             self.xd = 0.0
-        if yaOrg != ya:
+        if yaOrg != y:
             self.yd = 0.0
-        if zaOrg != za:
+        if zaOrg != z:
             self.zd = 0.0
 
-        self.x = (self.bb.x0 + self.bb.x1) / 2.0
-        self.y = self.bb.y0 + self.heightOffset
-        self.z = (self.bb.z0 + self.bb.z1) / 2.0
+        self.x = (self.bb.x0 + self.bb.x1) * (1 / 2)
+        self.y = self.bb.y0 + self.heightOffset - self.ySlideOffset
+        self.z = (self.bb.z0 + self.bb.z1) * (1 / 2)
 
         xd = self.x - xOrg
         zd = self.z - zOrg
@@ -204,6 +262,8 @@ cdef class Entity:
                     self.playSound('step.' + soundType.soundName,
                                    soundType.getVolume() * 0.75,
                                    soundType.getPitch())
+
+        self.ySlideOffset *= 0.4
 
     cdef _causeFallDamage(self, float distance):
         pass
@@ -221,7 +281,7 @@ cdef class Entity:
     cdef bint isInLava(self):
         return self.level.containsLiquid(self.bb.grow(0.0, -0.4, 0.0), Liquid.lava)
 
-    cdef moveRelative(self, float xa, float za, float speed):
+    cpdef moveRelative(self, float xa, float za, float speed):
         cdef float dist, si, co
 
         dist = sqrt(xa * xa + za * za)
@@ -247,7 +307,7 @@ cdef class Entity:
     cpdef float getBrightness(self, float a):
         cdef int x, y, z
         x = <int>self.x
-        y = <int>(self.y + self.heightOffset / 2.0)
+        y = <int>(self.y + self.heightOffset / 2.0 - 0.5)
         z = <int>self.z
         return self.level.getBrightness(x, y, z)
 
@@ -268,11 +328,10 @@ cdef class Entity:
         self.xRot = xRot
         self.setPos(x, y, z)
 
-    def distanceTo(self, entity):
-        cdef float x, y, z
-        x = self.x - entity.x
-        y = self.y - entity.y
-        z = self.z - entity.z
+    def distanceTo(self, float x, float y, float z):
+        x = self.x - x
+        y = self.y - y
+        z = self.z - z
         return sqrt(x * x + y * y + z * z)
 
     def distanceToSqr(self, entity):
@@ -336,3 +395,17 @@ cdef class Entity:
 
     def awardKillScore(self, entity, score):
         pass
+
+    cdef bint shouldRender(self, vec):
+        cdef float xd, yd, zd
+        xd = self.x - vec.x
+        yd = self.y - vec.y
+        zd = self.z - vec.z
+        return self.shouldRenderAtSqrDistance(xd * xd + yd * yd + zd * zd)
+
+    cdef bint shouldRenderAtSqrDistance(self, float d):
+        cdef float size = self.bb.getSize() * 64.0
+        return d < size * size
+
+    def getTexture(self):
+        return self.textureId

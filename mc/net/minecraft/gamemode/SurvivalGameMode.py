@@ -12,6 +12,10 @@ class SurvivalGameMode(GameMode):
         self.__destroyProgress = 0
         self.__delay = 0
 
+    def initPlayer(self, player):
+        player.inventory.slots[8] = tiles.tnt.id
+        player.inventory.count[8] = 10
+
     def destroyBlock(self, x, y, z):
         tile = self._mc.level.getTile(x, y, z)
         tiles.tiles[tile].spawnResources(self._mc.level, x, y, z)

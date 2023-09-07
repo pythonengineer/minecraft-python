@@ -1,5 +1,6 @@
 # cython: language_level=3
 
+from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 from mc.net.minecraft.level.liquid.Liquid cimport Liquid
 from mc.net.minecraft.level.Level cimport Level
@@ -32,6 +33,7 @@ cdef class Tile:
 
     def __init__(self, tiles, int id_, int tex=0):
         self.tiles = tiles
+        self.explodeable = True
         self.id = id_
         if tex:
             self.tex = tex
@@ -94,7 +96,7 @@ cdef class Tile:
         global Tile_tickSpeed
         Tile_tickSpeed = x
 
-    cdef bint isOpaque(self):
+    cpdef bint isOpaque(self):
         return True
 
     def setSoundAndGravity(self, soundType, float volume, float gravity, float pitch):
@@ -108,12 +110,12 @@ cdef class Tile:
 
     def _setShape(self, float minX, float minY, float minZ,
                   float maxX, float maxY, float maxZ):
-        self.__xx0 = minX
-        self.__yy0 = minY
-        self.__zz0 = minZ
-        self.__xx1 = maxX
-        self.__yy1 = maxY
-        self.__zz1 = maxZ
+        self.xx0 = minX
+        self.yy0 = minY
+        self.zz0 = minZ
+        self.xx1 = maxX
+        self.yy1 = maxY
+        self.zz1 = maxZ
 
     cdef setTickSpeed(self, int rate):
         self.tickSpeed[self.id] = 16
@@ -181,13 +183,16 @@ cdef class Tile:
         u1 = (xt + 15.99) / 256.0
         v0 = yt / 256.0
         v1 = (yt + 15.99) / 256.0
+        if face >= 2 and tex < 240:
+            v0 = (yt + self.yy0 * 15.99) / 256.0
+            v1 = (yt + self.yy1 * 15.99) / 256.0
 
-        x0 = x + self.__xx0
-        x1 = x + self.__xx1
-        y0 = y + self.__yy0
-        y1 = y + self.__yy1
-        z0 = z + self.__zz0
-        z1 = z + self.__zz1
+        x0 = x + self.xx0
+        x1 = x + self.xx1
+        y0 = y + self.yy0
+        y1 = y + self.yy1
+        z0 = z + self.zz0
+        z1 = z + self.zz1
 
         if face == 0:
             t.vertexUV(x0, y0, z1, u0, v1)
@@ -230,22 +235,30 @@ cdef class Tile:
             yt = tex // 16 << 4
             u0 = (xt + 15.99) / 256.0
             u1 = xt / 256.0
-            v0 = yt / 256.0
-            v1 = (yt + 15.99) / 256.0
+            if face > 1:
+                v0 = (yt + self.yy0 * 15.99) / 256.0
+                v1 = (yt + self.yy1 * 15.99) / 256.0
+            else:
+                v0 = yt / 256.0
+                v1 = (yt + 15.99) / 256.0
         else:
             xt = tex % 16
             yt = (xt << 4) + tex // 16 << 4
             u0 = 1.0 + layer
             u1 = 0.0
-            v0 = yt / 4096.0
-            v1 = (yt + 15.99) / 4096.0
+            if face > 1:
+                v0 = (yt + self.yy0 * 15.99) / 4096.0
+                v1 = (yt + self.yy1 * 15.99) / 4096.0
+            else:
+                v0 = yt / 4096.0
+                v1 = (yt + 15.99) / 4096.0
 
-        x0 = x + self.__xx0 - 0.001
-        x1 = x + self.__xx1 + 0.001
-        y0 = y + self.__yy0 - 0.001
-        y1 = y + self.__yy1 + 0.001
-        z0 = z + self.__zz0 - 0.001
-        z1 = z + self.__zz1 - 0.001
+        x0 = x + self.xx0 - 0.001
+        x1 = x + self.xx1 + 0.001
+        y0 = y + self.yy0 - 0.001
+        y1 = y + self.yy1 + 0.001
+        z0 = z + self.zz0 - 0.001
+        z1 = z + self.zz1 - 0.001
 
         if face == 0:
             t.vertexUV(x0, y0, z1, u0, v1)
@@ -288,12 +301,12 @@ cdef class Tile:
         v0 = (tex // 16) / 16.0
         v1 = v0 + 0.0624375
 
-        x0 = x + self.__xx0
-        x1 = x + self.__xx1
-        y0 = y + self.__yy0
-        y1 = y + self.__yy1
-        z0 = z + self.__zz0
-        z1 = z + self.__zz1
+        x0 = x + self.xx0
+        x1 = x + self.xx1
+        y0 = y + self.yy0
+        y1 = y + self.yy1
+        z0 = z + self.zz0
+        z1 = z + self.zz1
 
         if face == 0:
             t.vertexUV(x1, y0, z1, u1, v1)
@@ -326,8 +339,13 @@ cdef class Tile:
             t.vertexUV(x1, y0, z0, u1, v1)
             t.vertexUV(x1, y0, z1, u0, v1)
 
+    def getAABB(self, int x, int y, int z):
+        return AABB(x + self.xx0, y + self.yy0, z + self.zz0,
+                    x + self.xx1, y + self.yy1, z + self.zz1)
+
     def getTileAABB(self, int x, int y, int z):
-        return AABB(x, y, z, x + 1, y + 1, z + 1)
+        return AABB(x + self.xx0, y + self.yy0, z + self.zz0,
+                    x + self.xx1, y + self.yy1, z + self.zz1)
 
     cpdef bint blocksLight(self):
         return True
@@ -339,7 +357,7 @@ cdef class Tile:
         pass
 
     def destroy(self, Level level, int x, int y, int z, particleEngine):
-        from mc.net.minecraft.particle.Particle import Particle
+        from mc.net.minecraft.particle.TerrainParticle import TerrainParticle
         cdef int SD, xx, yy, zz
         cdef float xp, yp, zp
 
@@ -350,34 +368,34 @@ cdef class Tile:
                     xp = x + (xx + 0.5) / SD
                     yp = y + (yy + 0.5) / SD
                     zp = z + (zz + 0.5) / SD
-                    particleEngine.addParticle(Particle(level, xp, yp, zp,
+                    particleEngine.addParticle(TerrainParticle(level, xp, yp, zp,
                                                         xp - x - 0.5,
                                                         yp - y - 0.5,
                                                         zp - z - 0.5, self))
 
     def addParticleOnBlockBreaking(self, Level level, int x, int y, int z,
                                    int sideHit, particleEngine):
-        from mc.net.minecraft.particle.Particle import Particle
+        from mc.net.minecraft.particle.TerrainParticle import TerrainParticle
         cdef float f, xp, yp, zp
 
         f = 0.1
-        xp = x + random.random() * (1.0 - f * 2.0) + f
-        yp = y + random.random() * (1.0 - f * 2.0) + f
-        zp = z + random.random() * (1.0 - f * 2.0) + f
+        xp = x + random.random() * (self.xx1 - self.xx0 - f * 2.0) + f + self.xx0
+        yp = y + random.random() * (self.yy1 - self.yy0 - f * 2.0) + f + self.yy0
+        zp = z + random.random() * (self.zz1 - self.zz0 - f * 2.0) + f + self.zz0
         if sideHit == 0:
-            yp = y - f
+            yp = y + self.yy0 - f
         elif sideHit == 1:
-            yp = y + 1 + f
+            yp = y + self.yy1 + f
         elif sideHit == 2:
-            zp = z - f
+            zp = z + self.zz0 - f
         elif sideHit == 3:
-            zp = z + 1 + f
+            zp = z + self.zz1 + f
         elif sideHit == 4:
-            xp = x - f
+            xp = x + self.xx0 - f
         elif sideHit == 5:
-            xp = x + 1 + f
+            xp = x + self.xx1 + f
 
-        particleEngine.addParticle(Particle(level, xp, yp, zp,
+        particleEngine.addParticle(TerrainParticle(level, xp, yp, zp,
                                             0.0, 0.0, 0.0,
                                             self).setPower(0.2).scale(0.6))
 
@@ -409,15 +427,15 @@ cdef class Tile:
         return self.__destroyProgress
 
     def spawnResources(self, Level level, int x, int y, int z):
-        self.wasExploded(level, x, y, z, 1.0)
+        self.wasExplodedResources(level, x, y, z, 1.0)
 
-    cdef wasExploded(self, Level level, int x, int y, int z, float f):
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance):
         from mc.net.minecraft.item.Item import Item
         cdef int i
         cdef float f2, xx, yy, zz
 
         for i in range(self.resourceCount()):
-            if random.random() > f:
+            if random.random() > chance:
                 continue
 
             f2 = 0.7
@@ -447,3 +465,85 @@ cdef class Tile:
             self.renderFace(t, 0, 0, 0, i)
 
         t.end()
+
+    cdef bint isExplodeable(self):
+        return self.explodeable
+
+    cdef clip(self, int x, int y, int z, v0, v1):
+        v0 = v0.add(-x, -y, -z)
+        v1 = v1.add(-x, -y, -z)
+        vec36 = v0.clipX(v1, self.xx0)
+        vec37 = v0.clipX(v1, self.xx1)
+        vec38 = v0.clipY(v1, self.yy0)
+        vec39 = v0.clipY(v1, self.yy1)
+        vec310 = v0.clipZ(v1, self.zz0)
+        v1 = v0.clipZ(v1, self.zz1)
+        if not self.__containsX(vec36):
+            vec36 = None
+        if not self.__containsX(vec37):
+            vec37 = None
+        if not self.__containsY(vec38):
+            vec38 = None
+        if not self.__containsY(vec39):
+            vec39 = None
+        if not self.__containsZ(vec310):
+            vec310 = None
+        if not self.__containsZ(v1):
+            v1 = None
+
+        vec311 = None
+        if vec36:
+            vec311 = vec36
+
+        if vec37 and (not vec311 or v0.distanceTo(vec37) < v0.distanceTo(vec311)):
+            vec311 = vec37
+        if vec38 and (not vec311 or v0.distanceTo(vec38) < v0.distanceTo(vec311)):
+            vec311 = vec38
+        if vec39 and (not vec311 or v0.distanceTo(vec39) < v0.distanceTo(vec311)):
+            vec311 = vec39
+        if vec310 and (not vec311 or v0.distanceTo(vec310) < v0.distanceTo(vec311)):
+            vec311 = vec310
+
+        if v1 and (not vec311 or v0.distanceTo(v1) < v0.distanceTo(vec311)):
+            vec311 = v1
+
+        if not vec311:
+            return
+
+        cdef char v01 = -1
+        if vec311 == vec36:
+            v01 = 4
+        elif vec311 == vec37:
+            v01 = 5
+        elif vec311 == vec38:
+            v01 = 0
+        elif vec311 == vec39:
+            v01 = 1
+        elif vec311 == vec310:
+            v01 = 2
+        elif vec311 == v1:
+            v01 = 3
+
+        vec311.add(x, y, z)
+        return HitResult(x, y, z, v01, vec311)
+
+    cdef bint __containsX(self, vec):
+        if not vec:
+            return False
+        else:
+            return vec.y >= self.yy0 and vec.y <= self.yy1 and vec.z >= self.zz0 and vec.z <= self.zz1
+
+    cdef bint __containsY(self, vec):
+        if not vec:
+            return False
+        else:
+            return vec.x >= self.xx0 and vec.x <= self.xx1 and vec.z >= self.zz0 and vec.z <= self.zz1
+
+    cdef bint __containsZ(self, vec):
+        if not vec:
+            return False
+        else:
+            return vec.x >= self.xx0 and vec.x <= self.xx1 and vec.y >= self.yy0 and vec.y <= self.yy1
+
+    cpdef wasExploded(self, Level level, int x, int y, int z):
+        pass
