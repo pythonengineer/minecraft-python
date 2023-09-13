@@ -167,7 +167,7 @@ cdef class Mob(Entity):
         if self.ai:
             self.ai.tick(self.level, self)
 
-    def _bindTexture(self, textures):
+    def bindTexture(self, textures):
         self.textureId = textures.loadTexture(self._textureName)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureId)
 
@@ -243,13 +243,13 @@ cdef class Mob(Entity):
         gl.glScalef(-1.0, 1.0, 1.0)
         self.modelCache.getModel(self.modelName).rot = at / 5.0
 
-        self._bindTexture(textures)
+        self.bindTexture(textures)
         self.renderModel(textures, step, translation, run, rotX, rotY, rotZ)
         if self.invulnerableTime > self.invulnerableDuration - 10:
             gl.glColor4f(1.0, 1.0, 1.0, 0.75)
             gl.glEnable(gl.GL_BLEND)
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE)
-            self._bindTexture(textures)
+            self.bindTexture(textures)
             self.renderModel(textures, step, translation, run, rotX, rotY, rotZ)
             gl.glDisable(gl.GL_BLEND)
 
@@ -275,6 +275,9 @@ cdef class Mob(Entity):
 
     def hurt(self, Entity entity, int hp):
         cdef float xd, zd
+
+        if self.level.creativeMode:
+            return
 
         if self.health <= 0:
             return
@@ -319,12 +322,18 @@ cdef class Mob(Entity):
             self.yd = 0.4
 
     def die(self, Entity entity):
+        if self.level.creativeMode:
+            return
+
         if self._deathScore > 0 and entity:
             entity.awardKillScore(self, self._deathScore)
 
         self._dead = True
 
     cdef _causeFallDamage(self, float d):
+        if self.level.creativeMode:
+            return
+
         cdef int n = <int>ceil(d - 3.0)
         if n > 0:
             self.hurt(None, n)

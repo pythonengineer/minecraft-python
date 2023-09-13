@@ -7,8 +7,9 @@ class HumanoidMob(Mob):
 
     def __init__(self, level, x, y, z):
         super().__init__(level)
-        self.__helmet = random.random() < 0.2
-        self.__armor = random.random() < 0.2
+        self.helmet = random.random() < 0.2
+        self.armor = random.random() < 0.2
+        self.modelName = 'humanoid'
         self.setPos(x, y, z)
 
     def renderModel(self, textures, x, y, z, rotX, rotY, rotZ):
@@ -23,14 +24,14 @@ class HumanoidMob(Mob):
             model.hair.xRot = model.head.xRot
             model.hair.render(rotZ)
             gl.glEnable(gl.GL_CULL_FACE)
-        if self.__armor or self.__helmet:
+        if self.armor or self.helmet:
             gl.glBindTexture(gl.GL_TEXTURE_2D, textures.loadTexture('armor/plate.png'))
             gl.glDisable(gl.GL_CULL_FACE)
             model2 = self.modelCache.getModel('humanoid.armor')
-            model2.head.showModel = self.__helmet
-            model2.body.showModel = self.__armor
-            model2.rightArm.showModel = self.__armor
-            model2.leftArm.showModel = self.__armor
+            model2.head.showModel = self.helmet
+            model2.body.showModel = self.armor
+            model2.rightArm.showModel = self.armor
+            model2.leftArm.showModel = self.armor
             model2.rightLeg.showModel = False
             model2.leftLeg.showModel = False
             model2.head.yRot = model.head.yRot

@@ -6,7 +6,7 @@ class PlayerInput(BasicAI):
         super().__init__()
         self.__player = player
 
-    def _update(self):
+    def update(self):
         self.jumping = self.__player.input.jumping
         self.xxa = self.__player.input.ya
         self.yya = self.__player.input.xa

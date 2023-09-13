@@ -12,8 +12,8 @@ class Client:
     players = {}
 
     def __init__(self, minecraft, ip, port, username, mpPass):
-        self.mc = minecraft
-        self.mc.hideScreen = True
+        self.minecraft = minecraft
+        self.minecraft.hideScreen = True
         ConnectionThread(self, ip, port, username, mpPass, minecraft).start()
 
     def sendTileUpdated(self, x, y, z, editMode, paintTexture):
@@ -21,7 +21,7 @@ class Client:
 
     def handleException(self, e):
         self.serverConnection.disconnect()
-        self.mc.setScreen(ErrorScreen('Disconnected!', str(e)))
+        self.minecraft.setScreen(ErrorScreen('Disconnected!', str(e)))
         print(traceback.format_exc())
 
     def isConnected(self):
@@ -29,7 +29,7 @@ class Client:
 
     def getUsernames(self):
         players = []
-        players.append(self.mc.user.name)
+        players.append(self.minecraft.user.name)
         for player in self.players.values():
             players.append(player.name)
 

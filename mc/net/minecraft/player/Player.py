@@ -13,10 +13,11 @@ class Player(Mob):
 
     def __init__(self, level):
         super().__init__(level)
-        level.player = self
-        level.removeEntity(self)
-        level.addEntity(self)
-        print(level.player)
+        if level:
+            level.player = self
+            level.removeEntity(self)
+            level.addEntity(self)
+
         self.heightOffset = 1.62
         self.input = None
         self.inventory = Inventory()
@@ -34,7 +35,9 @@ class Player(Mob):
         self.heightOffset = 1.62
         self.setSize(0.6, 1.8)
         super().resetPos()
-        self.level.player = self
+        if self.level:
+            self.level.player = self
+
         self.health = Player.MAX_HEALTH
         self.deathTime = 0
 
@@ -109,3 +112,10 @@ class Player(Mob):
             gl.glBindTexture(gl.GL_TEXTURE_2D, textures.loadTexture('char.png'))
         else:
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__texture)
+
+    def hurt(self, entity, hp):
+        if not self.level.creativeMode:
+            super().hurt(entity, hp)
+
+    def isCreativeModeAllowed(self):
+        return True

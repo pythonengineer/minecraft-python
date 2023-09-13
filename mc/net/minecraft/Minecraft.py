@@ -42,6 +42,7 @@ from mc.net.minecraft.renderer.Textures import Textures
 from mc.net.minecraft.renderer.Tesselator import tesselator
 from mc.net.minecraft.renderer.Frustum import Frustum
 from mc.net.minecraft.renderer.Chunk import Chunk
+from mc.net.minecraft.gamemode.CreativeGameMode import CreativeGameMode
 from mc.net.minecraft.gamemode.SurvivalGameMode import SurvivalGameMode
 from mc.net.minecraft.sound.SoundEngine import SoundEngine
 from mc.net.minecraft.sound.SoundPlayer import SoundPlayer
@@ -63,7 +64,7 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.27   SURVIVAL TEST'
+    VERSION_STRING = '0.28_01'
     level = None
     levelRenderer = None
     player = None
@@ -91,7 +92,7 @@ class Minecraft(window.Window):
 
         self.__fullscreen = fullscreen
 
-        self.gamemode = SurvivalGameMode(self)
+        self.gamemode = CreativeGameMode(self)
         self.__timer = Timer(20.0)
         self.user = None
         self.guiScreen = None
@@ -189,7 +190,7 @@ class Minecraft(window.Window):
                 if compat_platform != 'darwin':
                     return
 
-            if not self.guiScreen:
+            if not self.guiScreen or self.guiScreen.allowUserInput:
                 if not self.mouseGrabbed:
                     self.grabMouse()
                 elif button == window.mouse.LEFT:
@@ -204,15 +205,17 @@ class Minecraft(window.Window):
                                               self.hitResult.z)
                     if tile == tiles.grass.id:
                         tile = tiles.dirt.id
+                    elif tile == tiles.slabFull.id:
+                        tile = tiles.slabHalf.id
 
-                    self.player.inventory.grabTexture(tile)
+                    self.player.inventory.grabTexture(tile, isinstance(self.gamemode, CreativeGameMode))
         except Exception as e:
             print(traceback.format_exc())
             self.setScreen(ErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
 
     def on_mouse_scroll(self, x, y, dx, dy):
         try:
-            if not self.guiScreen:
+            if not self.guiScreen or self.guiScreen.allowUserInput:
                 if dy != 0:
                     self.player.inventory.swapPaint(dy)
         except Exception as e:
@@ -247,7 +250,7 @@ class Minecraft(window.Window):
                 if compat_platform != 'darwin':
                     return
 
-            if not self.guiScreen:
+            if not self.guiScreen or self.guiScreen.allowUserInput:
                 if symbol != self.options.toggleFog.key:
                     self.player.setKey(symbol, True)
 
@@ -256,12 +259,25 @@ class Minecraft(window.Window):
                     elif symbol == window.key.F5 and not self.networkClient:
                         self.raining = not self.raining
                     elif symbol == window.key.TAB and not self.networkClient and self.player.arrows > 0:
-                        self.level.addEntity(Arrow(self.level, self.player, self.player.x, self.player.y,
-                                                   self.player.z, self.player.yRot, self.player.xRot, 1.2))
+                        self.level.addEntity(Arrow(self.level, self.player, self.player.x,
+                                                   self.player.y, self.player.z,
+                                                   self.player.yRot, self.player.xRot, 1.2))
                         self.player.arrows -= 1
                     elif symbol == self.options.chat.key and self.networkClient and self.networkClient.isConnected():
                         self.player.releaseAllKeys()
                         self.setScreen(ChatScreen())
+                    elif symbol == self.options.build.key:
+                        self.gamemode.handleOpenInventory()
+
+                    if isinstance(self.gamemode, CreativeGameMode):
+                        if symbol == self.options.load.key:
+                            self.player.resetPos()
+                        elif symbol == self.options.save.key:
+                            self.level.setSpawnPos(int(self.player.x),
+                                                   int(self.player.y),
+                                                   int(self.player.z),
+                                                   self.player.yRot)
+                            self.player.resetPos()
 
                     for i in range(9):
                         if symbol == getattr(window.key, '_' + str(i + 1)):
@@ -275,7 +291,7 @@ class Minecraft(window.Window):
 
     def on_key_release(self, symbol, modifiers):
         try:
-            if not self.guiScreen:
+            if not self.guiScreen or self.guiScreen.allowUserInput:
                 self.player.setKey(symbol, False)
         except Exception as e:
             print(traceback.format_exc())
@@ -339,38 +355,39 @@ class Minecraft(window.Window):
 
             self.__checkGlError('Pre render')
 
-            gl.glEnable(gl.GL_TEXTURE_2D)
-            self.gamemode.render(self.__timer.alpha)
-            self.soundPlayer.setListener(self.player, self.__timer.frames)
-
-            if self.gameRenderer.displayActive and not self.__active:
-                self.pauseScreen()
-
-            self.gameRenderer.displayActive = self.__active
-
             if not self.hideScreen:
-                screenWidth = self.width * 240 // self.height
-                screenHeight = self.height * 240 // self.height
-                xMouse = self.mouseX * screenWidth // self.width
-                yMouse = screenHeight - self.mouseY * screenHeight // self.height - 1
+                gl.glEnable(gl.GL_TEXTURE_2D)
+                self.gamemode.render(self.__timer.alpha)
+                self.soundPlayer.setListener(self.player, self.__timer.frames)
 
-                if self.level:
-                    self.__render(self.__timer.alpha)
-                    self.gui.render(self.__timer.alpha, self.guiScreen is not None, xMouse, yMouse)
-                else:
-                    #gl.glViewport(0, 0, self.width, self.height)
-                    gl.glClearColor(0.0, 0.0, 0.0, 0.0)
-                    gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
-                    gl.glMatrixMode(gl.GL_PROJECTION)
-                    gl.glLoadIdentity()
-                    gl.glMatrixMode(gl.GL_MODELVIEW)
-                    gl.glLoadIdentity()
-                    self.gameRenderer.render()
+                if self.gameRenderer.displayActive and not self.__active:
+                    self.pauseScreen()
 
-                if self.guiScreen:
-                    self.guiScreen.render(xMouse, yMouse)
+                self.gameRenderer.displayActive = self.__active
 
-            if self.options.i:
+                if not self.hideScreen:
+                    screenWidth = self.width * 240 // self.height
+                    screenHeight = self.height * 240 // self.height
+                    xMouse = self.mouseX * screenWidth // self.width
+                    yMouse = screenHeight - self.mouseY * screenHeight // self.height - 1
+
+                    if self.level:
+                        self.__render(self.__timer.alpha)
+                        self.gui.render(self.__timer.alpha, self.guiScreen is not None, xMouse, yMouse)
+                    else:
+                        #gl.glViewport(0, 0, self.width, self.height)
+                        gl.glClearColor(0.0, 0.0, 0.0, 0.0)
+                        gl.glClear(gl.GL_COLOR_BUFFER_BIT | gl.GL_DEPTH_BUFFER_BIT)
+                        gl.glMatrixMode(gl.GL_PROJECTION)
+                        gl.glLoadIdentity()
+                        gl.glMatrixMode(gl.GL_MODELVIEW)
+                        gl.glLoadIdentity()
+                        self.gameRenderer.render()
+
+                    if self.guiScreen:
+                        self.guiScreen.render(xMouse, yMouse)
+
+            if self.options.limitFramerate:
                 time.sleep(0.005)
 
             self.__checkGlError('Post render')
@@ -382,6 +399,7 @@ class Minecraft(window.Window):
         self.running = True
         self.__frustum = Frustum()
         self.__dummyChunk = Chunk(None, 0, 0, 0, 0, 0, True)
+        PlayerTextureLoader(self).start()
 
         self.set_fullscreen(self.__fullscreen)
 
@@ -446,7 +464,9 @@ class Minecraft(window.Window):
         #gl.glViewport(0, 0, self.width, self.height)
 
         if self.server and self.user:
-            self.level = None
+            level = Level()
+            level.setDataLegacy(8, 8, 8, bytearray(512))
+            self.loadLevel(level)
         else:
             success = False
 
@@ -459,8 +479,8 @@ class Minecraft(window.Window):
                 print(traceback.format_exc())
                 success = False
 
-        if not self.level:
-            self.generateLevel(1)
+            if not self.level:
+                self.generateLevel(1)
 
         self.particleEngine = ParticleEngine(self.level, self.textures)
 
@@ -482,7 +502,6 @@ class Minecraft(window.Window):
 
         self.__checkGlError('Post startup')
         self.gui = Gui(self, self.width, self.height)
-        PlayerTextureLoader(self).start()
         if self.server and self.user:
             self.networkClient = Client(self, self.server, self.port, self.user.name, self.user.mpPass)
 
@@ -494,7 +513,7 @@ class Minecraft(window.Window):
                 self.dispatch_events()
                 self.dispatch_event('on_draw')
                 app.platform_event_loop.step(timeout=0.001)
-                if frames >= 0 and not self.hideScreen:
+                if not self.hideScreen and frames >= 0:
                     self.flip()
 
                 frames += 1
@@ -543,7 +562,7 @@ class Minecraft(window.Window):
             return
 
         if not self.hitResult:
-            if editMode == 0:
+            if editMode == 0 and not isinstance(self.gamemode, CreativeGameMode):
                 self.__clickCounter = 10
 
             return
@@ -603,6 +622,7 @@ class Minecraft(window.Window):
             else:
                 self.soundEngine.stopMusic()
 
+        self.gamemode.tick()
         self.gui.tickCounter += 1
         for message in self.gui.messages.copy():
             message.counter += 1
@@ -643,9 +663,9 @@ class Minecraft(window.Window):
                     i9 = int(self.player.xRot * 256.0 / 360.0) & 255
                     self.networkClient.serverConnection.sendPacket(Packets.PLAYER_TELEPORT, [-1, i10, i4, i5, i6, i9])
 
-        if not self.guiScreen and self.player.health <= 0:
+        if not self.guiScreen and self.player and self.player.health <= 0:
             self.setScreen(None)
-        if not self.guiScreen:
+        if not self.guiScreen or self.guiScreen.allowUserInput:
             if self.__clickCounter > 0:
                 self.__clickCounter -= 1
 
@@ -657,14 +677,14 @@ class Minecraft(window.Window):
                 self.__oFrames = self.__frames
 
             leftHeld = not self.guiScreen and self.msh[window.mouse.LEFT] and self.mouseGrabbed
-            if self.__clickCounter <= 0:
+            if not self.gamemode.mode and self.__clickCounter <= 0:
                 if leftHeld and self.hitResult and self.hitResult.typeOfHit == 0:
                     x = self.hitResult.x
                     y = self.hitResult.y
                     z = self.hitResult.z
-                    self.gamemode.stopDestroyingBlock(x, y, z, self.hitResult.sideHit)
+                    self.gamemode.continueDestroyBlock(x, y, z, self.hitResult.sideHit)
                 else:
-                    self.gamemode.tick()
+                    self.gamemode.stopDestroyBlock()
         else:
             self.__oFrames = self.__frames + 10000
             self.guiScreen.tick()
@@ -756,10 +776,10 @@ class Minecraft(window.Window):
         yRot = self.player.yRotO + (self.player.yRot - self.player.yRotO) * alpha
 
         rotVec = self.gameRenderer.getPlayerRotVec(alpha)
-        y1 = math.cos((-yRot) * math.pi / 180.0 + math.pi)
-        y2 = math.sin((-yRot) * math.pi / 180.0 + math.pi)
-        x1 = math.cos((-xRot) * math.pi / 180.0)
-        x2 = math.sin((-xRot) * math.pi / 180.0)
+        y1 = math.cos(-yRot * 0.017453292 - math.pi)
+        y2 = math.sin(-yRot * 0.017453292 - math.pi)
+        x1 = math.cos(-xRot * 0.017453292)
+        x2 = math.sin(-xRot * 0.017453292)
         xy = y2 * x1
         y1 *= x1
         d = self.gamemode.getPickRange()
@@ -845,8 +865,9 @@ class Minecraft(window.Window):
                 chunk.updateInFrustum(self.__frustum)
 
             for chunk in self.levelRenderer.allDirtyChunks.copy():
-                chunk.rebuild(False)
+                chunk.rebuild()
                 self.levelRenderer.allDirtyChunks.remove(chunk)
+                chunk.dirty = False
 
             self.gameRenderer.setupFog()
             gl.glEnable(gl.GL_FOG)
@@ -867,16 +888,14 @@ class Minecraft(window.Window):
             self.gameRenderer.toggleLight(False)
             self.gameRenderer.setupFog()
             self.particleEngine.render(self.player, alpha)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.loadTexture('rock.png'))
+            gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glCallList(self.levelRenderer.surroundLists)
-            gl.glDisable(gl.GL_BLEND)
-            gl.glDisable(gl.GL_LIGHTING)
             self.gameRenderer.setupFog()
             self.levelRenderer.renderClouds(alpha)
             self.gameRenderer.setupFog()
-            gl.glEnable(gl.GL_LIGHTING)
 
             if self.hitResult:
-                gl.glDisable(gl.GL_LIGHTING)
                 gl.glDisable(gl.GL_ALPHA_TEST)
                 self.levelRenderer.renderHit(self.hitResult, 0, self.player.inventory.getSelected())
                 gl.glEnable(gl.GL_BLEND)
@@ -895,10 +914,12 @@ class Minecraft(window.Window):
                 gl.glEnable(gl.GL_TEXTURE_2D)
                 gl.glDisable(gl.GL_BLEND)
                 gl.glEnable(gl.GL_ALPHA_TEST)
-                gl.glEnable(gl.GL_LIGHTING)
 
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
             self.gameRenderer.setupFog()
+            gl.glEnable(gl.GL_BLEND)
+            gl.glEnable(gl.GL_TEXTURE_2D)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.loadTexture('water.png'))
             gl.glCallList(self.levelRenderer.surroundLists + 1)
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_BLEND)
@@ -917,7 +938,6 @@ class Minecraft(window.Window):
 
             gl.glDepthMask(True)
             gl.glDisable(gl.GL_BLEND)
-            gl.glDisable(gl.GL_LIGHTING)
             gl.glDisable(gl.GL_FOG)
             if self.raining:
                 self.gameRenderer.renderRain(alpha)
@@ -986,37 +1006,44 @@ class Minecraft(window.Window):
 
         gl.glColorMask(True, True, True, False)
 
-    def generateLevel(self, i):
+    def generateLevel(self, size):
         name = self.user.name if self.user else 'anonymous'
-        self.loadLevel(LevelGen(self.loadingScreen).generateLevel(name,
-                                                                  128 << i,
-                                                                  128 << i, 64))
+        level = LevelGen(self.loadingScreen).generateLevel(name, 128 << size,
+                                                           128 << size, 64)
+        self.gamemode.createPlayer(level)
+        self.loadLevel(level)
 
     def saveLevel(self):
         return self.levelIo.save(self.level, gzip.open('level.dat', 'wb'))
 
     def loadLevel(self, level):
         self.level = level
-        level.font = self.font
         if level:
+            level.init()
+            self.gamemode.initLevel(level)
+            level.font = self.font
             level.rendererContext = self
+            self.player = level.findSubclassOf(Player)
+
+        if not self.player:
+            self.player = Player(level)
+            self.player.resetPos()
+            self.gamemode.initPlayer(self.player)
+            if level:
+                level.player = self.player
+
+        self.player.input = KeyboardInput(self.options)
+        self.gamemode.adjustPlayer(self.player)
 
         if self.levelRenderer:
             self.levelRenderer.setLevel(level)
 
         if self.particleEngine:
-            self.level.particleEngine = self.particleEngine
+            if self.level:
+                self.level.particleEngine = self.particleEngine
+
             for i in range(2):
                 self.particleEngine.particles[i].clear()
-
-        self.player = level.findPlayer()
-        if not self.player:
-            self.player = Player(level)
-            self.player.resetPos()
-            self.gamemode.initPlayer(self.player)
-
-        self.player.input = KeyboardInput(self.options)
-        level.player = self.player
 
         gc.collect()
 

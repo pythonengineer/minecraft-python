@@ -12,8 +12,5 @@ class LogTile(Tile):
     def resourceCount(self):
         return math.floor(3 * random.random()) + 3
 
-    def getId(self):
-        return self.tiles.wood.id
-
     def _getTexture(self, face):
         return 21 if face == 1 else (21 if face == 0 else 20)

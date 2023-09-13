@@ -7,6 +7,10 @@ class SaveLevelScreen(LoadLevelScreen):
         super().__init__(screen)
         self._title = 'Save level'
 
+    def init(self, minecraft, width, height):
+        super().init(minecraft, width, height)
+        self._buttons[5].msg = 'Save file...'
+
     def _setLevels(self, string):
         for i in range(5):
             self._buttons[i].msg = string[i]

@@ -1,3 +1,6 @@
+from mc.net.minecraft.level.tile.Tiles import tiles
+from mc.net.minecraft.User import User
+
 class Inventory:
     POP_TIME_DURATION = 5
 
@@ -20,10 +23,12 @@ class Inventory:
 
         return -1
 
-    def grabTexture(self, index):
+    def grabTexture(self, index, replace):
         index = self.__containsTileAt(index)
         if index >= 0:
             self.selected = index
+        elif replace and index > 0 and tiles.tiles[index] in User.creativeTiles:
+            self.replaceTile(tiles.tiles[id])
 
     def swapPaint(self, dy):
         if dy > 0:
@@ -37,6 +42,18 @@ class Inventory:
 
         while self.selected >= len(self.slots):
             self.selected -= len(self.slots)
+
+    def replaceSlot(self, index):
+        if index >= 0:
+            self.replaceTile(User.creativeTiles[index])
+
+    def replaceTile(self, tile):
+        if tile:
+            index = self.__containsTileAt(tile.id)
+            if index >= 0:
+                self.slots[index] = self.slots[self.selected]
+
+            self.slots[self.selected] = tile.id
 
     def addResource(self, index):
         slot = self.__containsTileAt(index)

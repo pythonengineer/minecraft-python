@@ -22,4 +22,4 @@ cdef class BasicAI:
         public Entity attackTarget
 
     cpdef tick(self, Level level, Mob mob)
-    cpdef _update(self)
+    cpdef update(self)

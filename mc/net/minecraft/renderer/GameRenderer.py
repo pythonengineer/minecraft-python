@@ -172,7 +172,6 @@ class GameRenderer:
 
         gl.glEnable(gl.GL_COLOR_MATERIAL)
         gl.glColorMaterial(gl.GL_FRONT, gl.GL_AMBIENT)
-        gl.glEnable(gl.GL_LIGHTING)
 
     def __getBuffer(self, a, b, c, d):
         self.__lb.clear()

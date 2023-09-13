@@ -11,8 +11,8 @@ class BasicAttackAI(BasicAI):
         super().__init__()
         self.damage = 6
 
-    def _update(self):
-        super()._update()
+    def update(self):
+        super().update()
         if self.mob.health > 0:
             self._doAttack()
 

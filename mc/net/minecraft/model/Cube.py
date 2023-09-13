@@ -8,11 +8,11 @@ class Cube:
     def __init__(self, xTexOffs, yTexOffs):
         self.vertices = []
         self.polygons = []
-        self.__xTexOffs = xTexOffs
-        self.__yTexOffs = yTexOffs
-        self.__x = 0.0
-        self.__y = 0.0
-        self.__z = 0.0
+        self.xTexOffs = xTexOffs
+        self.yTexOffs = yTexOffs
+        self.x = 0.0
+        self.y = 0.0
+        self.z = 0.0
         self.xRot = 0.0
         self.yRot = 0.0
         self.zRot = 0.0
@@ -60,35 +60,35 @@ class Cube:
         self.vertices[7] = l3
 
         self.polygons[0] = Polygon([l1, u1, u2, l2],
-                                   self.__xTexOffs + d + w,
-                                   self.__yTexOffs + d,
-                                   self.__xTexOffs + d + w + d,
-                                   self.__yTexOffs + d + h)
+                                   self.xTexOffs + d + w,
+                                   self.yTexOffs + d,
+                                   self.xTexOffs + d + w + d,
+                                   self.yTexOffs + d + h)
         self.polygons[1] = Polygon([u0, l0, l3, u3],
-                                   self.__xTexOffs + 0,
-                                   self.__yTexOffs + d,
-                                   self.__xTexOffs + d,
-                                   self.__yTexOffs + d + h)
+                                   self.xTexOffs + 0,
+                                   self.yTexOffs + d,
+                                   self.xTexOffs + d,
+                                   self.yTexOffs + d + h)
         self.polygons[2] = Polygon([l1, l0, u0, u1],
-                                   self.__xTexOffs + d,
-                                   self.__yTexOffs + 0,
-                                   self.__xTexOffs + d + w,
-                                   self.__yTexOffs + d)
+                                   self.xTexOffs + d,
+                                   self.yTexOffs + 0,
+                                   self.xTexOffs + d + w,
+                                   self.yTexOffs + d)
         self.polygons[3] = Polygon([u2, u3, l3, l2],
-                                   self.__xTexOffs + d + w,
-                                   self.__yTexOffs + 0,
-                                   self.__xTexOffs + d + w + w,
-                                   self.__yTexOffs + d)
+                                   self.xTexOffs + d + w,
+                                   self.yTexOffs + 0,
+                                   self.xTexOffs + d + w + w,
+                                   self.yTexOffs + d)
         self.polygons[4] = Polygon([u1, u0, u3, u2],
-                                   self.__xTexOffs + d,
-                                   self.__yTexOffs + d,
-                                   self.__xTexOffs + d + w,
-                                   self.__yTexOffs + d + h)
+                                   self.xTexOffs + d,
+                                   self.yTexOffs + d,
+                                   self.xTexOffs + d + w,
+                                   self.yTexOffs + d + h)
         self.polygons[5] = Polygon([l0, l1, l2, l3],
-                                   self.__xTexOffs + d + w + d,
-                                   self.__yTexOffs + d,
-                                   self.__xTexOffs + d + w + d + w,
-                                   self.__yTexOffs + d + h)
+                                   self.xTexOffs + d + w + d,
+                                   self.yTexOffs + d,
+                                   self.xTexOffs + d + w + d + w,
+                                   self.yTexOffs + d + h)
 
         if self.mirror:
             for face in self.polygons:
@@ -99,9 +99,9 @@ class Cube:
                 face.vertices = vertexPos
 
     def setPos(self, x, y, z):
-        self.__x = x
-        self.__y = y
-        self.__z = z
+        self.x = x
+        self.y = y
+        self.z = z
 
     def render(self, translation):
         if not self.showModel:
@@ -110,20 +110,20 @@ class Cube:
             self.translateTo(translation)
 
         if self.xRot == 0.0 and self.yRot == 0.0 and self.zRot == 0.0:
-            if self.__x == 0.0 and self.__y == 0.0 and self.__z == 0.0:
+            if self.x == 0.0 and self.y == 0.0 and self.z == 0.0:
                 gl.glCallList(self.list)
             else:
-                gl.glTranslatef(self.__x * translation,
-                                self.__y * translation,
-                                self.__z * translation)
+                gl.glTranslatef(self.x * translation,
+                                self.y * translation,
+                                self.z * translation)
                 gl.glCallList(self.list)
-                gl.glTranslatef(-self.__x * translation,
-                                -self.__y * translation,
-                                -self.__z * translation)
+                gl.glTranslatef(-self.x * translation,
+                                -self.y * translation,
+                                -self.z * translation)
         else:
-            c = 57.29578
+            c = 57.295776
             gl.glPushMatrix()
-            gl.glTranslatef(self.__x * translation, self.__y * translation, self.__z * translation)
+            gl.glTranslatef(self.x * translation, self.y * translation, self.z * translation)
             if self.zRot != 0.0:
                 gl.glRotatef(self.zRot * c, 0.0, 0.0, 1.0)
             if self.yRot != 0.0:

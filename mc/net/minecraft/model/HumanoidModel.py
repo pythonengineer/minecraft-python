@@ -37,8 +37,8 @@ class HumanoidModel(BaseModel):
         self.leftLeg.render(zRot)
 
     def setupAnim(self, x, y, xRot, yRot, zRot, translation):
-        self.head.yRot = yRot / 57.29578
-        self.head.xRot = zRot / 57.29578
+        self.head.yRot = yRot / 57.295776
+        self.head.xRot = zRot / 57.295776
         self.rightArm.xRot = math.cos(x * 0.6662 + math.pi) * 2.0 * y
         self.rightArm.zRot = (math.cos(x * 0.2312) + 1.0) * y
         self.leftArm.xRot = math.cos(x * 0.6662) * 2.0 * y

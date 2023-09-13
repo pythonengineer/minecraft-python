@@ -2,6 +2,7 @@ from mc.net.minecraft.net.NetworkPlayerTextureLoader import NetworkPlayerTexture
 from mc.net.minecraft.mob.HumanoidMob import HumanoidMob
 from mc.net.minecraft.net.EntityPos import EntityPos
 from mc.net.minecraft.gui.Font import Font
+from mc.CompatibilityShims import rshift
 from collections import deque
 from pyglet import gl
 
@@ -16,6 +17,8 @@ class NetworkPlayer(HumanoidMob):
         self.__xp = xp
         self.__yp = yp
         self.__zp = zp
+        self.heightOffset = 0.0
+        self.pushthrough = 0.8
         self.__moveQueue = deque()
         self.__texture = -1
         self.newTexture = None
@@ -23,6 +26,7 @@ class NetworkPlayer(HumanoidMob):
         self.setPos(xp / 32.0, yp / 32.0, zp / 32.0)
         self.xRot = xRot
         self.yRot = yRot
+        self.armor = self.helmet = False
         NetworkPlayerTextureLoader(self).start()
         self.allowAlpha = False
 
@@ -35,6 +39,8 @@ class NetworkPlayer(HumanoidMob):
             i -= 1
             if i + 1 <= 0 or len(self.__moveQueue) <= 10:
                 break
+
+        self.onGround = True
 
     def bindTexture(self, textures):
         if self.newTexture:
@@ -53,22 +59,16 @@ class NetworkPlayer(HumanoidMob):
 
                 return x
 
-            yoff = 0
-            for y in range(16):
-                off = yoff
-                for x in range(32, 64):
-                    argb[off] = convertPixel(rgb[y + x])
-                    off += 1
-
-                yoff += 32
+            argb = [convertPixel(pixel) for pixel in rgb]
 
             for i in range(512):
                 a = rshift(argb[i], 24)
-                if a >= 128:
-                    continue
-
-                hasHair = True
-                break
+                r = argb[i] >> 16 & 255
+                g = argb[i] >> 8 & 255
+                b = argb[i] & 255
+                if a < 128:
+                    hasHair = True
+                    break
 
             self.hasHair = hasHair
             self.__texture = textures.loadTextureImg(self.newTexture)
@@ -80,8 +80,8 @@ class NetworkPlayer(HumanoidMob):
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__texture)
 
     def render(self, textures, translation):
-        super().render(textures, translation)
         self.__textures = textures
+        super().render(textures, translation)
         gl.glPushMatrix()
         f = 0.05
         gl.glTranslatef(self.xo + (self.x - self.xo) * translation,
@@ -89,19 +89,19 @@ class NetworkPlayer(HumanoidMob):
                         self.zo + (self.z - self.zo) * translation)
         gl.glRotatef(-self.__minecraft.player.yRot, 0.0, 1.0, 0.0)
         gl.glScalef(f, -f, f)
-        gl.glTranslatef(-Font.width(self.displayName) / 2.0, 0.0, 0.0)
+        gl.glTranslatef(-self.__minecraft.font.width(self.displayName) / 2.0, 0.0, 0.0)
         gl.glNormal3f(1.0, -1.0, 1.0)
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_LIGHT0)
         if self.name.lower() == 'notch':
-            Font.draw(self.displayName, 0, 0, 16776960)
+            self.__minecraft.font.draw(self.displayName, 0, 0, 16776960)
         else:
-            Font.draw(self.displayName, 0, 0, 16777215)
+            self.__minecraft.font.draw(self.displayName, 0, 0, 16777215)
 
         gl.glEnable(gl.GL_LIGHT0)
         gl.glEnable(gl.GL_LIGHTING)
         gl.glTranslatef(1.0, 1.0, -0.05)
-        Font.draw(self.name, 0, 0, 5263440)
+        self.__minecraft.font.draw(self.name, 0, 0, 5263440)
         gl.glPopMatrix()
 
     def queue1(self, xa, ya, za, xr, yr):

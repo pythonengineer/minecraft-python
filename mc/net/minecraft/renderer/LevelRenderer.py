@@ -1,7 +1,7 @@
 from mc.net.minecraft.level.tile.Tile import Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
 from mc.net.minecraft.renderer.DistanceSorter import DistanceSorter
-from mc.net.minecraft.renderer.Tesselator import Tesselator, tesselator
+from mc.net.minecraft.renderer.Tesselator import tesselator
 from mc.net.minecraft.renderer.Chunk import Chunk
 from mc.CompatibilityShims import BufferUtils, getMillis
 from pyglet import gl
@@ -14,11 +14,11 @@ class LevelRenderer:
     CHUNK_SIZE = 16
 
     def __init__(self, minecraft, textures):
-        self.__minecraft = minecraft
+        self.minecraft = minecraft
         self.textures = textures
         self.level = None
         self.ib = BufferUtils.createIntBuffer(65536)
-        self.allDirtyChunks = set()
+        self.allDirtyChunks = []
         self.__sortedChunks = []
         self.chunks = []
         self.__chunkBuffer = [0] * 50000
@@ -28,7 +28,7 @@ class LevelRenderer:
         self.__lZ = -9999.0
         self.hurtTime = 0.0
         self.surroundLists = gl.glGenLists(2)
-        self.glLists = gl.glGenLists(Tesselator.MAX_FLOATS)
+        self.glLists = gl.glGenLists(4096 << 6 << 1)
 
     def setLevel(self, level):
         if self.level:
@@ -61,12 +61,13 @@ class LevelRenderer:
                                                                                        LevelRenderer.CHUNK_SIZE,
                                                                                        self.glLists + lists)
                     self.__sortedChunks[(z * self.__yChunks + y) * self.__xChunks + x] = self.chunks[(z * self.__yChunks + y) * self.__xChunks + x]
-                    lists += 8
+                    lists += 2
+
+        for chunk in self.allDirtyChunks:
+            chunk.dirty = False
 
         self.allDirtyChunks.clear()
         gl.glNewList(self.surroundLists, gl.GL_COMPILE)
-        gl.glEnable(gl.GL_TEXTURE_2D)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('rock.png'))
         gl.glColor4f(0.5, 0.5, 0.5, 1.0)
         t = tesselator
         y = self.level.getGroundLevel()
@@ -118,14 +119,10 @@ class LevelRenderer:
             t.vertexUV(self.level.width, y, zz + 0, 0.0, 0.0)
 
         t.end()
-        gl.glDisable(gl.GL_BLEND)
         gl.glEndList()
         gl.glNewList(self.surroundLists + 1, gl.GL_COMPILE)
-        gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glColor3f(1.0, 1.0, 1.0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('water.png'))
         y = self.level.getWaterLevel()
-        gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         t = tesselator
         s = 128
@@ -167,7 +164,7 @@ class LevelRenderer:
 
         startingIndex = 0
         for chunk in self.__sortedChunks:
-            startingIndex = chunk.render(self.__chunkBuffer, startingIndex, layer, player.x, player.y, player.z)
+            startingIndex = chunk.render(self.__chunkBuffer, startingIndex, layer)
 
         self.ib.clear()
         self.ib.put(self.__chunkBuffer, 0, startingIndex)
@@ -184,7 +181,7 @@ class LevelRenderer:
         r = (self.level.cloudColor >> 16 & 0xFF) / 255.0
         g = (self.level.cloudColor >> 8 & 0xFF) / 255.0
         b = (self.level.cloudColor & 0xFF) / 255.0
-        if self.__minecraft.options.anaglyph3d:
+        if self.minecraft.options.anaglyph3d:
             nr = (r * 30.0 + g * 59.0 + b * 11.0) / 100.0
             g = (r * 30.0 + g * 70.0) / 100.0
             b = (r * 30.0 + b * 70.0) / 100.0
@@ -216,7 +213,7 @@ class LevelRenderer:
         r = (self.level.skyColor >> 16 & 0xFF) / 255.0
         g = (self.level.skyColor >> 8 & 0xFF) / 255.0
         b = (self.level.skyColor & 0xFF) / 255.0
-        if self.__minecraft.options.anaglyph3d:
+        if self.minecraft.options.anaglyph3d:
             nr = (r * 30.0 + g * 59.0 + b * 11.0) / 100.0
             g = (r * 30.0 + g * 70.0) / 100.0
             b = (r * 30.0 + b * 70.0) / 100.0
@@ -245,13 +242,13 @@ class LevelRenderer:
         t = tesselator
         t.begin()
         for face in range(6):
-            tiles.tiles[n5].renderFace(t, x, y, z, face)
+            tiles.tiles[tile].renderFace(t, x, y, z, face)
 
         t.end()
         gl.glCullFace(gl.GL_FRONT)
         t.begin()
         for face in range(6):
-            tiles.tiles[n5].renderFace(t, x, y, z, face)
+            tiles.tiles[tile].renderFace(t, x, y, z, face)
 
         t.end()
         gl.glCullFace(gl.GL_BACK)
@@ -311,4 +308,7 @@ class LevelRenderer:
         for x in range(x0, x1 + 1):
             for y in range(y0, y1 + 1):
                 for z in range(z0, z1 + 1):
-                    self.allDirtyChunks.add(self.chunks[(z * self.__yChunks + y) * self.__xChunks + x])
+                    chunk = self.chunks[(z * self.__yChunks + y) * self.__xChunks + x]
+                    if not chunk.dirty:
+                        chunk.dirty = True
+                        self.allDirtyChunks.append(chunk)

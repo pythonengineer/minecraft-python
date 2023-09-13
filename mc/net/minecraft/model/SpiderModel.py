@@ -41,8 +41,8 @@ class SpiderModel(BaseModel):
         self.__leg8.setPos(4.0, 0.0, -1.0)
 
     def render(self, x, y, z, xRot, yRot, zRot):
-        self.__head.yRot = xRot / 57.29578
-        self.__head.xRot = yRot / 57.29578
+        self.__head.yRot = xRot / 57.295776
+        self.__head.xRot = yRot / 57.295776
         xRot = 0.7853982
         self.__leg1.zRot = -xRot
         self.__leg2.zRot = xRot

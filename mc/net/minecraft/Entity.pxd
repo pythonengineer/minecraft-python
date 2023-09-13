@@ -43,6 +43,8 @@ cdef class Entity:
         public int textureId
         public float ySlideOffset
         public float footSize
+        public bint noPhysics
+        public float pushthrough
 
     cpdef tick(self)
     cpdef bint isFree(self, float xa, float ya, float za)

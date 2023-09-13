@@ -20,31 +20,17 @@ cdef class Flower(Tile):
         if not level.isLit(x, y, z) or (below != self.tiles.dirt.id and below != self.tiles.grass.id):
             level.setTile(x, y, z, 0)
 
-    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *:
-        cdef float b = level.getBrightness(x, y, z)
-        t.colorFloat(b, b, b)
-        self.__renderFlower(t, x, y, z)
-        return True
-
     cdef void __renderFlower(self, Tesselator t, float x, float y, float z) except *:
         cdef int tex, xt, yt, rots, r
         cdef float u0, u1, v0, v1, xa, za, x0, x1, y0, y1, z0, z1
 
         tex = self._getTexture(15)
-        if not self.isNormalTile:
-            xt = tex % 16 << 4
-            yt = tex // 16 << 4
-            u0 = xt / 256.0
-            u1 = (xt + 15.99) / 256.0
-            v0 = yt / 256.0
-            v1 = (yt + 15.99) / 256.0
-        else:
-            xt = tex % 16
-            yt = (xt << 4) + tex // 16 << 4
-            u0 = 0.0
-            u1 = 1.0
-            v0 = yt / 4096.0
-            v1 = (yt + 15.99) / 4096.0
+        xt = tex % 16 << 4
+        yt = tex // 16 << 4
+        u0 = xt / 256.0
+        u1 = (xt + 15.99) / 256.0
+        v0 = yt / 256.0
+        v1 = (yt + 15.99) / 256.0
 
         rots = 2
         for r in range(rots):
@@ -84,3 +70,13 @@ cdef class Flower(Tile):
 
     cpdef bint isOpaque(self):
         return False
+
+    cpdef bint renderFull(self, Level level, int x, int y, int z, Tesselator t) except *:
+        cdef float b = level.getBrightness(x, y, z)
+        t.colorFloat(b, b, b)
+        self.__renderFlower(t, x, y, z)
+        return True
+
+    cpdef void render(self, Tesselator t) except *:
+        t.colorFloat(1.0, 1.0, 1.0)
+        self.__renderFlower(t, -2, 0.0, 0.0)

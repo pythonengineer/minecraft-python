@@ -1,3 +1,5 @@
+# cython: language_level=3
+
 from libc.math cimport sqrt
 
 from mc.cCompatibilityShims cimport Random
@@ -73,9 +75,9 @@ cdef class Particle(Entity):
         cdef float u0, u1, v0, v1, r, x, y, z, br
 
         u0 = (self._tex % 16) / 16.0
-        u1 = u0 + 0.015609375
+        u1 = u0 + 0.0624375
         v0 = (self._tex // 16) / 16.0
-        v1 = v0 + 0.015609375
+        v1 = v0 + 0.0624375
         r = 0.1 * self._size
 
         x = self.xo + (self.x - self.xo) * a

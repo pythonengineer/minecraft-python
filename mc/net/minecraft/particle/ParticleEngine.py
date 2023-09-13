@@ -7,8 +7,10 @@ class ParticleEngine:
     particles = [[], []]
 
     def __init__(self, level, textures):
-        self.__textures = textures
-        level.particleEngine = self
+        if level:
+            level.particleEngine = self
+
+        self.textures = textures
 
     def addParticle(self, p):
         tex = p.getParticleTexture()
@@ -34,9 +36,9 @@ class ParticleEngine:
                 continue
 
             if i == 0:
-                id_ = self.__textures.loadTexture('particles.png')
+                id_ = self.textures.loadTexture('particles.png')
             elif i == 1:
-                id_ = self.__textures.loadTexture('terrain.png')
+                id_ = self.textures.loadTexture('terrain.png')
 
             gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
             t = tesselator

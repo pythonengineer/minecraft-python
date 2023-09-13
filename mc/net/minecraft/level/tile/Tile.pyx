@@ -8,7 +8,6 @@ from mc.net.minecraft.phys.AABB import AABB
 
 import random
 
-cdef bint Tile_isNormalTile
 cdef list Tile_shouldTick
 cdef list Tile_opaqueTileLookup
 cdef list Tile_lightOpacity
@@ -18,8 +17,6 @@ cdef list Tile_tickSpeed
 cdef class Tile:
 
     def __cinit__(self):
-        if not self.isNormalTile:
-            self.isNormalTile = True
         if not self.shouldTick:
             self.shouldTick = [False] * 256
         if not self.opaqueTileLookup:
@@ -41,15 +38,6 @@ cdef class Tile:
         self.opaqueTileLookup[id_] = self.isSolid()
         self.lightOpacity[id_] = self.isOpaque()
         self.isLiquid[id_] = False
-
-    @property
-    def isNormalTile(self):
-        return Tile_isNormalTile
-
-    @isNormalTile.setter
-    def isNormalTile(self, x):
-        global Tile_isNormalTile
-        Tile_isNormalTile = x
 
     @property
     def shouldTick(self):
@@ -120,52 +108,25 @@ cdef class Tile:
     cdef setTickSpeed(self, int rate):
         self.tickSpeed[self.id] = 16
 
-    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *:
-        cdef float f8, f9, f10, b
-        cdef bint layerOk
-
-        layerOk = False
-        f8 = 0.5
-        f9 = 0.8
-        f10 = 0.6
-        if self.shouldRenderFace(level, x, y - 1, z, layer, 0):
-            b = self._getBrightness(level, x, y - 1, z)
-            t.colorFloat(f8 * b, f8 * b, f8 * b)
-            self.renderFace(t, x, y, z, 0)
-            layerOk = True
-        if self.shouldRenderFace(level, x, y + 1, z, layer, 1):
-            b = self._getBrightness(level, x, y + 1, z)
-            t.colorFloat(b * 1.0, b * 1.0, b * 1.0)
-            self.renderFace(t, x, y, z, 1)
-            layerOk = True
-        if self.shouldRenderFace(level, x, y, z - 1, layer, 2):
-            b = self._getBrightness(level, x, y, z - 1)
-            t.colorFloat(f9 * b, f9 * b, f9 * b)
-            self.renderFace(t, x, y, z, 2)
-            layerOk = True
-        if self.shouldRenderFace(level, x, y, z + 1, layer, 3):
-            b = self._getBrightness(level, x, y, z + 1)
-            t.colorFloat(f9 * b, f9 * b, f9 * b)
-            self.renderFace(t, x, y, z, 3)
-            layerOk = True
-        if self.shouldRenderFace(level, x - 1, y, z, layer, 4):
-            b = self._getBrightness(level, x - 1, y, z)
-            t.colorFloat(f10 * b, f10 * b, f10 * b)
-            self.renderFace(t, x, y, z, 4)
-            layerOk = True
-        if self.shouldRenderFace(level, x + 1, y, z, layer, 5):
-            b = self._getBrightness(level, x + 1, y, z)
-            t.colorFloat(f10 * b, f10 * b, f10 * b)
-            self.renderFace(t, x, y, z, 5)
-            layerOk = True
-
-        return layerOk
+    cpdef void render(self, Tesselator t) except *:
+        t.colorFloat(0.5, 0.5, 0.5)
+        self.renderFace(t, -2, 0, 0, 0)
+        t.colorFloat(1.0, 1.0, 1.0)
+        self.renderFace(t, -2, 0, 0, 1)
+        t.colorFloat(0.8, 0.8, 0.8)
+        self.renderFace(t, -2, 0, 0, 2)
+        t.colorFloat(0.8, 0.8, 0.8)
+        self.renderFace(t, -2, 0, 0, 3)
+        t.colorFloat(0.6, 0.6, 0.6)
+        self.renderFace(t, -2, 0, 0, 4)
+        t.colorFloat(0.6, 0.6, 0.6)
+        self.renderFace(t, -2, 0, 0, 5)
 
     cdef float _getBrightness(self, Level level, int x, int y, int z):
         return level.getBrightness(x, y, z)
 
-    cpdef bint shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
-        return False if layer == 1 else not level.isSolidTile(x, y, z)
+    cpdef bint shouldRenderFace(self, Level level, int x, int y, int z, int layer):
+        return not level.isSolidTile(x, y, z)
 
     cpdef int _getTexture(self, int face):
         return self.tex
@@ -184,8 +145,12 @@ cdef class Tile:
         v0 = yt / 256.0
         v1 = (yt + 15.99) / 256.0
         if face >= 2 and tex < 240:
-            v0 = (yt + self.yy0 * 15.99) / 256.0
-            v1 = (yt + self.yy1 * 15.99) / 256.0
+            if self.yy0 >= 0.0 and self.yy1 <= 1.0:
+                v0 = (yt + self.yy0 * 15.99) / 256.0
+                v1 = (yt + self.yy1 * 15.99) / 256.0
+            else:
+                v0 = yt / 256.0
+                v1 = (yt + 15.99) / 256.0
 
         x0 = x + self.xx0
         x1 = x + self.xx1
@@ -224,72 +189,6 @@ cdef class Tile:
             t.vertexUV(x1, y0, z0, u1, v1)
             t.vertexUV(x1, y1, z0, u1, v0)
             t.vertexUV(x1, y1, z1, u0, v0)
-
-    cdef renderBlockFromSide(self, Tesselator t, int x, int y, int z, int face, int layer):
-        cdef int tex, xt, yt
-        cdef float u0, u1, v0, v1, x0, x1, y0, y1, z0, z1
-
-        tex = self._getTexture(face)
-        if not self.isNormalTile:
-            xt = tex % 16 << 4
-            yt = tex // 16 << 4
-            u0 = (xt + 15.99) / 256.0
-            u1 = xt / 256.0
-            if face > 1:
-                v0 = (yt + self.yy0 * 15.99) / 256.0
-                v1 = (yt + self.yy1 * 15.99) / 256.0
-            else:
-                v0 = yt / 256.0
-                v1 = (yt + 15.99) / 256.0
-        else:
-            xt = tex % 16
-            yt = (xt << 4) + tex // 16 << 4
-            u0 = 1.0 + layer
-            u1 = 0.0
-            if face > 1:
-                v0 = (yt + self.yy0 * 15.99) / 4096.0
-                v1 = (yt + self.yy1 * 15.99) / 4096.0
-            else:
-                v0 = yt / 4096.0
-                v1 = (yt + 15.99) / 4096.0
-
-        x0 = x + self.xx0 - 0.001
-        x1 = x + self.xx1 + 0.001
-        y0 = y + self.yy0 - 0.001
-        y1 = y + self.yy1 + 0.001
-        z0 = z + self.zz0 - 0.001
-        z1 = z + self.zz1 - 0.001
-
-        if face == 0:
-            t.vertexUV(x0, y0, z1, u0, v1)
-            t.vertexUV(x0, y0, z0, u0, v0)
-            t.vertexUV(x1 + layer, y0, z0, u1, v0)
-            t.vertexUV(x1 + layer, y0, z1, u1, v1)
-        elif face == 1:
-            t.vertexUV(x1 + layer, y1, z1, u1, v1)
-            t.vertexUV(x1 + layer, y1, z0, u1, v0)
-            t.vertexUV(x0, y1, z0, u0, v0)
-            t.vertexUV(x0, y1, z1, u0, v1)
-        elif face == 2:
-            t.vertexUV(x0, y1, z0, u1, v0)
-            t.vertexUV(x1 + layer, y1, z0, u0, v0)
-            t.vertexUV(x1 + layer, y0, z0, u0, v1)
-            t.vertexUV(x0, y0, z0, u1, v1)
-        elif face == 3:
-            t.vertexUV(x0, y1, z1, u0, v0)
-            t.vertexUV(x0, y0, z1, u0, v1)
-            t.vertexUV(x1 + layer, y0, z1, u1, v1)
-            t.vertexUV(x1 + layer, y1, z1, u1, v0)
-        elif face == 4:
-            t.vertexUV(x0, y1, z1 + layer, u1, v0)
-            t.vertexUV(x0, y1, z0, u0, v0)
-            t.vertexUV(x0, y0, z0, u0, v1)
-            t.vertexUV(x0, y0, z1 + layer, u1, v1)
-        elif face == 5:
-            t.vertexUV(x1, y0, z1 + layer, u0, v1)
-            t.vertexUV(x1, y0, z0, u1, v1)
-            t.vertexUV(x1, y1, z0, u1, v0)
-            t.vertexUV(x1, y1, z1 + layer, u0, v0)
 
     cdef renderBackFace(self, Tesselator t, int x, int y, int z, int face):
         cdef int tex
@@ -420,16 +319,13 @@ cdef class Tile:
     cpdef int resourceCount(self):
         return 1
 
-    cpdef int getId(self):
-        return self.id
-
     def getDestroyProgress(self):
         return self.__destroyProgress
 
     def spawnResources(self, Level level, int x, int y, int z):
-        self.wasExplodedResources(level, x, y, z, 1.0)
+        self.wasExplodedResources(1.0)
 
-    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance):
+    cdef wasExplodedResources(self, float chance):
         from mc.net.minecraft.item.Item import Item
         cdef int i
         cdef float f2, xx, yy, zz
@@ -438,11 +334,9 @@ cdef class Tile:
             if random.random() > chance:
                 continue
 
-            f2 = 0.7
-            xx = random.random() * f2 + (1.0 - f2) * 0.5
-            yy = random.random() * f2 + (1.0 - f2) * 0.5
-            zz = random.random() * f2 + (1.0 - f2) * 0.5
-            level.addEntity(Item(level, x + xx, y + yy, z + zz, self.getId()))
+            random.random()
+            random.random()
+            random.random()
 
     def renderGuiTile(self, Tesselator t):
         cdef int i
@@ -545,5 +439,46 @@ cdef class Tile:
         else:
             return vec.x >= self.xx0 and vec.x <= self.xx1 and vec.y >= self.yy0 and vec.y <= self.yy1
 
-    cpdef wasExploded(self, Level level, int x, int y, int z):
-        pass
+    cpdef bint renderFull(self, Level level, int x, int y, int z, Tesselator t) except *:
+        cdef float f8, f9, f10, b
+        cdef bint layerOk
+
+        layerOk = False
+        f8 = 0.5
+        f9 = 0.8
+        f10 = 0.6
+        if self.shouldRenderFace(level, x, y - 1, z, 0):
+            b = self._getBrightness(level, x, y - 1, z)
+            t.colorFloat(f8 * b, f8 * b, f8 * b)
+            self.renderFace(t, x, y, z, 0)
+            layerOk = True
+        if self.shouldRenderFace(level, x, y + 1, z, 1):
+            b = self._getBrightness(level, x, y + 1, z)
+            t.colorFloat(b * 1.0, b * 1.0, b * 1.0)
+            self.renderFace(t, x, y, z, 1)
+            layerOk = True
+        if self.shouldRenderFace(level, x, y, z - 1, 2):
+            b = self._getBrightness(level, x, y, z - 1)
+            t.colorFloat(f9 * b, f9 * b, f9 * b)
+            self.renderFace(t, x, y, z, 2)
+            layerOk = True
+        if self.shouldRenderFace(level, x, y, z + 1, 3):
+            b = self._getBrightness(level, x, y, z + 1)
+            t.colorFloat(f9 * b, f9 * b, f9 * b)
+            self.renderFace(t, x, y, z, 3)
+            layerOk = True
+        if self.shouldRenderFace(level, x - 1, y, z, 4):
+            b = self._getBrightness(level, x - 1, y, z)
+            t.colorFloat(f10 * b, f10 * b, f10 * b)
+            self.renderFace(t, x, y, z, 4)
+            layerOk = True
+        if self.shouldRenderFace(level, x + 1, y, z, 5):
+            b = self._getBrightness(level, x + 1, y, z)
+            t.colorFloat(f10 * b, f10 * b, f10 * b)
+            self.renderFace(t, x, y, z, 5)
+            layerOk = True
+
+        return layerOk
+
+    cdef int getRenderLayer(self):
+        return 0

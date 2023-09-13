@@ -34,10 +34,9 @@ cdef class LevelGen:
     def generateLevel(self, str userName, int width, int height, int depth):
         cdef int *heightmap
         cdef int i, i13, i34, i5, i15, i41, w, h, d, ix, iy, iz, i42, i16, i46, \
-                 id_, rock, count, length, l, xx, yy, zz, ii, target, i37, mobs
+                 id_, rock, count, length, l, xx, yy, zz, ii, target, i37
         cdef float f6, x, y, z, dir1, dira1, dir2, dira2, dir3, size, xd, yd, zd
         cdef double d14, d16, d21, start, end, d36
-        cdef long tileCount
         cdef Distort distort8, distort9, distort32
         cdef PerlinNoise perlinNoise
         cdef Level level
@@ -146,9 +145,9 @@ cdef class LevelGen:
                 dira2 += self.__random.randFloat() - self.__random.randFloat()
 
                 if self.__random.randFloat() >= 0.25:
-                    x = x + (self.__random.randFloat() * 4.0 - 2.0) * 0.2
-                    y = y + (self.__random.randFloat() * 4.0 - 2.0) * 0.2
-                    z = z + (self.__random.randFloat() * 4.0 - 2.0) * 0.2
+                    x += (self.__random.randFloat() * 4.0 - 2.0) * 0.2
+                    y += (self.__random.randFloat() * 4.0 - 2.0) * 0.2
+                    z += (self.__random.randFloat() * 4.0 - 2.0) * 0.2
                     size = (d - y) / d
                     size = 1.2 + (size * 3.5 + 1.0) * dir3
                     size = sin(l * pi / length) * size
@@ -169,17 +168,15 @@ cdef class LevelGen:
         self.__addOre(tiles.goldOre.id, 50, 3, 4)
         self.__levelLoaderListener.levelLoadUpdate('Watering..')
 
-        before = getNs()
-        tileCount = 0
         target = tiles.calmWater.id
 
         for ix in range(self.__width):
-            tileCount += self.__floodFillWithLiquid(ix, self.__depth // 2 - 1, 0, 0, target)
-            tileCount += self.__floodFillWithLiquid(ix, self.__depth // 2 - 1, self.__height - 1, 0, target)
+            self.__floodFillWithLiquid(ix, self.__depth // 2 - 1, 0, 0, target)
+            self.__floodFillWithLiquid(ix, self.__depth // 2 - 1, self.__height - 1, 0, target)
 
         for iy in range(self.__height):
-            tileCount += self.__floodFillWithLiquid(0, self.__depth // 2 - 1, iy, 0, target)
-            tileCount += self.__floodFillWithLiquid(self.__width - 1, self.__depth // 2 - 1, iy, 0, target)
+            self.__floodFillWithLiquid(0, self.__depth // 2 - 1, iy, 0, target)
+            self.__floodFillWithLiquid(self.__width - 1, self.__depth // 2 - 1, iy, 0, target)
 
         i37 = self.__width * self.__height // 8000
         for i in range(i37):
@@ -187,10 +184,7 @@ cdef class LevelGen:
             iy = self.__waterLevel - 1 - self.__random.nextInt(2)
             iz = self.__random.nextInt(self.__height)
             if self.__blocks[(iy * self.__height + iz) * self.__width + ix] == 0:
-                tileCount += self.__floodFillWithLiquid(ix, iy, iz, 0, target)
-
-        after = getNs()
-        print('Flood filled ' + str(tileCount) + ' tiles in ' + str((after - before) / 1000000.0) + ' ms')
+                self.__floodFillWithLiquid(ix, iy, iz, 0, target)
 
         self.__levelLoaderListener.levelLoadUpdate('Melting..')
         self.__addLava()
@@ -208,11 +202,6 @@ cdef class LevelGen:
         level.name = 'A Nice World'
 
         self.__generateTrees(level, heightmap)
-        self.__levelLoaderListener.levelLoadUpdate('Spawning..')
-
-        count = width * height * depth // 800
-        mobs = level.maybeSpawnMobs(count, None)
-        print(mobs, 'mobs')
 
         return level
 
@@ -246,11 +235,11 @@ cdef class LevelGen:
                     self.__blocks[heightmap2] = heightmap3
 
     cdef __generateTrees(self, Level level, int* heightmap):
-        cdef int w, i3, i4, x, y, z, i7, i8, i9, i10
+        cdef int w, size, i4, x, y, z, i7, i8, i9, i10
 
         w = self.__width
-        i3 = w * self.__height // 4000
-        for i4 in range(i3):
+        size = w * self.__height // 4000
+        for i4 in range(size):
             i8 = self.__random.nextInt(w)
             i9 = self.__random.nextInt(self.__height)
             for i7 in range(20):
@@ -295,11 +284,10 @@ cdef class LevelGen:
                         self.__blocks[tile] = tiles.rose.id
 
     cdef __addMushrooms(self, int* heightmap):
-        cdef int mushrooms, tile, n, n3, n4, n5, n6, n7, x, y, z
+        cdef int tile, n, size, n4, n5, n6, n7, x, y, z
 
-        mushrooms = 0
-        n3 = self.__width * self.__height * self.__depth // 2000
-        for i in range(n3):
+        size = self.__width * self.__height * self.__depth // 2000
+        for i in range(size):
             n4 = self.__random.nextInt(2)
             n5 = self.__random.nextInt(self.__width)
             n6 = self.__random.nextInt(self.__depth)
@@ -327,19 +315,15 @@ cdef class LevelGen:
                     elif n4 == 1:
                         self.__blocks[tile] = tiles.mushroomRed.id
 
-                    mushrooms += 1
-
-        print('Added ' + str(mushrooms) + ' mushrooms')
-
     cdef __addOre(self, int face, int i2, int i3, int i4):
-        cdef int w, h, d, i7, i8, i12, i17, i19, i20, i21, i26
+        cdef int w, h, d, size, i8, i12, i17, i19, i20, i21, i26
         cdef float f9, f10, f11, f12, f13, f14, f15, f16, f18, f22, f23, f24
 
         w = self.__width
         h = self.__height
         d = self.__depth
-        i7 = w * h * d // 256 // 64 * i2 // 100
-        for i8 in range(i7):
+        size = w * h * d // 256 // 64 * i2 // 100
+        for i8 in range(size):
             f9 = self.__random.randFloatM(w)
             f10 = self.__random.randFloatM(d)
             f11 = self.__random.randFloatM(h)
@@ -374,19 +358,15 @@ cdef class LevelGen:
                                     self.__blocks[i26] = face
 
     cdef __addLava(self):
-        cdef int lavaCount, i2, i, x, y, z
+        cdef int size, i, x, y, z
 
-        lavaCount = 0
-        i2 = self.__width * self.__height * self.__depth // 20000
-        for i in range(i2):
+        size = self.__width * self.__height * self.__depth // 20000
+        for i in range(size):
             x = self.__random.nextInt(self.__width)
             y = <int>(self.__random.randFloat() * self.__random.randFloat() * (self.__waterLevel - 3))
             z = self.__random.nextInt(self.__height)
             if self.__blocks[(y * self.__height + z) * self.__width + x] == 0:
-                lavaCount += 1
                 self.__floodFillWithLiquid(x, y, z, 0, tiles.calmLava.id)
-
-        print('LavaCount:', lavaCount)
 
     cdef long __floodFillWithLiquid(self, int x, int y, int z, int source, int tt):
         cdef int target, p, wBits, hBits, hMask, wMask, upStep, cl, i, z0, y0, x0, x1
@@ -415,7 +395,6 @@ cdef class LevelGen:
             p -= 1
             cl = self.__coords[p]
             if p == 0 and len(coordBuffer) > 0:
-                print('IT HAPPENED!')
                 coordBuffer.pop(-1)
                 self.__coords = <int*>malloc(len(coordBuffer) * sizeof(int))
                 for i in range(len(coordBuffer)):
@@ -438,7 +417,7 @@ cdef class LevelGen:
             z1 = cl >> wBits & hMask
             y1 = cl >> wBits + hBits
             if z1 != z0 or y1 != y0:
-                print('hoooly fuck') # sic
+                print('Diagonal flood!?')
 
             lastNorth = False
             lastSouth = False

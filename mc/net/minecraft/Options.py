@@ -145,7 +145,6 @@ class Options:
     bobView = True
     anaglyph3d = False
     limitFramerate = False
-    i = False
     optionCount = 8
 
     def __init__(self, minecraft, file):
@@ -198,7 +197,7 @@ class Options:
 
                 self.__minecraft.textures.addTextureId(img, id_)
         elif option == 7:
-            self.i = not self.i
+            self.limitFramerate = not self.limitFramerate
 
         self.__save()
 
@@ -218,7 +217,7 @@ class Options:
         elif option == 6:
             return '3d anaglyph: ' + ('ON' if self.anaglyph3d else 'OFF')
         elif option == 7:
-            return 'Limit framerate: ' + ('ON' if self.i else 'OFF')
+            return 'Limit framerate: ' + ('ON' if self.limitFramerate else 'OFF')
 
         return ''
 
@@ -244,7 +243,7 @@ class Options:
                         elif split[0] == 'anaglyph3d':
                             self.anaglyph3d = split[1] == 'true'
                         elif split[0] == 'limitFramerate':
-                            self.i = split[1] == 'true'
+                            self.limitFramerate = split[1] == 'true'
 
                         for binding in self.keys:
                             if split[0] == 'key_' + binding.name:
@@ -262,7 +261,7 @@ class Options:
                 f.write('viewDistance:' + str(self.viewDistance) + '\n')
                 f.write('bobView:' + ('true' if self.bobView else 'false') + '\n')
                 f.write('anaglyph3d:' + ('true' if self.anaglyph3d else 'false') + '\n')
-                f.write('limitFramerate:' + ('true' if self.i else 'false') + '\n')
+                f.write('limitFramerate:' + ('true' if self.limitFramerate else 'false') + '\n')
 
                 for binding in self.keys:
                     f.write('key_' + binding.name + ':' + str(_GL_KEYS[binding.key]) + '\n')

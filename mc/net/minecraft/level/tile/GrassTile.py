@@ -27,6 +27,3 @@ class GrassTile(Tile):
                 zt = z + math.floor(3 * random.random()) - 1
                 if level.getTile(xt, yt, zt) == self.tiles.dirt.id and level.isLit(xt, yt, zt):
                     level.setTile(xt, yt, zt, self.id)
-
-    def getId(self):
-        return self.tiles.dirt.getId()

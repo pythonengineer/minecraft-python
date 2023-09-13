@@ -19,7 +19,7 @@ class ConnectionThread(Thread):
             connection = SocketConnection(self.__ip, self.__port)
             self.__networkClient.serverConnection = connection
             connection.client = self.__networkClient
-            connection.sendPacket(Packets.LOGIN, [6, self.__username, self.__mpPass, 0])
+            connection.sendPacket(Packets.LOGIN, [7, self.__username, self.__mpPass, 0])
             self.__networkClient.processData = True
         except ConnectionRefusedError:
             self.__minecraft.hideScreen = False

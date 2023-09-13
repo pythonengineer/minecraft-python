@@ -53,7 +53,7 @@ cdef class BasicAI:
             self.yya = 0.0
             self._yRotA = 0.0
         else:
-            self._update()
+            self.update()
 
         isInWater = mob.isInWater()
         isInLava = mob.isInLava()
@@ -80,7 +80,7 @@ cdef class BasicAI:
     def _jumpFromGround(self):
         self.mob.yd = 0.42
 
-    cpdef _update(self):
+    cpdef update(self):
         if self.__rand.randFloat() < 0.07:
             self.xxa = (self.__rand.randFloat() - 0.5) * self.runSpeed
             self.yya = self.__rand.randFloat() * self.runSpeed

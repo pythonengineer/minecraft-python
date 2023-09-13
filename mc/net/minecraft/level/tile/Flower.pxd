@@ -7,8 +7,9 @@ from mc.net.minecraft.renderer.Tesselator cimport Tesselator
 cdef class Flower(Tile):
 
     cpdef void tick(self, Level level, int x, int y, int z, random) except *
-    cpdef bint render(self, Tesselator t, Level level, int layer, int x, int y, int z) except *
     cdef void __renderFlower(self, Tesselator t, float x, float y, float z) except *
     cpdef bint blocksLight(self)
     cpdef bint isSolid(self)
     cpdef bint isOpaque(self)
+    cpdef bint renderFull(self, Level level, int x, int y, int z, Tesselator t) except *
+    cpdef void render(self, Tesselator t) except *

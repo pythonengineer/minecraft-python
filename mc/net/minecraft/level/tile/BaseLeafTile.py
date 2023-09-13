@@ -9,11 +9,11 @@ class BaseLeafTile(Tile):
     def isSolid(self):
         return False
 
-    def shouldRenderFace(self, level, x, y, z, layer, face):
+    def shouldRenderFace(self, level, x, y, z, layer):
         if not self.__renderAdjacentFaces and level.getTile(x, y, z) == self.id:
             return False
         else:
-            return super().shouldRenderFace(level, x, y, z, layer, face)
+            return super().shouldRenderFace(level, x, y, z, layer)
 
     def blocksLight(self):
         return False

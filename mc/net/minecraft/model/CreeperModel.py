@@ -26,8 +26,8 @@ class CreeperModel(BaseModel):
         self.__leg4.setPos(2.0, 12.0, -4.0)
 
     def render(self, x, y, z, xRot, yRot, zRot):
-        self.__head.yRot = xRot / 57.29578
-        self.__head.xRot = yRot / 57.29578
+        self.__head.yRot = xRot / 57.295776
+        self.__head.xRot = yRot / 57.295776
         self.__leg1.xRot = math.cos(x * 0.6662) * 1.4 * y
         self.__leg2.xRot = math.cos(x * 0.6662 + math.pi) * 1.4 * y
         self.__leg3.xRot = math.cos(x * 0.6662 + math.pi) * 1.4 * y

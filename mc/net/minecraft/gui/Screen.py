@@ -4,6 +4,7 @@ from mc.CompatibilityShims import rshift
 from pyglet import window, gl
 
 class Screen(GuiComponent):
+    allowUserInput = False
 
     def render(self, xMouse, yMouse):
         for button in self._buttons:

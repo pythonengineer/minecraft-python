@@ -9,12 +9,12 @@ class GlassTile(Tile):
     def isSolid(self):
         return False
 
-    def shouldRenderFace(self, level, x, y, z, layer, face):
+    def shouldRenderFace(self, level, x, y, z, layer):
         tile = level.getTile(x, y, z)
         if not self.__renderAdjacentFaces and tile == self.id:
             return False
         else:
-            return super().shouldRenderFace(level, x, y, z, layer, face)
+            return super().shouldRenderFace(level, x, y, z, layer)
 
     def blocksLight(self):
         return False

@@ -13,6 +13,7 @@ class GuiComponent:
         b = (col & 255) / 255.0
         t = tesselator
         gl.glEnable(gl.GL_BLEND)
+        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glColor4f(r, g, b, a)
         t.begin()
@@ -21,6 +22,7 @@ class GuiComponent:
         t.vertex(x1, y0, 0.0)
         t.vertex(x0, y0, 0.0)
         t.end()
+        gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glDisable(gl.GL_BLEND)
 
     @staticmethod
@@ -33,17 +35,19 @@ class GuiComponent:
         f8 = (col2 >> 16 & 255) / 255.0
         f9 = (col2 >> 8 & 255) / 255.0
         f13 = (col2 & 255) / 255.0
+        gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_BLEND)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glBegin(gl.GL_QUADS)
         gl.glColor4f(f11, f6, f12, f10)
-        gl.glVertex2f(x1, 0.0)
-        gl.glVertex2f(0.0, 0.0)
+        gl.glVertex2f(x1, y0)
+        gl.glVertex2f(x0, y0)
         gl.glColor4f(f8, f9, f13, f7)
-        gl.glVertex2f(0.0, y1)
+        gl.glVertex2f(x0, y1)
         gl.glVertex2f(x1, y1)
         gl.glEnd()
         gl.glDisable(gl.GL_BLEND)
+        gl.glEnable(gl.GL_TEXTURE_2D)
 
     @staticmethod
     def drawCenteredString(font, string, x, y, color):

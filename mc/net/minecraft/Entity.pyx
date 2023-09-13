@@ -43,6 +43,8 @@ cdef class Entity:
         self.textureId = 0
         self.ySlideOffset = 0.0
         self.footSize = 0.0
+        self.noPhysics = False
+        self.pushthrough = 0.0
 
     def __init__(self, level):
         self.level = level
@@ -146,6 +148,13 @@ cdef class Entity:
         cdef float xOrg, zOrg, xaOrg, yaOrg, zaOrg, xo, yo, zo, xd, zd
         cdef bint onGround
         cdef AABB aabbOrg, aABB, aabb
+
+        if self.noPhysics:
+            self.bb.move(x, y, z)
+            self.x = (self.bb.x0 + self.bb.x1) / 2.0
+            self.y = self.bb.y0 + self.heightOffset - self.ySlideOffset
+            self.z = (self.bb.z0 + self.bb.z1) / 2.0
+            return
 
         xOrg = self.x
         zOrg = self.z
@@ -369,6 +378,8 @@ cdef class Entity:
             z /= d
             x *= 0.05
             z *= 0.05
+            x *= 1.0 - self.pushthrough
+            z *= 1.0 - self.pushthrough
             self._push(-x, 0.0, -z)
             entity._push(x, 0.0, z)
 
@@ -409,3 +420,6 @@ cdef class Entity:
 
     def getTexture(self):
         return self.textureId
+
+    def isCreativeModeAllowed(self):
+        return False

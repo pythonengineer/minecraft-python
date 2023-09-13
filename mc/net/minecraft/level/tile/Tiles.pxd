@@ -56,3 +56,4 @@ cdef class Tiles:
         public Tile tnt
         public Tile bookshelf
         public Tile mossStone
+        public Tile obsidian

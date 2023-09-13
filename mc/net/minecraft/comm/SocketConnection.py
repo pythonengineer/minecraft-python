@@ -52,9 +52,9 @@ class SocketConnection:
         except:
             pass
 
-        i1 = 0
-        while self.readBuffer.position() > 0 and i1 + 1 != 100:
-            i1 += 1
+        loops = 0
+        while self.readBuffer.position() > 0 and loops + 1 != 100:
+            loops += 1
             self.readBuffer.flip()
             b2 = self.readBuffer.get(0)
             packet = Packet.PACKETS[b2]
@@ -77,7 +77,7 @@ class SocketConnection:
                     self.client.minecraft.loadingScreen.levelLoadUpdate(data[2].decode())
                     self.client.minecraft.player.userType = data[3]
                 elif packet == Packets.LEVEL_INITIALIZE:
-                    self.client.minecraft.loadLegacy(None)
+                    self.client.minecraft.loadLevel(None)
                     self.client.levelBuffer = ByteArrayOutputStream()
                 elif packet == Packets.LEVEL_DATA_CHUNK:
                     s13 = data[0]
@@ -99,13 +99,13 @@ class SocketConnection:
                     level = Level()
                     level.setNetworkMode(True)
                     level.setDataLegacy(s18, s21, s17, b14)
-                    self.client.minecraft.loadLegacy(level)
+                    self.client.minecraft.loadLevel(level)
                     self.client.minecraft.hideScreen = False
                     self.client.connected = True
                 elif packet == Packets.SET_TILE:
                     if self.client.minecraft.level:
                         self.client.minecraft.level.netSetTile(int(data[0]), int(data[1]),
-                                                                int(data[2]), data[3])
+                                                               int(data[2]), data[3])
                 elif packet == Packets.PLAYER_JOIN:
                     b15 = data[0]
                     string19 = data[1].decode()
@@ -116,12 +116,19 @@ class SocketConnection:
                     b9 = data[6]
                     if b15 not in self.client.players:
                         if b15 >= 0:
-                            networkPlayer = NetworkPlayer(self.client.minecraft, b15, string19, s18, s21, s24, (-b8 * 360) / 256.0, (b9 * 360) / 256.0)
+                            networkPlayer = NetworkPlayer(self.client.minecraft, b15,
+                                                          string19, s18, s21, s24,
+                                                          (-b8 * 360) / 256.0,
+                                                          (b9 * 360) / 256.0)
                             self.client.players[b15] = networkPlayer
                             self.client.minecraft.level.addEntity(networkPlayer)
                         else:
-                            self.client.minecraft.level.setSpawnPos(s18 // 32, s21 // 32, s24 // 32, b8 * 320 / 256)
-                            self.client.minecraft.player.moveTo(s18 / 32.0, s21 / 32.0, s24 / 32.0, (b8 * 360) / 256.0, (b9 * 360) / 256.0)
+                            self.client.minecraft.level.setSpawnPos(s18 // 32, s21 // 32,
+                                                                    s24 // 32, b8 * 320 / 256)
+                            self.client.minecraft.player.moveTo(s18 / 32.0, s21 / 32.0,
+                                                                s24 / 32.0,
+                                                                (b8 * 360) / 256.0,
+                                                                (b9 * 360) / 256.0)
                 elif packet == Packets.PLAYER_TELEPORT:
                     b15 = data[0]
                     s17 = data[1]
@@ -131,9 +138,12 @@ class SocketConnection:
                     b8 = data[5]
                     networkPlayer = self.client.players.get(b15)
                     if b15 < 0:
-                        self.client.minecraft.player.moveTo(s17 / 32.0, s18 / 32.0, s21 / 32.0, float(b25 * 360) / 256.0, float(b8 * 360) / 256.0)
+                        self.client.minecraft.player.moveTo(s17 / 32.0, s18 / 32.0, s21 / 32.0,
+                                                            float(b25 * 360) / 256.0,
+                                                            float(b8 * 360) / 256.0)
                     elif networkPlayer:
-                        networkPlayer.teleport(s17, s18, s21, float(-b25 * 360) / 256.0, float(b8 * 360) / 256.0)
+                        networkPlayer.teleport(s17, s18, s21, float(-b25 * 360) / 256.0,
+                                               float(b8 * 360) / 256.0)
                 elif packet == Packets.PLAYER_MOVE_AND_ROTATE:
                     b15 = data[0]
                     b23 = data[1]
@@ -143,14 +153,16 @@ class SocketConnection:
                     b8 = data[5]
                     networkPlayer = self.client.players.get(b15)
                     if b15 >= 0 and networkPlayer:
-                        networkPlayer.queue1(b23, b22, b6, float(-b25 * 360) / 256.0, float(b8 * 360) / 256.0)
+                        networkPlayer.queue1(b23, b22, b6, float(-b25 * 360) / 256.0,
+                                             float(b8 * 360) / 256.0)
                 elif packet == Packets.PLAYER_ROTATE:
                     b15 = data[0]
                     b23 = data[1]
                     b22 = data[2]
                     networkPlayer = self.client.players.get(b15)
                     if b15 >= 0 and networkPlayer:
-                        networkPlayer.queue2(float(-b23 * 360) / 256.0, float(b22 * 360) / 256.0)
+                        networkPlayer.queue2(float(-b23 * 360) / 256.0,
+                                             float(b22 * 360) / 256.0)
                 elif packet == Packets.PLAYER_MOVE:
                     b15 = data[0]
                     b23 = data[1]
@@ -177,6 +189,8 @@ class SocketConnection:
                 elif packet == Packets.KICK_PLAYER:
                     self.client.minecraft.setScreen(ErrorScreen('Connection lost', data[0].decode()))
                     self.disconnect()
+                elif packet == Packets.USER_TYPE:
+                    self.client.minecraft.player.userType = data[0]
 
             if not self.connected:
                 break

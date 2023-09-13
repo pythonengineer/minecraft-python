@@ -89,6 +89,17 @@ cdef class BlockMap:
         return self.getEntities(entity, aabb.x0, aabb.y0, aabb.z0,
                                 aabb.x1, aabb.y1, aabb.z1, l)
 
+    def removeAllNonCreativeModeEntities(self):
+        cdef Entity e
+
+        for w in range(self.width):
+            for d in range(self.depth):
+                for h in range(self.height):
+                    l = self.entityGrid[(h * self.depth + d) * self.width + w]
+                    for e in l.copy():
+                        if not e.isCreativeModeAllowed():
+                            l.remove(e)
+
     cdef clear(self):
         for w in range(self.width):
             for d in range(self.depth):

@@ -128,8 +128,10 @@ cdef class Tiles:
 
         self.mossStone = Tile(self, 48, 36).setSoundAndGravity(SoundType.stone, 1.0, 1.0, 1.0)
         self.mossStone.explodeable = False
+        self.obsidian = StoneTile(self, 49, 37).setSoundAndGravity(SoundType.stone, 1.0, 1.0, 1.0)
+        self.obsidian.explodeable = False
 
-        self.tiles[1:48] = [self.rock, self.grass, self.dirt, self.stoneBrick, self.wood,
+        self.tiles[1:49] = [self.rock, self.grass, self.dirt, self.stoneBrick, self.wood,
                             self.bush, self.unbreakable, self.water, self.calmWater,
                             self.lava, self.calmLava, self.sand, self.gravel, self.goldOre,
                             self.ironOre, self.coalOre, self.log, self.leaf, self.sponge,
@@ -141,6 +143,6 @@ cdef class Tiles:
                             self.clothWhite, self.flower, self.rose,
                             self.mushroomBrown, self.mushroomRed, self.gold, self.iron,
                             self.slabFull, self.slabHalf, self.brick, self.tnt,
-                            self.bookshelf, self.mossStone]
+                            self.bookshelf, self.mossStone, self.obsidian]
 
 tiles = Tiles()

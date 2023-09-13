@@ -85,24 +85,18 @@ cdef class LiquidTile(Tile):
     cdef float _getBrightness(self, Level level, int x, int y, int z):
         return 100.0 if self._liquid == Liquid.lava else level.getBrightness(x, y, z)
 
-    cpdef bint shouldRenderFace(self, Level level, int x, int y, int z, int layer, int face):
-        if x < 0 or y < 0 or z < 0 or x >= level.width or z >= level.height:
-            return False
+    cpdef bint shouldRenderFace(self, Level level, int x, int y, int z, int layer):
+        cdef int tile
+        if x >= 0 and y >= 0 and z >= 0 and x < level.width and z < level.height:
+            tile = level.getTile(x, y, z)
+            if tile != self._tileId and tile != self._calmTileId:
+                if layer == 1 and (level.getTile(x - 1, y, z) == 0 or level.getTile(x + 1, y, z) == 0 or
+                                   level.getTile(x, y, z - 1) == 0 or level.getTile(x, y, z + 1) == 0):
+                    return True
+                else:
+                    return Tile.shouldRenderFace(self, level, x, y, z, -1)
 
-        if layer != 1 and self._liquid == Liquid.water:
-            return False
-
-        cdef int tile = level.getTile(x, y, z)
-        if tile == self._tileId or tile == self._calmTileId:
-            return False
-
-        if face == 1 and (level.getTile(x - 1, y, z) == 0 or \
-                          level.getTile(x + 1, y, z) == 0 or \
-                          level.getTile(x, y, z - 1) == 0 or \
-                          level.getTile(x, y, z + 1) == 0):
-            return True
-
-        return Tile.shouldRenderFace(self, level, x, y, z, -1, face)
+        return False
 
     cpdef void renderFace(self, Tesselator t, int x, int y, int z, int face):
         Tile.renderFace(self, t, x, y, z, face)
@@ -134,7 +128,7 @@ cdef class LiquidTile(Tile):
     cdef int getTickDelay(self):
         return 5 if self._liquid == Liquid.lava else 0
 
-    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance):
+    cdef wasExplodedResources(self, float chance):
         pass
 
     def spawnResources(self, Level level, int x, int y, int z):
@@ -142,3 +136,6 @@ cdef class LiquidTile(Tile):
 
     cpdef int resourceCount(self):
         return 0
+
+    cdef int getRenderLayer(self):
+        return 1 if self._liquid == Liquid.water else 0

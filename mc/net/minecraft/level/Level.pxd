@@ -3,6 +3,7 @@
 cimport cython
 
 from mc.net.minecraft.level.BlockMap cimport BlockMap
+from mc.net.minecraft.phys.AABB cimport AABB
 
 @cython.final
 cdef class Level:
@@ -30,6 +31,7 @@ cdef class Level:
         bint __networkMode
 
         public object rendererContext
+        public bint creativeMode
 
         public int waterLevel
         public int skyColor
@@ -68,21 +70,20 @@ cdef class Level:
     cpdef inline int getTile(self, int x, int y, int z)
     cpdef void tickEntities(self)
     cpdef tick(self)
-    cdef inline bint isSolidTile(self, int x, int y, int z)
+    cpdef inline bint isSolidTile(self, int x, int y, int z)
     cdef inline bint __isInLevelBounds(self, int x, int y, int z)
     cpdef inline float getGroundLevel(self)
     cpdef inline float getWaterLevel(self)
-    cdef bint containsAnyLiquid(self, box)
-    cdef bint containsLiquid(self, box, int liquidId)
+    cdef bint containsAnyLiquid(self, AABB box)
+    cdef bint containsLiquid(self, AABB box, int liquidId)
     cpdef inline addToTickNextTick(self, int x, int y, int z, int type_)
-    cpdef bint isFree(self, aabb)
+    cpdef bint isFree(self, AABB aabb)
     cpdef inline bint isSolid(self, int x, int y, int z, int f4)
     cdef inline bint __isBlockOpaque(self, int x, int y, int z)
     cpdef getHighestTile(self, int x, int z)
     cpdef setSpawnPos(self, int x, int y, int z, float yRot)
     cpdef inline float getBrightness(self, int x, int y, int z)
-    cdef inline int getLiquid(self, int x, int y, int z)
+    cpdef inline int getLiquid(self, int x, int y, int z)
     cpdef inline bint isWater(self, int x, int y, int z)
-    cdef int maybeSpawnMobs(self, int count, entity)
     cpdef bint maybeGrowTree(self, int x, int y, int z)
     cpdef explode(self, entity, float x, float y, float z, float radius)

@@ -23,7 +23,6 @@ class LevelIO:
                 dis.close()
                 return None
             elif version == 1:
-                print('Version is 1!')
                 name = dis.readUTF()
                 creator = dis.readUTF()
                 createTime = dis.readLong()

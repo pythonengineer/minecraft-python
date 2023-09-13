@@ -7,15 +7,8 @@ from libc.math cimport floor, isnan
 
 from mc.net.minecraft.HitResult import HitResult
 from mc.net.minecraft.level.liquid.Liquid import Liquid
+from mc.net.minecraft.phys.AABB cimport AABB
 from mc.net.minecraft.model.Vec3 import Vec3
-from mc.net.minecraft.mob.Mob import Mob
-from mc.net.minecraft.mob.Zombie import Zombie
-from mc.net.minecraft.mob.Skeleton import Skeleton
-from mc.net.minecraft.mob.Pig import Pig
-from mc.net.minecraft.mob.Creeper import Creeper
-from mc.net.minecraft.mob.Spider import Spider
-from mc.net.minecraft.fx.Smolder import Smolder
-from mc.net.minecraft.player.Player import Player
 from mc.net.minecraft.level.BlockMap cimport BlockMap
 from mc.net.minecraft.level.tile.Tile cimport Tile
 from mc.net.minecraft.level.tile.Tiles import tiles
@@ -207,9 +200,10 @@ cdef class Level:
         cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
         return tile.blocksLight() if tile else False
 
-    def getCubes(self, box):
+    def getCubes(self, AABB box):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
         cdef Tile tile
+        cdef AABB aabb
 
         boxes = []
         minX = <int>box.x0
@@ -330,7 +324,7 @@ cdef class Level:
         else:
             return 0
 
-    cdef inline bint isSolidTile(self, int x, int y, int z):
+    cpdef inline bint isSolidTile(self, int x, int y, int z):
         cdef Tile tile = tiles.tiles[self.getTile(x, y, z)]
         return False if tile is None else tile.isSolid()
 
@@ -339,22 +333,11 @@ cdef class Level:
 
     @cython.cdivision(True)
     cpdef tick(self):
-        cdef int count, mobs, i1, i2, h, w, d, ticks, i, i12, x, z, y, id_
+        cdef int i1, i2, h, w, d, ticks, i, i12, x, z, y, id_
         cdef char b
         cdef Coord posType
 
         self.__tickCount += 1
-
-        count = self.width * self.height * self.depth // 64 // 64 // 64
-        if <int>floor(self.rand.random() * 100) < count:
-            mobs = 0
-
-            for entity in self.blockMap.all:
-                if isinstance(entity, Mob):
-                    mobs += 1
-
-            if mobs < count * 20:
-                self.maybeSpawnMobs(count, self.player)
 
         i1 = 1
         i2 = 1
@@ -393,6 +376,14 @@ cdef class Level:
             if tiles.rock.shouldTick[id_]:
                 (<Tile>tiles.tiles[id_]).tick(self, x, y, z, self.rand)
 
+    def countInstanceOf(self, cls):
+        count = 0
+        for obj in self.blockMap.all:
+            if isinstance(obj, cls):
+                count += 1
+
+        return count
+
     cdef inline bint __isInLevelBounds(self, int x, int y, int z):
         return x >= 0 and y >= 0 and z >= 0 and x < self.width and y < self.depth and z < self.height
 
@@ -402,7 +393,7 @@ cdef class Level:
     cpdef inline float getWaterLevel(self):
         return self.waterLevel
 
-    cdef bint containsAnyLiquid(self, box):
+    cdef bint containsAnyLiquid(self, AABB box):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
         cdef Tile tile
 
@@ -434,7 +425,7 @@ cdef class Level:
 
         return False
 
-    cdef bint containsLiquid(self, box, int liquid):
+    cdef bint containsLiquid(self, AABB box, int liquid):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
         cdef Tile tile
 
@@ -478,10 +469,10 @@ cdef class Level:
 
             self.__tickList.add(posType)
 
-    cpdef bint isFree(self, aabb):
+    cpdef bint isFree(self, AABB aabb):
         return len(self.blockMap.getEntitiesWithinAABBExcludingEntity(None, aabb)) == 0
 
-    def findEntities(self, entity, aabb):
+    def findEntities(self, entity, AABB aabb):
         return self.blockMap.getEntitiesWithinAABBExcludingEntity(entity, aabb)
 
     cpdef inline bint isSolid(self, int x, int y, int z, int offset):
@@ -523,7 +514,7 @@ cdef class Level:
     cpdef inline float getBrightness(self, int x, int y, int z):
         return 1.0 if self.isLit(x, y, z) else 0.6
 
-    cdef inline int getLiquid(self, int x, int y, int z):
+    cpdef inline int getLiquid(self, int x, int y, int z):
         cdef int tile = self.getTile(x, y, z)
         if tile == 0:
             return Liquid.none
@@ -678,64 +669,6 @@ cdef class Level:
                 if self.rendererContext.player.getDistanceSq(x, y, z) < dist * dist:
                     self.rendererContext.soundPlayer.play(audioInfo, SoundPos(x, y, z))
 
-    cdef int maybeSpawnMobs(self, int count, entity):
-        cdef int mobs, i5, i6, i7, i8, i9, i10, xx, yy, zz, i14
-        cdef float x, y, z, xd, yd, zd
-
-        mobs = 0
-        for i5 in range(count):
-            i6 = <int>floor(self.rand.random() * 5)
-            i7 = <int>floor(self.rand.random() * self.width)
-            i8 = <int>(min(self.rand.random(), self.rand.random()) * self.depth)
-            i9 = <int>floor(self.rand.random() * self.height)
-            if not self.isSolidTile(i7, i8, i9) and self.getLiquid(i7, i8, i9) == Liquid.none and \
-               (not self.isLit(i7, i8, i9) or <int>floor(self.rand.random() * 5) == 0):
-                for i10 in range(3):
-                    xx = i7
-                    yy = i8
-                    zz = i9
-                    for i14 in range(3):
-                        xx += <int>floor(self.rand.random() * 6) - <int>floor(self.rand.random() * 6)
-                        yy += <int>floor(self.rand.random() * 1) - <int>floor(self.rand.random() * 1)
-                        zz += <int>floor(self.rand.random() * 6) - <int>floor(self.rand.random() * 6)
-                        if xx >= 0 and zz >= 1 and yy >= 0 and \
-                           yy < self.depth - 2 and xx < self.width and zz < self.height and \
-                           self.isSolidTile(xx, yy - 1, zz) and not \
-                           self.isSolidTile(xx, yy, zz) and not \
-                           self.isSolidTile(xx, yy + 1, zz):
-                            x = xx + 0.5
-                            y = yy + 1.0
-                            z = zz + 0.5
-                            if entity:
-                                xd = x - entity.x
-                                yd = y - entity.y
-                                zd = z - entity.z
-                                if xd * xd + yd * yd + zd * zd < 256.0:
-                                    continue
-                            else:
-                                xd = x - self.xSpawn
-                                yd = y - self.ySpawn
-                                zd = z - self.zSpawn
-                                if xd * xd + yd * yd + zd * zd < 256.0:
-                                    continue
-
-                            if i6 == 0:
-                                mob = Zombie(self, x, y, z)
-                            elif i6 == 1:
-                                mob = Skeleton(self, x, y, z)
-                            elif i6 == 2:
-                                mob = Pig(self, x, y, z)
-                            elif i6 == 3:
-                                mob = Creeper(self, x, y, z)
-                            elif i6 == 4:
-                                mob = Spider(self, x, y, z)
-
-                            if self.isFree(mob.bb):
-                                mobs += 1
-                                self.addEntity(mob)
-
-        return mobs
-
     cpdef bint maybeGrowTree(self, int x, int y, int z):
         cdef int xx, yy, zz, tile, n5, n6, n7, n9, n10, n11
 
@@ -830,12 +763,8 @@ cdef class Level:
                     if tileId > 0:
                         tile = tiles.tiles[tileId]
                         if tile.isExplodeable():
-                            self.addEntity(Smolder(self, i, n, j))
-                            tile.wasExplodedResources(self, i, n, j, 0.3)
+                            tile.spawnResources(0.3)
                             self.setTile(i, n, j, 0)
-                            tile.wasExploded(self, i, n, j)
-                    else:
-                        self.addEntity(Smolder(self, i, n, j))
 
         entities = self.blockMap.getEntitiesExcludingEntity(entity, x0, y0, z0, x1, y1, z1)
         for e in entities:
@@ -843,10 +772,13 @@ cdef class Level:
             if d <= 1.0:
                 e.hurt(entity, <int>((1.0 - d) * 15.0 + 1.0))
 
-    def findPlayer(self):
+    def findSubclassOf(self, cls):
         for entity in self.blockMap.all:
-            if isinstance(entity, Player):
+            if isinstance(entity, cls):
                 return entity
+
+    def removeAllNonCreativeModeEntities(self):
+        self.blockMap.removeAllNonCreativeModeEntities()
 
 cpdef object rebuild(str name, str creator, object createTime, float rotSpawn,
                      set entities, int unprocessed, int tickCount, int multiplier,

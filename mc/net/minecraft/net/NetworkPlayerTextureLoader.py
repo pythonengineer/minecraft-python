@@ -4,7 +4,8 @@ from io import BytesIO
 from PIL import Image
 
 import urllib.request
-import traceback
+import random
+import time
 import json
 
 def getTextureInfo(properties):
@@ -22,39 +23,34 @@ class NetworkPlayerTextureLoader(Thread):
         username = self.__player.name
 
         try:
+            time.sleep(random.randint(1, 7))
             with urllib.request.urlopen(f'https://api.mojang.com/users/profiles/minecraft/{username}') as r:
                 if r.code != 200:
-                    print('Failed to load texture for', username)
                     return
 
                 userId = json.loads(r.read().decode(r.info().get_param('charset') or 'utf-8'))['id']
 
+            time.sleep(random.randint(2, 3))
             with urllib.request.urlopen(f'https://sessionserver.mojang.com/session/minecraft/profile/{userId}') as r:
                 if r.code != 200:
-                    print('Failed to load texture for', username)
                     return
 
                 userInfo = json.loads(r.read().decode(r.info().get_param('charset') or 'utf-8'))
 
             textureInfo = getTextureInfo(userInfo['properties'])
             if not textureInfo:
-                print('Failed to load texture for', username)
                 return
 
             try:
                 skinUrl = textureInfo['textures']['SKIN']['url']
             except:
-                print('Failed to load texture for', username)
-                print(traceback.format_exc())
                 return
 
+            time.sleep(random.randint(2, 4))
             with urllib.request.urlopen(skinUrl) as r:
                 if r.code != 200:
-                    print('Failed to load texture for', username)
                     return
 
-                print('Loading texture for', username)
                 self.__player.newTexture = Image.open(BytesIO(r.read())).convert('RGBA')
         except:
-            print('Failed to load texture for', username)
-            print(traceback.format_exc())
+            pass
