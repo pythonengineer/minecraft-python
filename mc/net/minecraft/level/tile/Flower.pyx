@@ -16,9 +16,11 @@ cdef class Flower(Tile):
         self._setShape(0.5 - f, 0.0, 0.5 - f, f + 0.5, f * 3.0, f + 0.5)
 
     cpdef void tick(self, Level level, int x, int y, int z, random) except *:
-        cdef int below = level.getTile(x, y - 1, z)
-        if not level.isLit(x, y, z) or (below != self.tiles.dirt.id and below != self.tiles.grass.id):
-            level.setTile(x, y, z, 0)
+        cdef int below
+        if not level.growTrees:
+            below = level.getTile(x, y - 1, z)
+            if not level.isLit(x, y, z) or (below != self.tiles.dirt.id and below != self.tiles.grass.id):
+                level.setTile(x, y, z, 0)
 
     cdef void __renderFlower(self, Tesselator t, float x, float y, float z) except *:
         cdef int tex, xt, yt, rots, r

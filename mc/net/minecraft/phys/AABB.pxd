@@ -21,3 +21,7 @@ cdef class AABB:
     cdef float clipZCollide(self, AABB c, float za)
     cpdef void move(self, float xa, float ya, float za)
     cdef AABB copy(self)
+    cpdef clip(self, vec1, vec2)
+    cdef bint __containsX(self, xa)
+    cdef bint __containsY(self, ya)
+    cdef bint __containsZ(self, za)

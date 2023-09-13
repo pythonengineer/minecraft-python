@@ -418,8 +418,7 @@ cdef class Tile:
         elif vec311 == v1:
             v01 = 3
 
-        vec311.add(x, y, z)
-        return HitResult(x, y, z, v01, vec311)
+        return HitResult(x, y, z, v01, vec311.add(x, y, z))
 
     cdef bint __containsX(self, vec):
         if not vec:

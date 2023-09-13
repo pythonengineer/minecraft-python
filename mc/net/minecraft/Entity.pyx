@@ -423,3 +423,6 @@ cdef class Entity:
 
     def isCreativeModeAllowed(self):
         return False
+
+    def renderHover(self, textures, a):
+        pass

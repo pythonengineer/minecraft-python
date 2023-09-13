@@ -2,6 +2,7 @@
 
 cimport cython
 
+from mc.net.minecraft.HitResult import HitResult
 from pyglet import gl
 
 @cython.final
@@ -208,3 +209,68 @@ cdef class AABB:
 
     cdef AABB copy(self):
         return AABB(self.x0, self.y0, self.z0, self.x1, self.y1, self.z1)
+
+    cpdef clip(self, vec1, vec2):
+        cdef char b
+
+        vecX0 = vec1.clipX(vec2, self.x0)
+        vecX1 = vec1.clipX(vec2, self.x1)
+        vecY0 = vec1.clipY(vec2, self.y0)
+        vecY1 = vec1.clipY(vec2, self.y1)
+        vecZ0 = vec1.clipZ(vec2, self.z0)
+        vecZ1 = vec1.clipZ(vec2, self.z1)
+        if not self.__containsX(vecX0):
+            vecX0 = None
+        if not self.__containsX(vecX1):
+            vecX1 = None
+        if not self.__containsY(vecY0):
+            vecY0 = None
+        if not self.__containsY(vecY1):
+            vecY1 = None
+        if not self.__containsZ(vecZ0):
+            vecZ0 = None
+        if not self.__containsZ(vecZ1):
+            vecZ1 = None
+
+        vec38 = None
+        if vecX0:
+            vec38 = vecX0
+
+        if vecX1 and (not vec38 or vec1.distanceToSqr(vecX1) < vec1.distanceToSqr(vec38)):
+            vec38 = vecX1
+        if vecY0 and (not vec38 or vec1.distanceToSqr(vecY0) < vec1.distanceToSqr(vec38)):
+            vec38 = vecY0
+        if vecY1 and (not vec38 or vec1.distanceToSqr(vecY1) < vec1.distanceToSqr(vec38)):
+            vec38 = vecY1
+        if vecZ0 and (not vec38 or vec1.distanceToSqr(vecZ0) < vec1.distanceToSqr(vec38)):
+            vec38 = vecZ0
+        if vecZ1 and (not vec38 or vec1.distanceToSqr(vecZ1) < vec1.distanceToSqr(vec38)):
+            vec38 = vecZ1
+
+        if not vec38:
+            return
+
+        b = -1
+        if vec38 == vecX0:
+            b = 4
+        elif vec38 == vecX1:
+            b = 5
+        elif vec38 == vecY0:
+            b = 0
+        elif vec38 == vecY1:
+            b = 1
+        elif vec38 == vecZ0:
+            b = 2
+        elif vec38 == vecZ1:
+            b = 3
+
+        return HitResult(0, 0, 0, b, vec38)
+
+    cdef bint __containsX(self, xa):
+        return False if not xa else xa.y >= self.y0 and xa.y <= self.y1 and xa.z >= self.z0 and xa.z <= self.z1
+
+    cdef bint __containsY(self, ya):
+        return False if not ya else ya.x >= self.x0 and ya.x <= self.x1 and ya.z >= self.z0 and ya.z <= self.z1
+
+    cdef bint __containsZ(self, za):
+        return False if not za else za.x >= self.x0 and za.x <= self.x1 and za.y >= self.y0 and za.y <= self.y1

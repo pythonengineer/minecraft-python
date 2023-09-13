@@ -48,6 +48,8 @@ cdef class Level:
         public object particleEngine
         public object font
 
+        public bint growTrees
+
         public int width
         public int depth
         public int height

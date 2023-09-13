@@ -26,7 +26,12 @@ Ingame, ops can use the following commands:
 
 ## Changelog:
 
-Version 1.8.3:
+Version 1.9.1:
+
++ Made tree growing a server option (grow-trees)
++ Opping or de-opping a user now updates their client without forcing them to log out/in
+
+Version 1.9:
 
 + Added support for new tile types.
 + Fixed exploit where someone logging in with an illegal name would cause players to disconnect.

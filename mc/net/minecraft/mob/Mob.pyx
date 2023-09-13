@@ -36,6 +36,7 @@ cdef class Mob(Entity):
         self.modelName = ''
         self._bobStrength = 1.0
         self._deathScore = 0
+        self.renderOffset = 0.0
         self.rotOffs = 0.0
         self.health = 20
         self.lastHealth = 0
@@ -208,7 +209,7 @@ cdef class Mob(Entity):
         rotZ = 0.0625
         f10 = -abs(cos(step * 0.6662)) * 5.0 * run * self._bobStrength - 23.0
         gl.glTranslatef(self.xo + (self.x - self.xo) * translation,
-                        self.yo + (self.y - self.yo) * translation - 1.62,
+                        self.yo + (self.y - self.yo) * translation - 1.62 + self.renderOffset,
                         self.zo + (self.z - self.zo) * translation)
         ht = self.hurtTime - translation
         if ht > 0.0 or self.health <= 0:

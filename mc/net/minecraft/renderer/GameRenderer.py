@@ -16,6 +16,7 @@ class GameRenderer:
 
     renderDistance = 0.0
     rainTicks = 0
+    entity = None
     rand = random.Random()
 
     __u1 = 0

@@ -64,7 +64,7 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.28_01'
+    VERSION_STRING = '0.29_02'
     level = None
     levelRenderer = None
     player = None
@@ -256,9 +256,11 @@ class Minecraft(window.Window):
 
                     if symbol == window.key.ESCAPE:
                         self.pauseScreen()
-                    elif symbol == window.key.F5 and not self.networkClient:
+                    elif symbol == window.key.F5:
                         self.raining = not self.raining
-                    elif symbol == window.key.TAB and not self.networkClient and self.player.arrows > 0:
+                    elif symbol == window.key.TAB and \
+                         isinstance(self.gamemode, SurvivalGameMode) and \
+                         self.player.arrows > 0:
                         self.level.addEntity(Arrow(self.level, self.player, self.player.x,
                                                    self.player.y, self.player.z,
                                                    self.player.yRot, self.player.xRot, 1.2))
@@ -785,27 +787,29 @@ class Minecraft(window.Window):
         d = self.gamemode.getPickRange()
         vec2 = rotVec.add(xy * d, x2 * d, y1 * d)
         self.hitResult = self.level.clip(rotVec, vec2)
+        if self.hitResult:
+            d = self.hitResult.vec.distanceTo(rotVec)
 
         vec = self.gameRenderer.getPlayerRotVec(alpha)
-        if self.hitResult:
-            d = self.hitResult.vec.distanceTo(vec)
+        if isinstance(self.gamemode, CreativeGameMode):
+            d = 32.0
 
+        vec2 = vec.add(xy * d, x2 * d, y1 * d)
         entities = self.level.blockMap.getEntitiesWithinAABBExcludingEntity(self.player, self.player.bb.expand(xy * d, x2 * d, y1 * d))
+        d = 0.0
         for entity in entities:
             if not entity.isPickable():
                 continue
 
-            axisAlignedBB = entity.bb.grow(0.1, 0.1, 0.1)
-            di = 0.0
-            while di < d:
-                if not axisAlignedBB.contains(vec.add(xy * di, x2 * di, y1 * di)):
-                    di += 0.05
-                    continue
+            hit = entity.bb.grow(0.1, 0.1, 0.1).clip(vec, vec2)
+            if hit:
+                di = vec.distanceTo(hit.vec)
+                if di < d or d == 0.0:
+                    self.gameRenderer.entity = entity
+                    d = di
 
-                d = di
-                self.hitResult = HitResult(entity)
-                di += 0.05
-                break
+        if self.gameRenderer.entity and not isinstance(self.gamemode, CreativeGameMode):
+            self.hitResult = HitResult(self.gameRenderer.entity)
 
     def __render(self, alpha):
         for i in range(2):
@@ -888,7 +892,7 @@ class Minecraft(window.Window):
             self.gameRenderer.toggleLight(False)
             self.gameRenderer.setupFog()
             self.particleEngine.render(self.player, alpha)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.loadTexture('rock.png'))
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('rock.png'))
             gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glCallList(self.levelRenderer.surroundLists)
             self.gameRenderer.setupFog()
@@ -919,7 +923,7 @@ class Minecraft(window.Window):
             self.gameRenderer.setupFog()
             gl.glEnable(gl.GL_BLEND)
             gl.glEnable(gl.GL_TEXTURE_2D)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.loadTexture('water.png'))
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('water.png'))
             gl.glCallList(self.levelRenderer.surroundLists + 1)
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_BLEND)
@@ -933,7 +937,7 @@ class Minecraft(window.Window):
                     gl.glColorMask(True, False, False, False)
 
             if remaining > 0:
-                gl.glBindTexture(gl.GL_TEXTURE_2D, self.levelRenderer.textures.loadTexture('terrain.png'))
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('terrain.png'))
                 gl.glCallLists(self.levelRenderer.ib.capacity(), gl.GL_INT, self.levelRenderer.ib)
 
             gl.glDepthMask(True)
@@ -941,6 +945,9 @@ class Minecraft(window.Window):
             gl.glDisable(gl.GL_FOG)
             if self.raining:
                 self.gameRenderer.renderRain(alpha)
+
+            if self.gameRenderer.entity:
+                self.gameRenderer.entity.renderHover(self.textures, alpha)
 
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
             gl.glLoadIdentity()
@@ -1023,7 +1030,14 @@ class Minecraft(window.Window):
             self.gamemode.initLevel(level)
             level.font = self.font
             level.rendererContext = self
-            self.player = level.findSubclassOf(Player)
+            if self.isOnlineClient():
+                self.player = level.findSubclassOf(Player)
+            elif self.player:
+                self.player.resetPos()
+                self.gamemode.initPlayer(self.player)
+                if level:
+                    level.player = self.player
+                    level.addEntity(self.player)
 
         if not self.player:
             self.player = Player(level)

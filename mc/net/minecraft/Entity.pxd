@@ -45,6 +45,7 @@ cdef class Entity:
         public float footSize
         public bint noPhysics
         public float pushthrough
+        public bint hovered
 
     cpdef tick(self)
     cpdef bint isFree(self, float xa, float ya, float za)

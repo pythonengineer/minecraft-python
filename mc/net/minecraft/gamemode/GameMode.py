@@ -8,6 +8,7 @@ class GameMode:
 
     def initLevel(self, level):
         level.creativeMode = False
+        level.growTrees = True
 
     def handleOpenInventory(self):
         pass

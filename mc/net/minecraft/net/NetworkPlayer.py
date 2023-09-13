@@ -27,6 +27,7 @@ class NetworkPlayer(HumanoidMob):
         self.xRot = xRot
         self.yRot = yRot
         self.armor = self.helmet = False
+        self.renderOffset = 0.6875
         NetworkPlayerTextureLoader(self).start()
         self.allowAlpha = False
 
@@ -43,6 +44,7 @@ class NetworkPlayer(HumanoidMob):
         self.onGround = True
 
     def bindTexture(self, textures):
+        self.__textures = textures
         if self.newTexture:
             hasHair = False
 
@@ -79,16 +81,13 @@ class NetworkPlayer(HumanoidMob):
         else:
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__texture)
 
-    def render(self, textures, translation):
-        self.__textures = textures
-        super().render(textures, translation)
+    def renderHover(self, textures, translation):
         gl.glPushMatrix()
-        f = 0.05
         gl.glTranslatef(self.xo + (self.x - self.xo) * translation,
-                        self.yo + (self.y - self.yo) * translation + 0.8,
+                        self.yo + (self.y - self.yo) * translation + 0.8 + self.renderOffset,
                         self.zo + (self.z - self.zo) * translation)
         gl.glRotatef(-self.__minecraft.player.yRot, 0.0, 1.0, 0.0)
-        gl.glScalef(f, -f, f)
+        gl.glScalef(0.05, -0.05, 0.05)
         gl.glTranslatef(-self.__minecraft.font.width(self.displayName) / 2.0, 0.0, 0.0)
         gl.glNormal3f(1.0, -1.0, 1.0)
         gl.glDisable(gl.GL_LIGHTING)
@@ -98,10 +97,19 @@ class NetworkPlayer(HumanoidMob):
         else:
             self.__minecraft.font.draw(self.displayName, 0, 0, 16777215)
 
-        gl.glEnable(gl.GL_LIGHT0)
-        gl.glEnable(gl.GL_LIGHTING)
+        gl.glDepthFunc(gl.GL_GREATER)
+        gl.glDepthMask(False)
+        gl.glColor4f(1.0, 1.0, 1.0, 0.8)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        self.__minecraft.font.draw(self.displayName, 0, 0, 0xFFFFFF)
+        gl.glDisable(gl.GL_BLEND)
+        gl.glDepthMask(True)
+        gl.glDepthFunc(gl.GL_LEQUAL)
         gl.glTranslatef(1.0, 1.0, -0.05)
         self.__minecraft.font.draw(self.name, 0, 0, 5263440)
+        gl.glEnable(gl.GL_LIGHT0)
+        gl.glEnable(gl.GL_LIGHTING)
         gl.glPopMatrix()
 
     def queue1(self, xa, ya, za, xr, yr):
@@ -190,7 +198,7 @@ class NetworkPlayer(HumanoidMob):
         self.__moveQueue.append(EntityPos(rotX, rotY))
 
     def clear(self):
-        if self.__texture >= 0:
+        if self.__texture >= 0 and self.__textures:
             del self.__textures.pixelsMap[self.__texture]
             self.__textures.ib.clear()
             self.__textures.ib.put(self.__texture)

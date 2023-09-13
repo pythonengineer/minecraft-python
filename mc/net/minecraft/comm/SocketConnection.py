@@ -116,9 +116,11 @@ class SocketConnection:
                     b9 = data[6]
                     if b15 not in self.client.players:
                         if b15 >= 0:
+                            b8 += 128
+                            s21 -= 22
                             networkPlayer = NetworkPlayer(self.client.minecraft, b15,
                                                           string19, s18, s21, s24,
-                                                          (-b8 * 360) / 256.0,
+                                                          (b8 * 360) / 256.0,
                                                           (b9 * 360) / 256.0)
                             self.client.players[b15] = networkPlayer
                             self.client.minecraft.level.addEntity(networkPlayer)
@@ -142,7 +144,9 @@ class SocketConnection:
                                                             float(b25 * 360) / 256.0,
                                                             float(b8 * 360) / 256.0)
                     elif networkPlayer:
-                        networkPlayer.teleport(s17, s18, s21, float(-b25 * 360) / 256.0,
+                        b25 += 128
+                        s18 -= 22
+                        networkPlayer.teleport(s17, s18, s21, float(b25 * 360) / 256.0,
                                                float(b8 * 360) / 256.0)
                 elif packet == Packets.PLAYER_MOVE_AND_ROTATE:
                     b15 = data[0]
@@ -153,7 +157,8 @@ class SocketConnection:
                     b8 = data[5]
                     networkPlayer = self.client.players.get(b15)
                     if b15 >= 0 and networkPlayer:
-                        networkPlayer.queue1(b23, b22, b6, float(-b25 * 360) / 256.0,
+                        b25 += 128
+                        networkPlayer.queue1(b23, b22, b6, float(b25 * 360) / 256.0,
                                              float(b8 * 360) / 256.0)
                 elif packet == Packets.PLAYER_ROTATE:
                     b15 = data[0]
@@ -161,7 +166,8 @@ class SocketConnection:
                     b22 = data[2]
                     networkPlayer = self.client.players.get(b15)
                     if b15 >= 0 and networkPlayer:
-                        networkPlayer.queue2(float(-b23 * 360) / 256.0,
+                        b23 += 128
+                        networkPlayer.queue2(float(b23 * 360) / 256.0,
                                              float(b22 * 360) / 256.0)
                 elif packet == Packets.PLAYER_MOVE:
                     b15 = data[0]

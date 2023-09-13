@@ -24,6 +24,7 @@ cdef class Mob(Entity):
         public str modelName
         public float _bobStrength
         public int _deathScore
+        public float renderOffset
         public float rotOffs
         public int health
         public int lastHealth

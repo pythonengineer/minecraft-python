@@ -15,6 +15,7 @@ class CreativeGameMode(GameMode):
         super().initLevel(level)
         level.removeAllNonCreativeModeEntities()
         level.creativeMode = True
+        level.growTrees = False
 
     def adjustPlayer(self, player):
         for i in range(9):

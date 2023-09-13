@@ -72,6 +72,9 @@ class Font:
 
                     color = r << 16 | g << 8 | b
                     i += 2
+                    if i >= len(string):
+                        break
+
                     if darken:
                         color = (color & 0xFCFCFC) >> 2
 

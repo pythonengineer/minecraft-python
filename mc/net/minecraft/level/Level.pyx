@@ -56,6 +56,9 @@ cdef class Level:
         self.multiplier = 3
         self.addend = 1013904223
 
+        self.creativeMode = False
+        self.growTrees = False
+
     def __dealloc__(self):
         free(self.__blocks)
         free(self.__heightMap)
@@ -641,9 +644,6 @@ cdef class Level:
             if tileId > 0:
                 tile = tiles.tiles[tileId]
                 if tile.getLiquidType() == Liquid.none:
-                    if tile.isOpaque():
-                        return HitResult(x1, y1, z1, sideHit, posVec)
-
                     hitResult = tile.clip(x1, y1, z1, vec1, vec2)
                     if hitResult:
                         return hitResult
