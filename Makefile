@@ -12,7 +12,7 @@ install:
 	CYTHONIZE=1 pip install .
 
 install-from-source: dist
-	pip install dist/minecraft-python-0.29.tar.gz
+	pip install dist/minecraft-python-0.30.tar.gz
 
 clean:
 	$(RM) -r build dist src/*.egg-info

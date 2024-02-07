@@ -28,6 +28,8 @@ extensions = [
               sources=['mc/net/minecraft/renderer/texture/WaterTexture.pyx']),
     Extension(name='mc.net.minecraft.particle.Particle',
               sources=['mc/net/minecraft/particle/Particle.pyx']),
+    Extension(name='mc.net.minecraft.particle.SmokeParticle',
+              sources=['mc/net/minecraft/particle/SmokeParticle.pyx']),
     Extension(name='mc.net.minecraft.level.Level',
               sources=['mc/net/minecraft/level/Level.pyx']),
     Extension(name='mc.net.minecraft.level.BlockMap',
@@ -58,7 +60,7 @@ extensions = [
 
 setup(
     name='minecraft-python',
-    version='0.29',
+    version='0.30',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

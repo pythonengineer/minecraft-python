@@ -90,7 +90,6 @@ class LevelRenderer:
                 t.vertexUV(xx + 0, yy, zz + 0, 0.0, 0.0)
 
         t.end()
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textures.loadTexture('rock.png'))
         gl.glColor3f(0.8, 0.8, 0.8)
         t.begin()
 

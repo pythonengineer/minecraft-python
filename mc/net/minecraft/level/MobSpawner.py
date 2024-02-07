@@ -16,7 +16,7 @@ class MobSpawner:
     def spawnMobs(self, count, entity, loader):
         mobs = 0
         for i in range(count):
-            mobType = math.floor(self.level.rand.random() * 5)
+            mobType = math.floor(self.level.rand.random() * 6)
             i7 = math.floor(self.level.rand.random() * self.level.width)
             i8 = int(min(self.level.rand.random(), self.level.rand.random()) * self.level.depth)
             i9 = math.floor(self.level.rand.random() * self.level.height)
@@ -52,19 +52,20 @@ class MobSpawner:
                                     continue
 
                             if mobType == 0:
-                                Zombie(self.level, x, y, z)
+                                mob = Zombie(self.level, x, y, z)
                             elif mobType == 1:
-                                Skeleton(self.level, x, y, z)
+                                mob = Skeleton(self.level, x, y, z)
                             elif mobType == 2:
-                                Pig(self.level, x, y, z)
+                                mob = Pig(self.level, x, y, z)
                             elif mobType == 3:
-                                Creeper(self.level, x, y, z)
+                                mob = Creeper(self.level, x, y, z)
                             elif mobType == 4:
-                                Spider(self.level, x, y, z)
+                                mob = Spider(self.level, x, y, z)
+                            elif mobType == 5:
+                                mob = Sheep(self.level, x, y, z)
 
-                            sheep = Sheep(self.level, x, y, z)
-                            if self.level.isFree(sheep.bb):
+                            if self.level.isFree(mob.bb):
                                 mobs += 1
-                                self.level.addEntity(sheep)
+                                self.level.addEntity(mob)
 
         return mobs

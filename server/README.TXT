@@ -26,6 +26,17 @@ Ingame, ops can use the following commands:
 
 ## Changelog:
 
+Version 1.10.1:
+
++ Fixed grow-trees again
+
+Version 1.10:
+
++ Added a HUGE warning for running without verify-names turned off
++ Fixed grow-trees
++ Fixed a bug where people with long usernames could connect
++ Added admin-slot to server.properties. Setting this to true prevents people from logging in if the server is almost full and they're not admins.
+
 Version 1.9.1:
 
 + Made tree growing a server option (grow-trees)

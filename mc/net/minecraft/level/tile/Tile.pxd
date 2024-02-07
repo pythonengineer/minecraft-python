@@ -37,11 +37,13 @@ cdef class Tile:
     cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *
     cdef int getTickDelay(self)
     cpdef int resourceCount(self)
-    cdef wasExplodedResources(self, float chance)
+    cpdef int getId(self)
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance)
     cdef bint isExplodeable(self)
     cdef clip(self, int x, int y, int z, v0, v1)
     cdef bint __containsX(self, vec)
     cdef bint __containsY(self, vec)
     cdef bint __containsZ(self, vec)
+    cpdef wasExploded(self, Level level, int x, int y, int z)
     cpdef bint renderFull(self, Level level, int x, int y, int z, Tesselator t) except *
     cdef int getRenderLayer(self)

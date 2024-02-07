@@ -7,9 +7,9 @@ class SurvivalGameMode(GameMode):
 
     def __init__(self, minecraft):
         super().__init__(minecraft)
-        self.__x = 0
-        self.__y = 0
-        self.__z = 0
+        self.__x = -1
+        self.__y = -1
+        self.__z = -1
         self.__oDestroyProgress = 0
         self.__destroyProgress = 0
         self.__delay = 0

@@ -319,24 +319,32 @@ cdef class Tile:
     cpdef int resourceCount(self):
         return 1
 
+    cpdef int getId(self):
+        return self.id
+
     def getDestroyProgress(self):
         return self.__destroyProgress
 
     def spawnResources(self, Level level, int x, int y, int z):
-        self.wasExplodedResources(1.0)
+        self.wasExplodedResources(level, x, y, z, 1.0)
 
-    cdef wasExplodedResources(self, float chance):
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance):
         from mc.net.minecraft.item.Item import Item
         cdef int i
         cdef float f2, xx, yy, zz
+
+        if level.creativeMode:
+            return
 
         for i in range(self.resourceCount()):
             if random.random() > chance:
                 continue
 
-            random.random()
-            random.random()
-            random.random()
+            f2 = 0.7
+            xx = random.random() * f2 + (1.0 - f2) * 0.5
+            yy = random.random() * f2 + (1.0 - f2) * 0.5
+            zz = random.random() * f2 + (1.0 - f2) * 0.5
+            level.addEntity(Item(level, x + xx, y + yy, z + zz, self.getId()))
 
     def renderGuiTile(self, Tesselator t):
         cdef int i
@@ -437,6 +445,9 @@ cdef class Tile:
             return False
         else:
             return vec.x >= self.xx0 and vec.x <= self.xx1 and vec.y >= self.yy0 and vec.y <= self.yy1
+
+    cpdef wasExploded(self, Level level, int x, int y, int z):
+        pass
 
     cpdef bint renderFull(self, Level level, int x, int y, int z, Tesselator t) except *:
         cdef float f8, f9, f10, b
