@@ -1,6 +1,9 @@
 from mc.net.minecraft.level.Level import Level
 from mc.CompatibilityShims import DataInputStream, DataOutputStream
+
+import traceback
 import pickle
+import time
 
 class LevelIO:
     MAGIC_NUMBER = 656127880
@@ -45,15 +48,27 @@ class LevelIO:
             dis.close()
             return level
         except Exception as e:
-            print('Failed to load level:', e)
+            print(traceback.format_exc())
+            if self.__levelLoaderListener:
+                self.__levelLoaderListener.levelLoadUpdate('Failed!')
 
-    @staticmethod
-    def save(level, out):
-        dos = DataOutputStream(out)
-        dos.writeInt(LevelIO.MAGIC_NUMBER)
-        dos.writeByte(LevelIO.CURRENT_VERSION)
-        dos.write(pickle.dumps(level))
-        dos.close()
+            time.sleep(1)
+
+    def save(self, level, out):
+        try:
+            dos = DataOutputStream(out)
+            dos.writeInt(LevelIO.MAGIC_NUMBER)
+            dos.writeByte(LevelIO.CURRENT_VERSION)
+            dos.write(pickle.dumps(level))
+            dos.close()
+            return True
+        except Exception as e:
+            print(traceback.format_exc())
+            if self.__levelLoaderListener:
+                self.__levelLoaderListener.levelLoadUpdate('Failed!')
+
+            time.sleep(1)
+            return False
 
     @staticmethod
     def loadBlocks(inp):

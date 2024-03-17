@@ -23,6 +23,6 @@ cdef class LiquidTile(Tile):
     cpdef int getLiquidType(self)
     cpdef void neighborChanged(self, Level level, int x, int y, int z, int type_) except *
     cdef int getTickDelay(self)
-    cdef wasExplodedResources(self, float chance)
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance)
     cpdef int resourceCount(self)
     cdef int getRenderLayer(self)

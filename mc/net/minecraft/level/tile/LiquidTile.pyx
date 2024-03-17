@@ -128,7 +128,7 @@ cdef class LiquidTile(Tile):
     cdef int getTickDelay(self):
         return 5 if self._liquid == Liquid.lava else 0
 
-    cdef wasExplodedResources(self, float chance):
+    cdef wasExplodedResources(self, Level level, int x, int y, int z, float chance):
         pass
 
     def spawnResources(self, Level level, int x, int y, int z):

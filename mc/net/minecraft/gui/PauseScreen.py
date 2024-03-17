@@ -16,8 +16,6 @@ class PauseScreen(Screen):
         self._buttons.append(Button(2, self._width // 2 - 100, self._height // 4 + 48, 'Save level..'))
         self._buttons.append(Button(3, self._width // 2 - 100, self._height // 4 + 72, 'Load level..'))
         self._buttons.append(Button(4, self._width // 2 - 100, self._height // 4 + 120, 'Back to game'))
-        if not False:#self._minecraft.user:
-            self._buttons[3].enabled = False
 
         if minecraft.networkClient:
             self._buttons[1].enabled = False
@@ -29,16 +27,11 @@ class PauseScreen(Screen):
             self._minecraft.setScreen(OptionsScreen(self, self._minecraft.options))
         elif button.id == 1:
             self._minecraft.setScreen(NewLevelScreen(self))
-
-        if False:
-            if button.id == 2 and self._minecraft.user:
-                self._minecraft.setScreen(SaveLevelScreen(self))
-            elif button.id == 3 and self._minecraft.user:
-                self._minecraft.setScreen(LoadLevelScreen(self))
         elif button.id == 2:
-            self._minecraft.saveLevel()
-
-        if button.id == 4:
+            self._minecraft.setScreen(SaveLevelScreen(self))
+        elif button.id == 3:
+            self._minecraft.setScreen(LoadLevelScreen(self))
+        elif button.id == 4:
             self._minecraft.setScreen(None)
             self._minecraft.grabMouse()
 

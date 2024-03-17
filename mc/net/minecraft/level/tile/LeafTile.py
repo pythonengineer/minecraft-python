@@ -13,3 +13,6 @@ class LeafTile(BaseLeafTile):
             return 1
         else:
             return 0
+
+    def getId(self):
+        return self.tiles.bush.id

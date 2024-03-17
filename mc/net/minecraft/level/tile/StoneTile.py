@@ -4,3 +4,6 @@ class StoneTile(Tile):
 
     def __init__(self, tiles, id_, tex):
         super().__init__(tiles, id_, tex)
+
+    def getId(self):
+        return self.tiles.stoneBrick.id

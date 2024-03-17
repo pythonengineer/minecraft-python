@@ -26,6 +26,9 @@ class SlabTile(Tile):
             level.setTile(x, y, z, 0)
             level.setTile(x, y - 1, z, self.tiles.slabFull.id)
 
+    def getId(self):
+        return self.tiles.slabHalf.id
+
     def isOpaque(self):
         return self.__half
 

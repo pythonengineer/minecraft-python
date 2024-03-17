@@ -763,8 +763,9 @@ cdef class Level:
                     if tileId > 0:
                         tile = tiles.tiles[tileId]
                         if tile.isExplodeable():
-                            tile.spawnResources(0.3)
+                            tile.wasExplodedResources(self, i, n, j, 0.3)
                             self.setTile(i, n, j, 0)
+                            tile.wasExploded(self, i, n, j)
 
         entities = self.blockMap.getEntitiesExcludingEntity(entity, x0, y0, z0, x1, y1, z1)
         for e in entities:

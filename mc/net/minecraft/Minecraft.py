@@ -64,7 +64,7 @@ import gc
 GL_DEBUG = False
 
 class Minecraft(window.Window):
-    VERSION_STRING = '0.29_02'
+    VERSION_STRING = '0.30'
     level = None
     levelRenderer = None
     player = None
@@ -87,12 +87,16 @@ class Minecraft(window.Window):
 
     guiScreenChanged = False
 
-    def __init__(self, fullscreen, *args, **kwargs):
+    def __init__(self, fullscreen, survival, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.__fullscreen = fullscreen
 
-        self.gamemode = CreativeGameMode(self)
+        if survival:
+            self.gamemode = SurvivalGameMode(self)
+        else:
+            self.gamemode = CreativeGameMode(self)
+
         self.__timer = Timer(20.0)
         self.user = None
         self.guiScreen = None
@@ -207,6 +211,8 @@ class Minecraft(window.Window):
                         tile = tiles.dirt.id
                     elif tile == tiles.slabFull.id:
                         tile = tiles.slabHalf.id
+                    elif tile == tiles.unbreakable.id:
+                        tile = tiles.rock.id
 
                     self.player.inventory.grabTexture(tile, isinstance(self.gamemode, CreativeGameMode))
         except Exception as e:
@@ -788,7 +794,7 @@ class Minecraft(window.Window):
         vec2 = rotVec.add(xy * d, x2 * d, y1 * d)
         self.hitResult = self.level.clip(rotVec, vec2)
         if self.hitResult:
-            d = self.hitResult.vec.distanceTo(rotVec)
+            d = self.hitResult.vec.distanceTo(self.gameRenderer.getPlayerRotVec(alpha))
 
         vec = self.gameRenderer.getPlayerRotVec(alpha)
         if isinstance(self.gamemode, CreativeGameMode):
@@ -1067,6 +1073,7 @@ if __name__ == '__main__':
     port = None
     name = 'guest'
     mpPass = ''
+    survival = False
     for i, arg in enumerate(sys.argv):
         if arg == '-fullscreen':
             fullScreen = True
@@ -1076,8 +1083,10 @@ if __name__ == '__main__':
             name = sys.argv[i + 1]
         elif arg == '-mppass':
             mpPass = sys.argv[i + 1]
+        elif arg == '-survival':
+            survival = True
 
-    game = Minecraft(fullScreen, width=854, height=480, caption='Minecraft')
+    game = Minecraft(fullScreen, survival, width=854, height=480, caption='Minecraft')
     game.user = User(name, 0, mpPass)
     if server and port:
         game.setServer(server, int(port))
