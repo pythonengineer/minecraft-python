@@ -1,5 +1,4 @@
 pillow>=8.2.0
 pyglet>=1.5.28,<2.0.0
-cython>=0.29.35
-pyogg==0.6.14a1
-wxPython==4.2.1
+cython>=3.0.8
+numpy>=1.26.0

@@ -7,7 +7,7 @@ include screenshot.png
 include LICENSE
 include README.md
 
-recursive-include mc *.pyx *.pxd *.ogg *.png
+recursive-include mc *.pyx *.pxd *.ogg *.png *.md3 *.MD3
 recursive-exclude * *.pyc
 recursive-exclude * *.pyd
 recursive-exclude * *.html
