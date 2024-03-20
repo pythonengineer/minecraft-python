@@ -16,7 +16,7 @@ class EffectRenderer:
         tex = fx.getFXLayer()
         self.fxLayers[tex].append(fx)
 
-    def tick(self):
+    def updateEffects(self):
         for i in range(2):
             for p in self.fxLayers[i].copy():
                 p.onEntityUpdate()

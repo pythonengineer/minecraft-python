@@ -37,13 +37,11 @@ cdef class ClippingHelper:
             self.__modelviewMatrix[i] = 0.0
             self.__clippingMatrix[i] = 0.0
 
-        self.init()
-
-    cpdef void init(self):
         for i in range(6):
             for n in range(4):
                 self.__frustrum[i][n] = 0.0
 
+    def init(self):
         self.__projectionMatrixBuffer.clear()
         self.__modelviewMatrixBuffer.clear()
         self.__clippingMatrixBuffer.clear()
@@ -135,6 +133,8 @@ cdef class ClippingHelper:
 
         self.__normalize(self._front)
 
+        return self
+
     cdef __normalize(self, int side):
         cdef float magnitude = sqrt(self.__frustrum[side][self._a] * self.__frustrum[side][self._a] + \
                                     self.__frustrum[side][self._b] * self.__frustrum[side][self._b] + \
@@ -145,8 +145,8 @@ cdef class ClippingHelper:
         self.__frustrum[side][self._c] /= magnitude
         self.__frustrum[side][self._d] /= magnitude
 
-    cdef bint isBoundingBoxFullyInFrustrum(self, float x0, float y0, float z0,
-                                           float x1, float y1, float z1):
+    cpdef bint isBoundingBoxFullyInFrustrum(self, float x0, float y0, float z0,
+                                            float x1, float y1, float z1):
         for i in range(6):
             if not self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] > 0.0:
                 return False
@@ -167,23 +167,21 @@ cdef class ClippingHelper:
 
         return True
 
-    cdef bint isBoundingBoxInFrustrum(self, float x0, float y0, float z0,
-                                      float x1, float y1, float z1):
+    cpdef bint isBoundingBoxInFrustrum(self, float x0, float y0, float z0,
+                                       float x1, float y1, float z1):
         for i in range(6):
-            if self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] > 0.0 or \
-               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] > 0.0 or \
-               self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] > 0.0 or \
-               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] > 0.0 or \
-               self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] > 0.0 or \
-               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] > 0.0 or \
-               self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] > 0.0 or \
-               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] > 0.0:
-                continue
-
-            return False
+            if self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] <= 0.0 and \
+               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] <= 0.0 and \
+               self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] <= 0.0 and \
+               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z0 + self.__frustrum[i][self._d] <= 0.0 and \
+               self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] <= 0.0 and \
+               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y0 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] <= 0.0 and \
+               self.__frustrum[i][self._a] * x0 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] <= 0.0 and \
+               self.__frustrum[i][self._a] * x1 + self.__frustrum[i][self._b] * y1 + self.__frustrum[i][self._c] * z1 + self.__frustrum[i][self._d] <= 0.0:
+                return False
 
         return True
 
-    cdef bint isVisible(self, aabb):
+    cpdef bint isVisible(self, aabb):
         return self.isBoundingBoxInFrustrum(aabb.x0, aabb.y0, aabb.z0,
                                             aabb.x1, aabb.y1, aabb.z1)

@@ -33,3 +33,6 @@ cdef class BlockGrass(Block):
                 if world.getBlockId(xt, yt, zt) == self.blocks.dirt.blockID and \
                    world.isHalfLit(xt, yt, zt):
                     world.setBlockWithNotify(xt, yt, zt, self.blockID)
+
+    cpdef int idDropped(self):
+        return self.blocks.dirt.idDropped()

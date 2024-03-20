@@ -10,9 +10,9 @@ class GuiGameOver(GuiScreen):
     def initGui(self, minecraft, width, height):
         super().initGui(minecraft, width, height)
         self._controlList.clear()
-        self._controlList.append(GuiButton(1, self._width // 2 - 100, self._height // 4 + 72,
+        self._controlList.append(GuiButton(1, self.width // 2 - 100, self.height // 4 + 72,
                                            'Generate new world...'))
-        self._controlList.append(GuiButton(2, self._width // 2 - 100, self._height // 4 + 96,
+        self._controlList.append(GuiButton(2, self.width // 2 - 100, self.height // 4 + 96,
                                            'Load world..'))
         if not self._mc.session:
             self._controlList[2].enabled = False
@@ -26,11 +26,11 @@ class GuiGameOver(GuiScreen):
             self._mc.displayGuiScreen(GuiLoadLevel(self))
 
     def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self._width, self._height, 0x60500000, -1602211792)
+        self._drawGradientRect(0, 0, self.width, self.height, 0x60500000, -1602211792)
         gl.glPushMatrix()
         gl.glScalef(2.0, 2.0, 2.0)
-        self.drawCenteredString(self._fontRenderer, 'Game over!', self._width // 2 // 2, 30, 0xFFFFFF)
+        self.drawCenteredString(self._fontRenderer, 'Game over!', self.width // 2 // 2, 30, 0xFFFFFF)
         gl.glPopMatrix()
         self.drawCenteredString(self._fontRenderer, 'Score: &e' + str(self._mc.thePlayer.getScore()),
-                                self._width // 2, 100, 0xFFFFFF)
+                                self.width // 2, 100, 0xFFFFFF)
         super().drawScreen(xm, ym)

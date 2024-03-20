@@ -16,12 +16,12 @@ cdef class EntityLiving(Entity):
 
     def __init__(self, world):
         super().__init__(world)
-        self.heartsHalvesLife = 20
+        self.__heartsHalvesLife = 20
         self.renderYawOffset = 0.0
         self.prevRenderYawOffset = 0.0
         self.__prevRotationYawHead = 0.0
         self.__rotationYawHead = 0.0
-        self.__maxAir = 10
+        self.__maxAir = EntityLiving.TOTAL_AIR_SUPPLY
         self.health = 20
         self.prevHealth = 0
         self.scoreValue = 0
@@ -59,7 +59,7 @@ cdef class EntityLiving(Entity):
         if self.health <= 0:
             self.deathTime += 1
             if self.deathTime > 20:
-                self.remove()
+                self.setEntityDead()
 
         if self.isInsideOfMaterial():
             if self.air > 0:
@@ -144,7 +144,7 @@ cdef class EntityLiving(Entity):
         if self.health > 20:
             self.health = 20
 
-        self.scoreValue = self.heartsHalvesLife // 2
+        self.scoreValue = self.__heartsHalvesLife // 2
 
     def attackEntityFrom(self, Entity entity, int damage):
         cdef float xd, zd, f3, f4
@@ -155,14 +155,14 @@ cdef class EntityLiving(Entity):
         if self.health <= 0:
             return
 
-        if self.scoreValue > self.heartsHalvesLife // 2.0:
+        if self.scoreValue > self.__heartsHalvesLife // 2.0:
             if self.prevHealth - damage >= self.health:
                 return
 
             self.health = self.prevHealth - damage
         else:
             self.prevHealth = self.health
-            self.scoreValue = self.heartsHalvesLife
+            self.scoreValue = self.__heartsHalvesLife
             self.health -= damage
             self.hurtTime = self.maxHurtTime = 10
 

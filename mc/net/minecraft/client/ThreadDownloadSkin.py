@@ -1,5 +1,3 @@
-from mc.net.minecraft.client.player.EntityPlayer import EntityPlayer
-
 from threading import Thread
 from base64 import b64decode
 from io import BytesIO
@@ -52,7 +50,5 @@ class ThreadDownloadSkin(Thread):
             with urllib.request.urlopen(skinUrl) as r:
                 if r.code != 200:
                     return
-
-                EntityPlayer.skinData = Image.open(BytesIO(r.read())).convert('RGBA')
         except:
             pass

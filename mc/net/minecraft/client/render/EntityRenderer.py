@@ -1,31 +1,35 @@
-from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.material.Material import Material
+from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
 from mc.net.minecraft.client.render.ClippingHelper import ClippingHelper
 from mc.net.minecraft.client.render.ItemRenderer import ItemRenderer
-from mc.net.minecraft.client.render.RenderSorter import RenderSorter
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.Tessellator import tessellator
-from mc.net.minecraft.client.player.EntityPlayer import EntityPlayer
+from mc.net.minecraft.client.effect.EntityRainFX import EntityRainFX
 from mc.net.minecraft.client.RenderHelper import RenderHelper
 from mc.net.minecraft.client.controller.PlayerControllerCreative import PlayerControllerCreative
 from mc.CompatibilityShims import BufferUtils
+
 from pyglet import gl
-from functools import cmp_to_key
+from PIL import Image
 
 import random
 import math
 
 class EntityRenderer:
-    __fogColorMultiplier = 1.0
+    fogColorMultiplier = 1.0
 
     displayActive = False
 
-    __farPlaneDistance = 0.0
+    farPlaneDistance = 0.0
     rainTicks = 0
     __pointedEntity = None
-    rand = random.Random()
+
+    entityByteBuffer = None
+    entityFloatBuffer = BufferUtils.createFloatBuffer(16)
+
+    __rand = random.Random()
 
     __unusedInt1 = 0
     __unusedInt2 = 0
@@ -36,12 +40,15 @@ class EntityRenderer:
     __fogColorGreen = 0.0
     __fogColorBlue = 0.0
 
+    prevFogColor = 0.0
+    fogColor = 0.0
+
     def __init__(self, minecraft):
         self.mc = minecraft
         self.itemRenderer = ItemRenderer(self.mc)
         self.__clippingHelper = ClippingHelper()
 
-    def __orientCamera(self, rot):
+    def orientCamera(self, rot):
         x = self.mc.thePlayer.prevPosX + (self.mc.thePlayer.posX - self.mc.thePlayer.prevPosX) * rot
         y = self.mc.thePlayer.prevPosY + (self.mc.thePlayer.posY - self.mc.thePlayer.prevPosY) * rot
         z = self.mc.thePlayer.prevPosZ + (self.mc.thePlayer.posZ - self.mc.thePlayer.prevPosZ) * rot
@@ -72,11 +79,23 @@ class EntityRenderer:
         gl.glRotatef(abs(math.cos(d * math.pi + 0.2) * bob) * 5.0, 1.0, 0.0, 0.0)
         gl.glRotatef(cameraPitch, 1.0, 0.0, 0.0)
 
+    @staticmethod
+    def screenshotBuffer(buffer, w, h):
+        buffer.position(0).limit(w * h << 2)
+        img = Image.new('RGB', (w, h))
+        for i in range(w * h):
+            r = buffer.getAt(i * 3) & 255
+            g = buffer.getAt(i * 3 + 1) & 255
+            b = buffer.getAt(i * 3 + 2) & 255
+            img.putpixel((i % w, i // w), (r, g, b))
+
+        return img
+
     def updateCameraAndRender(self, alpha):
         rotationPitch = self.mc.thePlayer.prevRotationPitch + (self.mc.thePlayer.rotationPitch - self.mc.thePlayer.prevRotationPitch) * alpha
         rotationYaw = self.mc.thePlayer.prevRotationYaw + (self.mc.thePlayer.rotationYaw - self.mc.thePlayer.prevRotationYaw) * alpha
 
-        rotVec = self.__orientCamera(alpha)
+        rotVec = self.orientCamera(alpha)
         y1 = math.cos(-rotationYaw * 0.017453292 - math.pi)
         y2 = math.sin(-rotationYaw * 0.017453292 - math.pi)
         x1 = math.cos(-rotationPitch * 0.017453292)
@@ -89,7 +108,7 @@ class EntityRenderer:
         if self.mc.objectMouseOver:
             d = self.mc.objectMouseOver.hitVec.distanceTo(rotVec)
 
-        vec = self.__orientCamera(alpha)
+        vec = self.orientCamera(alpha)
         if isinstance(self.mc.playerController, PlayerControllerCreative):
             d = 32.0
 
@@ -120,49 +139,14 @@ class EntityRenderer:
                 else:
                     gl.glColorMask(True, False, False, False)
 
-            #gl.glViewport(0, 0, self.width, self.height)
+            #gl.glViewport(0, 0, self.mc.width, self.mc.height)
 
-            f4 = 1.0 - pow(1.0 / (4 - self.mc.options.renderDistance), 0.25)
-            x = (self.mc.theWorld.skyColor >> 16 & 0xFF) / 255.0
-            y = (self.mc.theWorld.skyColor >> 8 & 0xFF) / 255.0
-            z = (self.mc.theWorld.skyColor & 0xFF) / 255.0
-            self.__fogColorRed = x
-            self.__fogColorGreen = y
-            self.__fogColorBlue = z
-            self.__fogColorRed += (x - self.__fogColorRed) * f4
-            self.__fogColorGreen += (y - self.__fogColorGreen) * f4
-            self.__fogColorBlue += (z - self.__fogColorBlue) * f4
-            self.__fogColorRed *= self.__fogColorMultiplier
-            self.__fogColorGreen *= self.__fogColorMultiplier
-            self.__fogColorBlue *= self.__fogColorMultiplier
-            block = blocks.blocksList[self.mc.theWorld.getBlockId(int(self.mc.thePlayer.posX),
-                                                                  int(self.mc.thePlayer.posY + 0.12),
-                                                                  int(self.mc.thePlayer.posZ))]
-            if block and block.getMaterial() != Material.air:
-                material = block.getMaterial()
-                if material == Material.water:
-                    self.__fogColorRed = 0.02
-                    self.__fogColorGreen = 0.02
-                    self.__fogColorBlue = 0.2
-                elif material == Material.lava:
-                    self.__fogColorRed = 0.6
-                    self.__fogColorGreen = 0.1
-                    self.__fogColorBlue = 0.0
-
-            if self.mc.options.anaglyph:
-                x = (self.__fogColorRed * 30.0 + self.__fogColorGreen * 59.0 + self.__fogColorBlue * 11.0) / 100.0
-                y = (self.__fogColorRed * 30.0 + self.__fogColorGreen * 70.0) / 100.0
-                z = (self.__fogColorRed * 30.0 + self.__fogColorBlue * 70.0) / 100.0
-                self.__fogColorRed = x
-                self.__fogColorGreen = y
-                self.__fogColorBlue = z
-
-            gl.glClearColor(self.__fogColorRed, self.__fogColorGreen, self.__fogColorBlue, 0.0)
+            self.updateFogColor(alpha)
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT | gl.GL_COLOR_BUFFER_BIT)
-            self.__fogColorMultiplier = 1.0
+            self.fogColorMultiplier = 1.0
 
             gl.glEnable(gl.GL_CULL_FACE)
-            self.__farPlaneDistance = float(512 >> (self.mc.options.renderDistance << 1))
+            self.farPlaneDistance = 512 >> (self.mc.options.renderDistance << 1)
 
             gl.glMatrixMode(gl.GL_PROJECTION)
             gl.glLoadIdentity()
@@ -176,7 +160,7 @@ class EntityRenderer:
 
             aspect = self.mc.width / self.mc.height
             zNear = 0.05
-            zFar = self.__farPlaneDistance
+            zFar = self.farPlaneDistance
 
             fH = math.tan(fov / 360 * math.pi) * zNear
             fW = fH * aspect
@@ -184,7 +168,6 @@ class EntityRenderer:
             gl.glFrustum(-fW, fW, -fH, fH, zNear, zFar)
             gl.glMatrixMode(gl.GL_MODELVIEW)
             gl.glLoadIdentity()
-
             if self.mc.options.anaglyph:
                 gl.glTranslatef(((i << 1) - 1) * 0.1, 0.0, 0.0)
 
@@ -208,23 +191,10 @@ class EntityRenderer:
             gl.glTranslatef(-x, -y, -z)
 
             self.__clippingHelper.init()
-            for chunk in self.mc.renderGlobal.worldRenderers:
-                chunk.updateInFrustrum(self.__clippingHelper)
+            self.mc.renderGlobal.clipRenderersByFrustrum(self.__clippingHelper)
+            self.mc.renderGlobal.updateRenderers(self.mc.thePlayer)
 
-            self.mc.renderGlobal.worldRenderersToUpdate = sorted(
-                self.mc.renderGlobal.worldRenderersToUpdate,
-                key=cmp_to_key(RenderSorter(self.mc.thePlayer).compare)
-            )
-
-            for i, chunk in enumerate(self.mc.renderGlobal.worldRenderersToUpdate.copy()):
-                if i > self.mc.renderGlobal.MAX_REBUILDS_PER_FRAME:
-                    break
-
-                self.mc.renderGlobal.worldRenderersToUpdate.remove(chunk)
-                chunk.updateRenderer()
-                chunk.needsUpdate = False
-
-            self.__setupFog()
+            self.setupFog()
             gl.glEnable(gl.GL_FOG)
             self.mc.renderGlobal.sortAndRender(self.mc.thePlayer, 0)
             if self.mc.theWorld.isSolid(self.mc.thePlayer.posX,
@@ -246,19 +216,17 @@ class EntityRenderer:
                                 renderBlocks.flipTexture = False
 
             RenderHelper.enableStandardItemLighting()
-            vec = self.__orientCamera(alpha)
-            self.mc.theWorld.entityMap.render(vec, self.__clippingHelper,
-                                              self.mc.renderGlobal.renderManager,
-                                              self.mc.renderEngine, alpha)
+            self.mc.renderGlobal.renderEntities(self.orientCamera(alpha),
+                                                self.__clippingHelper, alpha)
             RenderHelper.disableStandardItemLighting()
-            self.__setupFog()
+            self.setupFog()
             self.mc.effectRenderer.render(self.mc.thePlayer, alpha)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('rock.png'))
             gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glCallList(self.mc.renderGlobal.glGenList)
-            self.__setupFog()
+            self.setupFog()
             self.mc.renderGlobal.renderClouds(alpha)
-            self.__setupFog()
+            self.setupFog()
 
             if self.mc.objectMouseOver:
                 gl.glDisable(gl.GL_ALPHA_TEST)
@@ -268,7 +236,7 @@ class EntityRenderer:
                 gl.glColor4f(0.0, 0.0, 0.0, 0.4)
                 gl.glLineWidth(2.0)
                 gl.glDisable(gl.GL_TEXTURE_2D)
-                #gl.glDepthMask(False)
+                gl.glDepthMask(False)
                 block = self.mc.renderGlobal.worldObj.getBlockId(self.mc.objectMouseOver.blockX,
                                                                  self.mc.objectMouseOver.blockY,
                                                                  self.mc.objectMouseOver.blockZ)
@@ -278,19 +246,20 @@ class EntityRenderer:
                         self.mc.objectMouseOver.blockZ
                     ).expand(0.002, 0.002, 0.002).render()
 
-                #gl.glDepthMask(True)
+                gl.glDepthMask(True)
                 gl.glEnable(gl.GL_TEXTURE_2D)
                 gl.glDisable(gl.GL_BLEND)
                 gl.glEnable(gl.GL_ALPHA_TEST)
 
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-            self.__setupFog()
+            self.setupFog()
             gl.glEnable(gl.GL_TEXTURE_2D)
             gl.glEnable(gl.GL_BLEND)
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('water.png'))
             gl.glCallList(self.mc.renderGlobal.glGenList + 1)
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_BLEND)
+            gl.glDisable(gl.GL_CULL_FACE)
             gl.glColorMask(False, False, False, False)
             remaining = self.mc.renderGlobal.sortAndRender(self.mc.thePlayer, 1)
             gl.glColorMask(True, True, True, True)
@@ -301,12 +270,10 @@ class EntityRenderer:
                     gl.glColorMask(True, False, False, False)
 
             if remaining > 0:
-                gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('terrain.png'))
-                self.mc.renderGlobal.renderIntBuffer.glCallLists(
-                    self.mc.renderGlobal.renderIntBuffer.capacity(), gl.GL_INT
-                )
+                self.mc.renderGlobal.renderAllRenderLists()
 
             gl.glDepthMask(True)
+            gl.glEnable(gl.GL_CULL_FACE)
             gl.glDisable(gl.GL_BLEND)
             gl.glDisable(gl.GL_FOG)
             if self.mc.thirdPersonView:
@@ -323,28 +290,36 @@ class EntityRenderer:
                 for xx in range(x - 5, x + 6):
                     for zz in range(z - 5, z + 6):
                         block = self.mc.theWorld.getMapHeight(xx, zz)
-                        i11 = y - 5
-                        i12 = y + 5
-                        if i11 < block:
-                            i11 = block
-                        if i12 < block:
-                            i12 = block
+                        minY = y - 5
+                        maxY = y + 5
+                        if minY < block:
+                            minY = block
+                        if maxY < block:
+                            maxY = block
 
-                        if i11 != i12:
-                            f15 = (((self.rainTicks + xx * 3121 + zz * 418711) % 32) + alpha) / 32.0
-                            f13 = xx + 0.5 - self.mc.thePlayer.posX
-                            f14 = zz + 0.5 - self.mc.thePlayer.posZ
-                            f13 = math.sqrt(f13 * f13 + f14 * f14) / 5
-                            gl.glColor4f(1.0, 1.0, 1.0, (1.0 - f13 * f13) * 0.7)
+                        if minY != maxY:
+                            v = (((self.rainTicks + xx * 3121 + zz * 418711) % 32) + alpha) / 32.0
+                            xd = xx + 0.5 - self.mc.thePlayer.posX
+                            zd = zz + 0.5 - self.mc.thePlayer.posZ
+                            xd = math.sqrt(xd * xd + zd * zd) / 5
+                            gl.glColor4f(1.0, 1.0, 1.0, (1.0 - xd * xd) * 0.7)
                             t.startDrawingQuads()
-                            t.addVertexWithUV(xx, i11, zz, 0.0, i11 * 2.0 / 8.0 + f15 * 2.0)
-                            t.addVertexWithUV(xx + 1, i11, zz + 1, 2.0, i11 * 2.0 / 8.0 + f15 * 2.0)
-                            t.addVertexWithUV(xx + 1, i12, zz + 1, 2.0, i12 * 2.0 / 8.0 + f15 * 2.0)
-                            t.addVertexWithUV(xx, i12, zz, 0.0, i12 * 2.0 / 8.0 + f15 * 2.0)
-                            t.addVertexWithUV(xx, i11, zz + 1, 0.0, i11 * 2.0 / 8.0 + f15 * 2.0)
-                            t.addVertexWithUV(xx + 1, i11, zz, 2.0, i11 * 2.0 / 8.0 + f15 * 2.0)
-                            t.addVertexWithUV(xx + 1, i12, zz, 2.0, i12 * 2.0 / 8.0 + f15 * 2.0)
-                            t.addVertexWithUV(xx, i12, zz + 1, 0.0, i12 * 2.0 / 8.0 + f15 * 2.0)
+                            t.addVertexWithUV(xx, minY, zz, 0.0,
+                                              minY * 2.0 / 8.0 + v * 2.0)
+                            t.addVertexWithUV(xx + 1, minY, zz + 1, 2.0,
+                                              minY * 2.0 / 8.0 + v * 2.0)
+                            t.addVertexWithUV(xx + 1, maxY, zz + 1, 2.0,
+                                              maxY * 2.0 / 8.0 + v * 2.0)
+                            t.addVertexWithUV(xx, maxY, zz, 0.0,
+                                              maxY * 2.0 / 8.0 + v * 2.0)
+                            t.addVertexWithUV(xx, minY, zz + 1, 0.0,
+                                              minY * 2.0 / 8.0 + v * 2.0)
+                            t.addVertexWithUV(xx + 1, minY, zz, 2.0,
+                                              minY * 2.0 / 8.0 + v * 2.0)
+                            t.addVertexWithUV(xx + 1, maxY, zz, 2.0,
+                                              maxY * 2.0 / 8.0 + v * 2.0)
+                            t.addVertexWithUV(xx, maxY, zz + 1, 0.0,
+                                              maxY * 2.0 / 8.0 + v * 2.0)
                             t.draw()
 
                 gl.glEnable(gl.GL_CULL_FACE)
@@ -362,10 +337,14 @@ class EntityRenderer:
             itemRenderer = self.itemRenderer
             progress = itemRenderer.prevEquippedProgress + (itemRenderer.equippedProgress - itemRenderer.prevEquippedProgress) * alpha
             gl.glPushMatrix()
-            gl.glRotatef(self.mc.thePlayer.prevRotationPitch + (self.mc.thePlayer.rotationPitch - self.mc.thePlayer.prevRotationPitch) * alpha,
-                         1.0, 0.0, 0.0)
-            gl.glRotatef(self.mc.thePlayer.prevRotationYaw + (self.mc.thePlayer.rotationYaw - self.mc.thePlayer.prevRotationYaw) * alpha,
-                         0.0, 1.0, 0.0)
+            gl.glRotatef(
+                self.mc.thePlayer.prevRotationPitch + (self.mc.thePlayer.rotationPitch - self.mc.thePlayer.prevRotationPitch) * alpha,
+                1.0, 0.0, 0.0
+            )
+            gl.glRotatef(
+                self.mc.thePlayer.prevRotationYaw + (self.mc.thePlayer.rotationYaw - self.mc.thePlayer.prevRotationYaw) * alpha,
+                0.0, 1.0, 0.0
+            )
             RenderHelper.enableStandardItemLighting()
             gl.glPopMatrix()
             gl.glPushMatrix()
@@ -374,30 +353,48 @@ class EntityRenderer:
                     itemRenderer.swingProgress += 1
 
                 slot = (itemRenderer.swingProgress + alpha) / 7.0
-                f20 = math.sin(slot * math.pi)
-                f3 = math.sin(math.sqrt(slot) * math.pi)
-                gl.glTranslatef(-f3 * 0.4, math.sin(math.sqrt(slot) * math.pi * 2.0) * 0.2, -f20 * 0.2)
+                swingY = math.sin(slot * math.pi)
+                swingX = math.sin(math.sqrt(slot) * math.pi)
+                gl.glTranslatef(-swingX * 0.4,
+                                math.sin(math.sqrt(slot) * math.pi * 2.0) * 0.2,
+                                -swingY * 0.2)
 
             gl.glTranslatef(0.7 * 0.8, -0.65 * 0.8 - (1.0 - progress) * 0.6, -0.9 * 0.8)
             gl.glRotatef(45.0, 0.0, 1.0, 0.0)
             gl.glEnable(gl.GL_NORMALIZE)
             if itemRenderer.itemSwingState:
                 slot = (itemRenderer.swingProgress + alpha) / 7.0
-                f20 = math.sin((slot * slot) * math.pi)
-                f3 = math.sin(math.sqrt(slot) * math.pi)
-                gl.glRotatef(f3 * 80.0, 0.0, 1.0, 0.0)
-                gl.glRotatef(-f20 * 20.0, 1.0, 0.0, 0.0)
+                swingY = math.sin((slot * slot) * math.pi)
+                swingX = math.sin(math.sqrt(slot) * math.pi)
+                gl.glRotatef(swingX * 80.0, 0.0, 1.0, 0.0)
+                gl.glRotatef(-swingY * 20.0, 1.0, 0.0, 0.0)
 
             brightness = self.mc.theWorld.getBlockLightValue(int(self.mc.thePlayer.posX),
                                                              int(self.mc.thePlayer.posY),
                                                              int(self.mc.thePlayer.posZ))
             gl.glColor4f(brightness, brightness, brightness, 1.0)
-            if itemRenderer.itemToRender:
+            item = itemRenderer.itemToRender
+            if item:
                 gl.glScalef(0.4, 0.4, 0.4)
                 gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('terrain.png'))
-                itemRenderer.renderBlocksInstance.renderBlockOnInventory(itemRenderer.itemToRender)
+                if item.itemID > 0:
+                    itemRenderer.renderBlocksInstance.renderBlockOnInventory(blocks.blocksList[item.itemID])
+                else:
+                    gl.glBindTexture(gl.GL_TEXTURE_2D, self.mc.renderEngine.getTexture('gui/items.png'))
+                    gl.glDisable(gl.GL_LIGHTING)
+                    t = tessellator
+                    u0 = (item.iconIndex % 16 << 4) / 256.0
+                    u1 = ((item.iconIndex % 16 << 4) + 16) / 256.0
+                    v0 = (item.iconIndex // 16 << 4) / 256.0
+                    v1 = ((item.iconIndex // 16 << 4) + 16) / 256.0
+                    t.startDrawingQuads()
+                    t.addVertexWithUV(0.0 - 0.4, 0.0 - 0.2, 0.0 - 0.4, u0, v1)
+                    t.addVertexWithUV(0.7 - 0.4, 0.0 - 0.2, 0.7 - 0.4, u1, v1)
+                    t.addVertexWithUV(0.7 - 0.4, 1.0 - 0.2, 0.7 - 0.4, u1, v0)
+                    t.addVertexWithUV(0.0 - 0.4, 1.0 - 0.2, 0.0 - 0.4, u0, v0)
+                    t.draw()
+                    gl.glEnable(gl.GL_LIGHTING)
             else:
-                EntityPlayer.setupSkinImage(self.mc.renderEngine)
                 gl.glScalef(1.0, -1.0, -1.0)
                 gl.glTranslatef(0.0, 0.2, 0.0)
                 gl.glRotatef(-120.0, 0.0, 0.0, 1.0)
@@ -406,10 +403,27 @@ class EntityRenderer:
             gl.glDisable(gl.GL_NORMALIZE)
             gl.glPopMatrix()
             RenderHelper.disableStandardItemLighting()
+
             if not self.mc.options.anaglyph:
                 break
 
         gl.glColorMask(True, True, True, False)
+
+    def addRainParticles(self):
+        x = self.mc.thePlayer.posX
+        y = self.mc.thePlayer.posY
+        z = self.mc.thePlayer.posZ
+        for i in range(50):
+            xr = x + int(random.random() * 9) - 4
+            zr = z + int(random.random() * 9) - 4
+            highest = self.mc.theWorld.getMapHeight(xr, zr)
+            blockId = self.mc.theWorld.getBlockId(xr, highest - 1, zr)
+            if highest <= y + 4 and highest >= y - 4 and blockId > 0:
+                self.mc.effectRenderer.addEffect(EntityRainFX(
+                        self.mc.theWorld, xr + random.random(),
+                        highest + 0.1 - blocks.blocksList[blockId].minY,
+                        zr + random.random()
+                    ))
 
     def setupOverlayRendering(self):
         screenWidth = self.mc.width * 240 // self.mc.height
@@ -418,12 +432,56 @@ class EntityRenderer:
         gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
-        gl.glOrtho(0.0, screenWidth, screenHeight, 0.0, 100.0, 300.0)
+        gl.glOrtho(0.0, screenWidth, screenHeight, 0.0, 1000.0, 3000.0)
         gl.glMatrixMode(gl.GL_MODELVIEW)
         gl.glLoadIdentity()
-        gl.glTranslatef(0.0, 0.0, -200.0)
+        gl.glTranslatef(0.0, 0.0, -2000.0)
 
-    def __setupFog(self):
+    def updateFogColor(self, alpha):
+        d = 1.0 - pow(1.0 / (4 - self.mc.options.renderDistance), 0.25)
+        x = (self.mc.theWorld.skyColor >> 16 & 0xFF) / 255.0
+        y = (self.mc.theWorld.skyColor >> 8 & 0xFF) / 255.0
+        z = (self.mc.theWorld.skyColor & 0xFF) / 255.0
+        self.__fogColorRed = (self.mc.theWorld.fogColor >> 16 & 255) / 255.0
+        self.__fogColorGreen = (self.mc.theWorld.fogColor >> 8 & 255) / 255.0
+        self.__fogColorBlue = (self.mc.theWorld.fogColor & 255) / 255.0
+        self.__fogColorRed += (x - self.__fogColorRed) * d
+        self.__fogColorGreen += (y - self.__fogColorGreen) * d
+        self.__fogColorBlue += (z - self.__fogColorBlue) * d
+        self.__fogColorRed *= self.fogColorMultiplier
+        self.__fogColorGreen *= self.fogColorMultiplier
+        self.__fogColorBlue *= self.fogColorMultiplier
+        block = blocks.blocksList[self.mc.theWorld.getBlockId(
+                int(self.mc.thePlayer.posX), int(self.mc.thePlayer.posY + 0.12),
+                int(self.mc.thePlayer.posZ)
+            )]
+        if block and block.getMaterial() != Material.air:
+            material = block.getMaterial()
+            if material == Material.water:
+                self.__fogColorRed = 0.02
+                self.__fogColorGreen = 0.02
+                self.__fogColorBlue = 0.2
+            elif material == Material.lava:
+                self.__fogColorRed = 0.6
+                self.__fogColorGreen = 0.1
+                self.__fogColorBlue = 0.0
+
+        fd = self.prevFogColor + (self.fogColor - self.prevFogColor) * alpha
+        self.__fogColorRed *= fd
+        self.__fogColorGreen *= fd
+        self.__fogColorBlue *= fd
+        if self.mc.options.anaglyph:
+            x = (self.__fogColorRed * 30.0 + self.__fogColorGreen * 59.0 + self.__fogColorBlue * 11.0) / 100.0
+            y = (self.__fogColorRed * 30.0 + self.__fogColorGreen * 70.0) / 100.0
+            z = (self.__fogColorRed * 30.0 + self.__fogColorBlue * 70.0) / 100.0
+            self.__fogColorRed = x
+            self.__fogColorGreen = y
+            self.__fogColorBlue = z
+
+        gl.glClearColor(self.__fogColorRed, self.__fogColorGreen,
+                        self.__fogColorBlue, 0.0)
+
+    def setupFog(self):
         self.__fogColorBuffer.clear()
         self.__fogColorBuffer.put(self.__fogColorRed).put(self.__fogColorGreen).put(self.__fogColorBlue).put(1.0)
         self.__fogColorBuffer.flip()
@@ -444,7 +502,7 @@ class EntityRenderer:
         else:
             gl.glFogi(gl.GL_FOG_MODE, gl.GL_LINEAR)
             gl.glFogf(gl.GL_FOG_START, 0.0)
-            gl.glFogf(gl.GL_FOG_END, self.__farPlaneDistance)
+            gl.glFogf(gl.GL_FOG_END, self.farPlaneDistance)
 
         gl.glEnable(gl.GL_COLOR_MATERIAL)
         gl.glColorMaterial(gl.GL_FRONT, gl.GL_AMBIENT)

@@ -51,11 +51,7 @@ cdef class World:
         public bint multiplayerWorld
         public bint survivalWorld
 
-        int[1048576] __floodFillCounters
-        char[1048576] __coords
-        int[1048576] __floodedBlocks
-
-        int __explosionTime
+        int[295936] __floodFillCounters
 
     cdef findSpawn(self)
     cdef void __updateSkylight(self, int x0, int y0, int x1, int y1) except *
@@ -86,4 +82,3 @@ cdef class World:
     cpdef inline int getBlockMaterial(self, int x, int y, int z)
     cpdef inline bint isWater(self, int x, int y, int z)
     cpdef bint growTrees(self, int x, int y, int z)
-    cpdef bint createExplosion(self, int x, int y, int z, int blockType)

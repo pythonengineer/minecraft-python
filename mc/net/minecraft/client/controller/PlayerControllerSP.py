@@ -1,8 +1,9 @@
 from mc.net.minecraft.client.controller.PlayerController import PlayerController
+from mc.net.minecraft.client.gui.GuiInventory import GuiInventory
 from mc.net.minecraft.game.level.MobSpawner import MobSpawner
 from mc.net.minecraft.game.level.block.Blocks import blocks
-from mc.net.minecraft.game.level.MobSpawner import MobSpawner
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
+from mc.net.minecraft.game.entity.player.ItemStack import ItemStack
 
 class PlayerControllerSP(PlayerController):
 
@@ -16,19 +17,21 @@ class PlayerControllerSP(PlayerController):
         self.__blockHitWait = 0
         self.__mobSpawner = None
 
+    def displayInventoryGUI(self):
+        self._mc.displayGuiScreen(GuiInventory())
+
     def preparePlayer(self, player):
-        player.inventory.mainInventory[5] = blocks.stairSingle.blockID
-        player.inventory.stackSize[5] = 99
-        player.inventory.mainInventory[6] = blocks.stone.blockID
-        player.inventory.stackSize[6] = 99
-        player.inventory.mainInventory[7] = blocks.waterMoving.blockID
-        player.inventory.stackSize[7] = 99
-        player.inventory.mainInventory[8] = blocks.lavaMoving.blockID
-        player.inventory.stackSize[8] = 99
+        player.inventory.mainInventory[8] = ItemStack(blocks.bookShelf, 99)
+        player.inventory.mainInventory[7] = ItemStack(blocks.tnt, 99)
+
+        for i in range(20):
+            row = i % 5
+            col = i // 5
+            player.inventory.mainInventory[i + 9] = ItemStack(row + (col << 4))
 
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
-        blocks.blocksList[block].dropBlockAsItem(self._mc.theWorld)
+        blocks.blocksList[block].dropBlockAsItem(self._mc.theWorld, x, y, z)
         super().sendBlockRemoved(x, y, z)
 
     def canPlace(self, block):
@@ -74,17 +77,6 @@ class PlayerControllerSP(PlayerController):
 
     def getBlockReachDistance(self):
         return 4.0
-
-    def sendUseItem(self, entity, quantity):
-        block = blocks.blocksList[quantity]
-        if block == blocks.mushroomRed and self._mc.thePlayer.inventory.consumeInventoryItem(quantity):
-            entity.attackEntityFrom(None, 3)
-            return True
-        elif block == blocks.mushroomBrown and self._mc.thePlayer.inventory.consumeInventoryItem(quantity):
-            entity.heal(5)
-            return True
-
-        return False
 
     def onWorldChange(self, world):
         super().onWorldChange(world)

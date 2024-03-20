@@ -20,8 +20,9 @@ cdef class EntityMap:
 
         public list entityGrid
         public list entities
-        list __entitiesExcludingEntity
+        public list entitiesExcludingEntity
 
+    cdef list getEntities(self, Entity oEntity, float x0, float y0, float z0,
+                          float x1, float y1, float z1, list l)
     cpdef list getEntitiesWithinAABBExcludingEntity(self, Entity entity, AxisAlignedBB aabb)
     cdef tickAll(self)
-    cpdef render(self, vec, ClippingHelper frustum, renderManager, renderEngine, float a)

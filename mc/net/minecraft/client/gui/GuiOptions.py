@@ -13,14 +13,14 @@ class GuiOptions(GuiScreen):
     def initGui(self, minecraft, width, height):
         super().initGui(minecraft, width, height)
         for i in range(self.__options.numberOfOptions):
-            self._controlList.append(GuiSmallButton(i, self._width // 2 - 155 + i % 2 * 160,
-                                                    self._height // 6 + 24 * (i >> 1),
+            self._controlList.append(GuiSmallButton(i, self.width // 2 - 155 + i % 2 * 160,
+                                                    self.height // 6 + 24 * (i >> 1),
                                                     self.__options.setOptionString(i)))
 
-        self._controlList.append(GuiButton(100, self._width // 2 - 100,
-                                           self._height // 6 + 120 + 12, 'Controls...'))
-        self._controlList.append(GuiButton(200, self._width // 2 - 100,
-                                           self._height // 6 + 168, 'Done'))
+        self._controlList.append(GuiButton(100, self.width // 2 - 100,
+                                           self.height // 6 + 120 + 12, 'Controls...'))
+        self._controlList.append(GuiButton(200, self.width // 2 - 100,
+                                           self.height // 6 + 168, 'Done'))
 
     def _actionPerformed(self, button):
         if button.enabled:
@@ -33,7 +33,7 @@ class GuiOptions(GuiScreen):
                 self._mc.displayGuiScreen(self.__parentScreen)
 
     def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self._width, self._height, 1610941696, -1607454624)
+        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
         self.drawCenteredString(self._fontRenderer, self.__screenTitle,
-                                self._width / 2, 20, 16777215)
+                                self.width / 2, 20, 16777215)
         super().drawScreen(xm, ym)

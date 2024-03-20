@@ -41,7 +41,7 @@ cdef class LevelGenerator:
         cdef NoiseGeneratorOctaves perlinNoise
         cdef World world
 
-        self.progressBar.beginLevelLoading('Generating level')
+        self.progressBar.displayProgressMessage('Generating level')
 
         self.width = width
         self.depth = depth
@@ -49,7 +49,7 @@ cdef class LevelGenerator:
         self.waterLevel = 32
         self.blocksByteArray = <char*>malloc(sizeof(char) * (self.width * self.depth << 6))
 
-        self.progressBar.displayProgressMessage('Raising..')
+        self.progressBar.displayLoadingString('Raising..')
 
         distort8 = NoiseGeneratorDistort(NoiseGeneratorOctaves(self.rand, 8),
                                          NoiseGeneratorOctaves(self.rand, 8))
@@ -72,7 +72,7 @@ cdef class LevelGenerator:
 
                 heightmap[i + i13 * self.width] = <int>d21
 
-        self.progressBar.displayProgressMessage('Eroding..')
+        self.progressBar.displayLoadingString('Eroding..')
 
         distort9 = NoiseGeneratorDistort(NoiseGeneratorOctaves(self.rand, 8),
                                          NoiseGeneratorOctaves(self.rand, 8))
@@ -86,7 +86,7 @@ cdef class LevelGenerator:
                     i41 = ((heightmap[i34 + i5 * self.width] - i15) // 4) + i15
                     heightmap[i34 + i5 * self.width] = i41
 
-        self.progressBar.displayProgressMessage('Soiling..')
+        self.progressBar.displayLoadingString('Soiling..')
 
         w = self.width
         d = self.depth
@@ -115,7 +115,7 @@ cdef class LevelGenerator:
 
                     self.blocksByteArray[i] = blockId
 
-        self.progressBar.displayProgressMessage('Carving..')
+        self.progressBar.displayLoadingString('Carving..')
 
         count = w * h * d // 256 // 64 << 1
         stone = <int>blocks.stone.blockID
@@ -166,7 +166,7 @@ cdef class LevelGenerator:
         self.populateOre(blocks.oreCoal.blockID, 90, 1, 4)
         self.populateOre(blocks.oreIron.blockID, 70, 2, 4)
         self.populateOre(blocks.oreGold.blockID, 50, 3, 4)
-        self.progressBar.displayProgressMessage('Watering..')
+        self.progressBar.displayLoadingString('Watering..')
 
         target = blocks.waterStill.blockID
 
@@ -186,11 +186,11 @@ cdef class LevelGenerator:
             if self.blocksByteArray[(iy * self.depth + iz) * self.width + ix] == 0:
                 self.floodFill(ix, iy, iz, 0, target)
 
-        self.progressBar.displayProgressMessage('Melting..')
+        self.progressBar.displayLoadingString('Melting..')
         self.__addLava()
-        self.progressBar.displayProgressMessage('Growing..')
+        self.progressBar.displayLoadingString('Growing..')
         self.__addBeaches(heightmap)
-        self.progressBar.displayProgressMessage('Planting..')
+        self.progressBar.displayLoadingString('Planting..')
         self.__addBlockFlowers(heightmap)
         self.__addMushrooms(heightmap)
 

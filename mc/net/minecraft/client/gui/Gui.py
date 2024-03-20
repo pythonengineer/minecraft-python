@@ -50,7 +50,7 @@ class Gui:
 
     @staticmethod
     def drawCenteredString(font, string, x, y, color):
-        font.drawStringWithShadow(string, x - font.getWidth(string) // 2, y, color)
+        font.drawStringWithShadow(string, x - font.getStringWidth(string) // 2, y, color)
 
     @staticmethod
     def drawString(font, string, x, y, color):

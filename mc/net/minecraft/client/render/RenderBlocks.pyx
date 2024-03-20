@@ -159,12 +159,10 @@ cdef class RenderBlocks:
 
     cdef __renderBlockBottom(self, Block block, int x, int y, int z, int tex):
         cdef int xt
-        cdef float u0, u1, v0, v1, x0, x1, y0, z0, z1, ofs
+        cdef float u0, u1, v0, v1, x0, x1, y0, z0, z1
 
-        ofs = 0.0
         if self.overrideBlockTexture >= 0:
             tex = self.overrideBlockTexture
-            ofs = 0.01
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -174,7 +172,7 @@ cdef class RenderBlocks:
         v1 = (tex + 15.99) / 256.0
         x0 = x + block.minX
         x1 = x + block.maxX
-        y0 = y + block.minY - ofs
+        y0 = y + block.minY
         z0 = z + block.minZ
         z1 = z + block.maxZ
         self.__tessellator.addVertexWithUV(x0, y0, z1, u0, v1)
@@ -184,12 +182,10 @@ cdef class RenderBlocks:
 
     cdef __renderBlockTop(self, Block block, int x, int y, int z, int tex):
         cdef int xt
-        cdef float u0, u1, v0, v1, x0, x1, y1, z0, z1, ofs
+        cdef float u0, u1, v0, v1, x0, x1, y1, z0, z1
 
-        ofs = 0.0
         if self.overrideBlockTexture >= 0:
             tex = self.overrideBlockTexture
-            ofs = 0.01
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -199,7 +195,7 @@ cdef class RenderBlocks:
         v1 = (tex + 15.99) / 256.0
         x0 = x + block.minX
         x1 = x + block.maxX
-        y1 = y + block.maxY + ofs
+        y1 = y + block.maxY
         z0 = z + block.minZ
         z1 = z + block.maxZ
         self.__tessellator.addVertexWithUV(x1, y1, z1, u1, v1)
@@ -209,12 +205,10 @@ cdef class RenderBlocks:
 
     cdef __renderBlockNorth(self, Block block, int x, int y, int z, int tex):
         cdef int xt
-        cdef float u0, u1, v0, v1, x0, x1, y0, y1, z0, ofs
+        cdef float u0, u1, v0, v1, x0, x1, y0, y1, z0
 
-        ofs = 0.0
         if self.overrideBlockTexture >= 0:
             tex = self.overrideBlockTexture
-            ofs = 0.01
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -233,7 +227,7 @@ cdef class RenderBlocks:
         x1 = x + block.maxX
         y0 = y + block.minY
         y1 = y + block.maxY
-        z0 = z + block.minZ - ofs
+        z0 = z + block.minZ
         self.__tessellator.addVertexWithUV(x0, y1, z0, u1, v0)
         self.__tessellator.addVertexWithUV(x1, y1, z0, u0, v0)
         self.__tessellator.addVertexWithUV(x1, y0, z0, u0, v1)
@@ -241,12 +235,10 @@ cdef class RenderBlocks:
 
     cdef __renderBlockSouth(self, Block block, int x, int y, int z, int tex):
         cdef int xt
-        cdef float u0, u1, v0, v1, x0, x1, y0, y1, z1, ofs
+        cdef float u0, u1, v0, v1, x0, x1, y0, y1, z1
 
-        ofs = 0.0
         if self.overrideBlockTexture >= 0:
             tex = self.overrideBlockTexture
-            ofs = 0.01
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -265,7 +257,7 @@ cdef class RenderBlocks:
         x1 = x + block.maxX
         y0 = y + block.minY
         y1 = y + block.maxY
-        z1 = z + block.maxZ + ofs
+        z1 = z + block.maxZ
         self.__tessellator.addVertexWithUV(x0, y1, z1, u0, v0)
         self.__tessellator.addVertexWithUV(x0, y0, z1, u0, v1)
         self.__tessellator.addVertexWithUV(x1, y0, z1, u1, v1)
@@ -273,12 +265,10 @@ cdef class RenderBlocks:
 
     cdef __renderBlockWest(self, Block block, int x, int y, int z, int tex):
         cdef int xt
-        cdef float u0, u1, v0, v1, x0, y0, y1, z0, z1, ofs
+        cdef float u0, u1, v0, v1, x0, y0, y1, z0, z1
 
-        ofs = 0.0
         if self.overrideBlockTexture >= 0:
             tex = self.overrideBlockTexture
-            ofs = 0.01
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -293,7 +283,7 @@ cdef class RenderBlocks:
             v0 = tex / 256.0
             v1 = (tex + 15.99) / 256.0
 
-        x0 = x + block.minX - ofs
+        x0 = x + block.minX
         y0 = y + block.minY
         y1 = y + block.maxY
         z0 = z + block.minZ
@@ -305,12 +295,10 @@ cdef class RenderBlocks:
 
     cdef __renderBlockEast(self, Block block, int x, int y, int z, int tex):
         cdef int xt
-        cdef float u0, u1, v0, v1, x1, y0, y1, z0, z1, ofs
+        cdef float u0, u1, v0, v1, x1, y0, y1, z0, z1
 
-        ofs = 0.0
         if self.overrideBlockTexture >= 0:
             tex = self.overrideBlockTexture
-            ofs = 0.01
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -325,7 +313,7 @@ cdef class RenderBlocks:
             v0 = tex / 256.0
             v1 = (tex + 15.99) / 256.0
 
-        x1 = x + block.maxX + ofs
+        x1 = x + block.maxX
         y0 = y + block.minY
         y1 = y + block.maxY
         z0 = z + block.minZ
@@ -342,15 +330,25 @@ cdef class RenderBlocks:
             self.__tessellator.startDrawingQuads()
             self.__tessellator.setNormal(0.0, -1.0, 0.0)
             self.__renderBlockBottom(block, 0, 0, 0, block.getBlockTexture(0))
+            self.__tessellator.draw()
+            self.__tessellator.startDrawingQuads()
             self.__tessellator.setNormal(0.0, 1.0, 0.0)
             self.__renderBlockTop(block, 0, 0, 0, block.getBlockTexture(1))
+            self.__tessellator.draw()
+            self.__tessellator.startDrawingQuads()
             self.__tessellator.setNormal(0.0, 0.0, -1.0)
             self.__renderBlockNorth(block, 0, 0, 0, block.getBlockTexture(2))
+            self.__tessellator.draw()
+            self.__tessellator.startDrawingQuads()
             self.__tessellator.setNormal(0.0, 0.0, 1.0)
             self.__renderBlockSouth(block, 0, 0, 0, block.getBlockTexture(3))
+            self.__tessellator.draw()
+            self.__tessellator.startDrawingQuads()
             self.__tessellator.setNormal(-1.0, 0.0, 0.0)
             self.__renderBlockWest(block, 0, 0, 0, block.getBlockTexture(4))
-            self.__tessellator.setNormal(0.0, 0.0, 0.0)
+            self.__tessellator.draw()
+            self.__tessellator.startDrawingQuads()
+            self.__tessellator.setNormal(1.0, 0.0, 0.0)
             self.__renderBlockEast(block, 0, 0, 0, block.getBlockTexture(5))
             self.__tessellator.draw()
             gl.glTranslatef(0.5, 0.5, 0.5)

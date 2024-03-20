@@ -11,11 +11,11 @@ class GuiIngameMenu(GuiScreen):
     def initGui(self, minecraft, width, height):
         super().initGui(minecraft, width, height)
         self._controlList.clear()
-        self._controlList.append(GuiButton(0, self._width // 2 - 100, self._height // 4, 'Options...'))
-        self._controlList.append(GuiButton(1, self._width // 2 - 100, self._height // 4 + 24, 'Generate new world...'))
-        self._controlList.append(GuiButton(2, self._width // 2 - 100, self._height // 4 + 48, 'Save world..'))
-        self._controlList.append(GuiButton(3, self._width // 2 - 100, self._height // 4 + 72, 'Load world..'))
-        self._controlList.append(GuiButton(4, self._width // 2 - 100, self._height // 4 + 120, 'Back to game'))
+        self._controlList.append(GuiButton(0, self.width // 2 - 100, self.height // 4, 'Options...'))
+        self._controlList.append(GuiButton(1, self.width // 2 - 100, self.height // 4 + 24, 'Generate new world...'))
+        self._controlList.append(GuiButton(2, self.width // 2 - 100, self.height // 4 + 48, 'Save world..'))
+        self._controlList.append(GuiButton(3, self.width // 2 - 100, self.height // 4 + 72, 'Load world..'))
+        self._controlList.append(GuiButton(4, self.width // 2 - 100, self.height // 4 + 120, 'Back to game'))
 
         if not minecraft.session:
             self._controlList[2].enabled = False
@@ -35,6 +35,6 @@ class GuiIngameMenu(GuiScreen):
             self._mc.setIngameFocus()
 
     def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self._width, self._height, 1610941696, -1607454624)
-        self.drawCenteredString(self._fontRenderer, 'Game menu', self._width // 2, 40, 0xFFFFFF)
+        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+        self.drawCenteredString(self._fontRenderer, 'Game menu', self.width // 2, 40, 0xFFFFFF)
         super().drawScreen(xm, ym)

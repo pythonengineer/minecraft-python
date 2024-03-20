@@ -334,6 +334,9 @@ cdef class ByteBuffer(Buffer):
         gl.glTexSubImage2D(target, level, xoffset, yoffset, width, height,
                            format, type, self.__getDataPtr())
 
+    def glReadPixels(self, int x, int y, int width, int height, int format, int type):
+        gl.glReadPixels(x, y, width, height, format, type, self.__getDataPtr())
+
 cdef class IntBuffer(Buffer):
 
     def __init__(self, capacity):
@@ -490,6 +493,9 @@ cdef class FloatBuffer(Buffer):
 
     def glInterleavedArrays(self, int format, int stride):
         gl.glInterleavedArrays(format, stride, self.__getDataPtr())
+
+    def glMultMatrix(self):
+        gl.glMultMatrixf(self.__getDataPtr())
 
 cdef class BufferUtils:
 

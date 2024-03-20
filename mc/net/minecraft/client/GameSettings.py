@@ -153,15 +153,16 @@ class GameSettings:
         self.keyBindBack = KeyBinding('Back', window.key.S)
         self.keyBindRight = KeyBinding('Right', window.key.D)
         self.keyBindJump = KeyBinding('Jump', window.key.SPACE)
-        self.keyBindInventory = KeyBinding('Build', window.key.B)
+        self.keyBindInventory = KeyBinding('Inventory', window.key.I)
+        self.keyBindDrop = KeyBinding('Drop', window.key.Q)
         self.keyBindChat = KeyBinding('Chat', window.key.T)
         self.keyBindToggleFog = KeyBinding('Toggle fog', window.key.F)
         self.keyBindSave = KeyBinding('Save location', window.key.RETURN)
         self.keyBindLoad = KeyBinding('Load location', window.key.R)
         self.keyBindings = [self.keyBindForward, self.keyBindLeft, self.keyBindBack,
-                            self.keyBindRight, self.keyBindJump, self.keyBindInventory,
-                            self.keyBindChat, self.keyBindToggleFog, self.keyBindSave,
-                            self.keyBindLoad]
+                            self.keyBindRight, self.keyBindJump, self.keyBindDrop,
+                            self.keyBindInventory, self.keyBindChat, self.keyBindToggleFog,
+                            self.keyBindSave, self.keyBindLoad]
         self.__mc = mc
         self.__optionsFile = (pathlib.Path(file) / 'options.txt').resolve()
         self.__loadOptions()

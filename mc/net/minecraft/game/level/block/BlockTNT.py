@@ -1,4 +1,7 @@
 from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.entity.misc.EntityTNTPrimed import EntityTNTPrimed
+
+import math
 
 class BlockTNT(Block):
 
@@ -13,8 +16,13 @@ class BlockTNT(Block):
         else:
             return self.blockIndexInTexture
 
-    def quantityDropped(self):
+    def quantityDropped(self, random):
         return 0
 
-    def wasExploded(self, world, x, y, z):
-        world.createExplosion(x, y - 1, z, self.blocks.planks.blockID)
+    def onBlockDestroyedByExplosion(self, world, x, y, z):
+        entity = EntityTNTPrimed(world, x + 0.5, y + 0.5, z + 0.5)
+        entity.fuse = math.floor((entity.fuse // 4) * world.rand.random()) + entity.fuse // 8
+        world.spawnEntityInWorld(entity)
+
+    def onBlockDestroyedByPlayer(self, world, x, y, z):
+        world.spawnEntityInWorld(EntityTNTPrimed(world, x + 0.5, y + 0.5, z + 0.5))

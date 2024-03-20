@@ -3,6 +3,8 @@
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
 from mc.net.minecraft.game.level.material.Material cimport Material
 from mc.net.minecraft.game.level.World cimport World
+from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
+from mc.net.minecraft.game.entity.player.ItemStack import ItemStack
 from mc.net.minecraft.game.physics.AxisAlignedBB import AxisAlignedBB
 
 import random
@@ -14,12 +16,13 @@ cdef class Block:
         self.blockID = blockId
         if tex:
             self.blockIndexInTexture = tex
+        self.blockIsDropped = True
         self.blockParticleGravity = 1.0
         self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
         self.blocks.opaqueCubeLookup[blockId] = self.isOpaqueCube()
         self.blocks.lightOpacity[blockId] = 255 if self.isOpaqueCube() else 0
         self.blocks.canBlockGrass[blockId] = self.renderAsNormalBlock()
-        self.blocks.isBlockContainer[blockId] = False
+        self.blocks.isBlockFluid[blockId] = False
 
     def setLightOpacity(self, int opacity):
         self.blocks.lightOpacity[self.blockID] = opacity
@@ -35,8 +38,8 @@ cdef class Block:
     cpdef int getRenderType(self):
         return 0
 
-    def setHardness(self, float pitch):
-        self.__blockHardness = <int>(pitch * 20.0)
+    def setResistance(self, float pitch):
+        self.__hardness = <int>(pitch * 20.0)
         return self
 
     def _setTickOnLoad(self, bint tick):
@@ -95,24 +98,37 @@ cdef class Block:
     def onBlockRemoval(self, World world, int x, int y, int z):
         pass
 
-    cpdef int quantityDropped(self):
+    cpdef int quantityDropped(self, random):
         return 1
 
+    cpdef int idDropped(self):
+        return self.blockID
+
     def blockStrength(self):
-        return self.__blockHardness
+        return self.__hardness
 
-    def dropBlockAsItem(self, World world):
-        self.dropBlockAsItemWithChance(world, 1.0)
+    def dropBlockAsItem(self, World world, int x, int y, int z):
+        self.dropBlockAsItemWithChance(world, x, y, z, 1.0)
 
-    cdef dropBlockAsItemWithChance(self, World world, float chance):
+    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
         cdef int i
-        for i in range(self.quantityDropped()):
-            if random.random() > 1.0:
+        cdef float move, xx, yy, zz
+
+        for i in range(self.quantityDropped(world.rand)):
+            if world.rand.random() > chance:
                 continue
 
-            random.random()
-            random.random()
-            random.random()
+            move = 0.7
+            xx = world.rand.random() * move + (1.0 - move) * 0.5
+            yy = world.rand.random() * move + (1.0 - move) * 0.5
+            zz = world.rand.random() * move + (1.0 - move) * 0.5
+            world.spawnEntityInWorld(EntityItem(
+                    world, x + xx, y + yy, z + zz,
+                    ItemStack(self.blocks.blocksList[self.idDropped()], 1)
+                ))
+
+    cdef bint canDrop(self):
+        return self.blockIsDropped
 
     cdef collisionRayTrace(self, int x, int y, int z, v0, v1):
         v0 = v0.addVector(-x, -y, -z)
@@ -188,6 +204,9 @@ cdef class Block:
             return vec.xCoord >= self.minX and vec.xCoord <= self.maxX and vec.yCoord >= self.minY and vec.yCoord <= self.maxY
         else:
             return False
+
+    def onBlockDestroyedByExplosion(self, world, x, y, z):
+        pass
 
     cdef int getRenderBlockPass(self):
         return 0

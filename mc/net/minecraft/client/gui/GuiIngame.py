@@ -20,7 +20,7 @@ class GuiIngame(Gui):
         self.chatMessageList = []
         self.updateCounter = 0
 
-    def renderGameOverlay(self, scale):
+    def renderGameOverlay(self):
         self.__mc.entityRenderer.setupOverlayRendering()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/gui.png'))
         t = tessellator
@@ -80,38 +80,51 @@ class GuiIngame(Gui):
         RenderHelper.enableStandardItemLighting()
         gl.glPopMatrix()
 
-        for slot in range(len(self.__mc.thePlayer.inventory.mainInventory)):
-            width = self.__ingameWidth // 2 - 90 + slot * 20
-            height = self.__ingameHeight - 16
-            block = self.__mc.thePlayer.inventory.mainInventory[slot]
-            if block <= 0:
+        for slot in range(9):
+            width = self.__ingameWidth // 2 - 90 + slot * 20 + 2
+            height = self.__ingameHeight - 16 - 3
+            stack = self.__mc.thePlayer.inventory.mainInventory[slot]
+            if not stack:
+                if slot > 50:
+                    gl.glDisable(gl.GL_LIGHTING)
+                    tex = this.mc.renderEngine.getTexture('gui/items.png')
+                    gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+                    self.drawTexturedModal(width, height, 240, 63 - slot << 4, 16, 16)
+                    gl.glEnable(gl.GL_LIGHTING)
+
                 continue
 
-            gl.glPushMatrix()
-            gl.glTranslatef(width, height, -50.0)
-            if self.__mc.thePlayer.inventory.animationsToGo[slot] > 0:
-                f2 = (self.__mc.thePlayer.inventory.animationsToGo[slot] - scale) / 5.0
-                f3 = -(math.sin((f2 * f2) * math.pi)) * 8.0
-                f4 = math.sin((f2 * f2) * math.pi) + 1.0
-                f5 = math.sin(f2 * math.pi) + 1.0
-                gl.glTranslatef(10.0, f3 + 10.0, 0.0)
-                gl.glScalef(f4, f5, 1.0)
-                gl.glTranslatef(-10.0, -10.0, 0.0)
+            item = stack.itemID
+            if item > 0:
+                tex = self.__mc.renderEngine.getTexture('terrain.png')
+                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+                block = blocks.blocksList[item]
+                gl.glPushMatrix();
+                gl.glTranslatef(width - 2, height + 3, 0.0)
+                gl.glScalef(10.0, 10.0, 10.0)
+                gl.glTranslatef(1.0, 0.5, 8.0)
+                gl.glRotatef(210.0, 1.0, 0.0, 0.0)
+                gl.glRotatef(45.0, 0.0, 1.0, 0.0)
+                gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+                self.__blockRenderer.renderBlockOnInventory(block)
+                gl.glPopMatrix()
+            elif stack.iconIndex >= 0:
+                gl.glDisable(gl.GL_LIGHTING)
+                tex = self.__mc.renderEngine.getTexture('gui/items.png')
+                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+                self.drawTexturedModal(width, height, stack.iconIndex % 16 << 4,
+                                       stack.iconIndex // 16 << 4, 16, 16)
+                gl.glEnable(gl.GL_LIGHTING)
 
-            gl.glScalef(10.0, 10.0, 10.0)
-            gl.glTranslatef(1.0, 0.5, 0.0)
-            gl.glRotatef(210.0, 1.0, 0.0, 0.0)
-            gl.glRotatef(45.0, 0.0, 1.0, 0.0)
-            tex = self.__mc.renderEngine.getTexture('terrain.png')
-            gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-            self.__blockRenderer.renderBlockOnInventory(blocks.blocksList[block])
-            gl.glPopMatrix()
-            if self.__mc.thePlayer.inventory.stackSize[slot] > 1:
-                string = '' + str(self.__mc.thePlayer.inventory.stackSize[slot])
+            if stack.stackSize > 1:
+                size = str(stack.stackSize)
+                gl.glDisable(gl.GL_LIGHTING)
+                gl.glDisable(gl.GL_DEPTH_TEST)
                 self.__mc.fontRenderer.drawStringWithShadow(
-                    string, width + 19 - self.__mc.fontRenderer.getWidth(string),
-                    height + 6, 0xFFFFFF
-                )
+                    size, width + 19 - 2 - self.__mc.fontRenderer.getStringWidth(size),
+                    height + 6 + 3, 16777215)
+                gl.glEnable(gl.GL_LIGHTING)
+                gl.glEnable(gl.GL_DEPTH_TEST)
 
         RenderHelper.disableStandardItemLighting()
         gl.glDisable(gl.GL_NORMALIZE)
@@ -122,7 +135,7 @@ class GuiIngame(Gui):
         if isinstance(self.__mc.playerController, PlayerControllerSP):
             score = 'Score: &e' + str(self.__mc.thePlayer.getScore())
             self.__mc.fontRenderer.drawStringWithShadow(
-                score, self.__ingameWidth - self.__mc.fontRenderer.getWidth(score) - 2,
+                score, self.__ingameWidth - self.__mc.fontRenderer.getStringWidth(score) - 2,
                 2, 16777215
             )
             self.__mc.fontRenderer.drawStringWithShadow(

@@ -6,6 +6,8 @@ from mc.net.minecraft.game.level.material.Material cimport Material
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.physics.AxisAlignedBB cimport AxisAlignedBB
 
+from random import Random
+
 cdef class Entity:
 
     def __cinit__(self):
@@ -40,6 +42,7 @@ cdef class Entity:
         self.lastTickPosZ = 0.0
         self.__ySize = 0.0
         self.stepHeight = 0.0
+        self.rand = Random()
         self.ticksExisted = 0
 
     def __init__(self, world):
@@ -64,7 +67,7 @@ cdef class Entity:
         self.rotationYaw = self.worldObj.rotSpawn
         self.rotationPitch = 0.0
 
-    def remove(self):
+    def setEntityDead(self):
         self.isDead = True
 
     def setSize(self, w, h):
@@ -312,7 +315,7 @@ cdef class Entity:
     def canBePushed(self):
         return False
 
-    cdef bint shouldRender(self, vec):
+    cpdef bint shouldRender(self, vec):
         cdef float xd, yd, zd
         xd = self.posX - vec.xCoord
         yd = self.posY - vec.yCoord

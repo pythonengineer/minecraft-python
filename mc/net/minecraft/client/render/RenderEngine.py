@@ -10,7 +10,7 @@ class RenderEngine:
         self.options = options
         self.textureMap = {}
         self.textureContentsMap = {}
-        self.glBuffer = gl.GLuint(1)
+        self.__singleIntBuffer = gl.GLuint(1)
         self.imageData = BufferUtils.createByteBuffer(262144)
         self.textureList = []
         self.clampTexture = False
@@ -19,8 +19,8 @@ class RenderEngine:
         if resourceName in self.textureMap:
             return self.textureMap[resourceName]
         else:
-            gl.glGenTextures(1, ctypes.byref(self.glBuffer))
-            id_ = self.glBuffer.value
+            gl.glGenTextures(1, ctypes.byref(self.__singleIntBuffer))
+            id_ = self.__singleIntBuffer.value
             if resourceName.startswith('##'):
                 self.setupTexture(RenderEngine.unwrapImageByColumns(Resources.textures[resourceName]), id_)
             else:
@@ -30,8 +30,8 @@ class RenderEngine:
             return id_
 
     def getTextureImg(self, img):
-        gl.glGenTextures(1, ctypes.byref(self.glBuffer))
-        id_ = self.glBuffer.value
+        gl.glGenTextures(1, ctypes.byref(self.__singleIntBuffer))
+        id_ = self.__singleIntBuffer.value
         self.setupTexture(img, id_)
         self.textureContentsMap[id_] = img
         return id_

@@ -5,13 +5,12 @@
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
 The project is currently working on the Indev versions of Minecraft.
-The latest version is **Indev 0.31 20091223-2**, the first version of Indev which was released on _**December 23, 2009**_.
+The latest version is **Indev 0.31 20091231-2** as released on _**December 31, 2009**_.
 
-This version is the last available version of Minecraft to be released in creative mode exclusively.
-However, the work-in-progress survival mode can be enabled by running the game with the argument `-survival`.
-This is the first version to feature one of the MD3 mobs of Indev, Rana.
+This version is the last version of Minecraft released in 2009, and the first version of Indev released in survival mode.
+This version introduces the player inventory screen and isometric screenshots, the latter of which is exclusive to Indev versions as the world is not infinite.
 
-You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20091223-2).
+You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20091231-2)
 
 ### Organization
 
@@ -21,25 +20,24 @@ To play any version, specify it in the `pip install` command as demonstrated bel
 
 ### General Usage
 
-*Pyglet*, *Cython*, and *Pillow* are required dependencies and can easily be installed with *pip*. Use the versions specified in `requirements.txt`.
+*Pyglet*, *Cython*, *Pillow*, and *NumPy* are required dependencies and can easily be installed with *pip*. Use the versions specified in `requirements.txt`.
 
 While the late Classic versions and later Indev versions feature audio, this version does not.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20091223-2`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20091231-2`.
 
 Alternatively, for a manual Cython build, run `python setup.py build_ext --inplace`.
 
 Run `python -m mc.net.minecraft.Minecraft` to launch the game. *Minecraft: Python Edition* should be compatible with any modern platform that supports OpenGL and Cython.
 
-Run with the argument `-fullscreen` to open the window in fullscreen mode.
+Run with the argument `-fullscreen` to open the window in fullscreen mode. The argument `-creative` will force the game to be in creative mode.
 
 ### Gameplay
 
-Press B to pick any of the ores and tiles that exist in this creative version.
-Press F5 to toggle rain. Other keys are listed in the regular options menu.
+Press I to open your inventory. Tools which were newly added in this version will be in the inventory, but they serve no function yet.
+Press F7 to take a cool isometric screenshot and F5 to toggle rain. Other keys are listed in the regular options menu.
 
-If you enable survival mode, you will spawn with some lava and water blocks for testing.
-You will be able to attack the Rana mobs, but items in general won't drop. Arrows and mushrooms are unusable.
+The only mobs around are the Rana mobs, but they don't drop anything when killed. Arrows and mushrooms are unusable.
 
 ### Additional Notes
 

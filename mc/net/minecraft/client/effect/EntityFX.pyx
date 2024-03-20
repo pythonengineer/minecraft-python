@@ -56,7 +56,7 @@ cdef class EntityFX(Entity):
         self.prevPosZ = self.posZ
 
         if self.__particleAge >= self._particleMaxAge:
-            self.remove()
+            self.setEntityDead()
 
         self.__particleAge += 1
 

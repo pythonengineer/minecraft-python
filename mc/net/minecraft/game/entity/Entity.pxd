@@ -40,6 +40,7 @@ cdef class Entity:
         public float lastTickPosZ
         float __ySize
         public float stepHeight
+        public object rand
         public int ticksExisted
 
     cpdef onEntityUpdate(self)
@@ -51,5 +52,5 @@ cdef class Entity:
     cpdef moveFlying(self, float xa, float za, float speed)
     cpdef float getBrightness(self)
     cdef push(self, entity)
-    cdef bint shouldRender(self, vec)
+    cpdef bint shouldRender(self, vec)
     cdef bint shouldRenderAtSqrDistance(self, float d)

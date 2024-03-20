@@ -7,9 +7,8 @@ class MD3Model:
     def __init__(self, vertices):
         self.__vertices = vertices
         self.__displayList = 0
-        BufferUtils.createFloatBuffer(16)
 
-    def renderModelVertices(self, x, y, z):
+    def renderModelVertices(self):
         if self.__displayList == 0:
             self.__displayList = gl.glGenLists(self.__vertices.totalFrames)
 

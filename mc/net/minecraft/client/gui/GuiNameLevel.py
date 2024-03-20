@@ -15,8 +15,8 @@ class GuiNameLevel(GuiScreen):
     def initGui(self, minecraft, width, height):
         super().initGui(minecraft, width, height)
         self._controlList.clear()
-        self._controlList.append(GuiButton(0, self._width // 2 - 100, self._height // 4 + 120, 'Save'))
-        self._controlList.append(GuiButton(1, self._width // 2 - 100, self._height // 4 + 144, 'Cancel'))
+        self._controlList.append(GuiButton(0, self.width // 2 - 100, self.height // 4 + 120, 'Save'))
+        self._controlList.append(GuiButton(1, self.width // 2 - 100, self.height // 4 + 144, 'Cancel'))
         self._controlList[0].enabled = len(self.__name.strip()) > 1
 
     def updateScreen(self):
@@ -41,10 +41,10 @@ class GuiNameLevel(GuiScreen):
             self._controlList[0].enabled = len(self.__name.strip()) > 1
 
     def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self._width, self._height, 1610941696, -1607454624)
-        self.drawCenteredString(self._fontRenderer, self.__title, self._width / 2, 40, 0xFFFFFF)
-        w = self._width // 2 - 100
-        h = self._height // 2 - 10
+        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+        self.drawCenteredString(self._fontRenderer, self.__title, self.width / 2, 40, 0xFFFFFF)
+        w = self.width // 2 - 100
+        h = self.height // 2 - 10
         self._drawRect(w - 1, h - 1, w + 200 + 1, h + 20 + 1, -6250336)
         self._drawRect(w, h, w + 200, h + 20, -16777216)
         self._fontRenderer.drawStringWithShadow(

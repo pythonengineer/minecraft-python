@@ -21,14 +21,14 @@ class GuiLoadLevel(GuiScreen):
         super().initGui(minecraft, width, height)
 
         for i in range(5):
-            self._controlList.append(GuiButton(i, self._width // 2 - 100,
-                                               self._height // 6 + i * 24, '---'))
+            self._controlList.append(GuiButton(i, self.width // 2 - 100,
+                                               self.height // 6 + i * 24, '---'))
             self._controlList[i].visible = False
 
-        self._controlList.append(GuiButton(5, self._width // 2 - 100,
-                                           self._height // 6 + 120 + 12, 'Load file...'))
-        self._controlList.append(GuiButton(6, self._width // 2 - 100,
-                                           self._height // 6 + 168, 'Cancel'))
+        self._controlList.append(GuiButton(5, self.width // 2 - 100,
+                                           self.height // 6 + 120 + 12, 'Load file...'))
+        self._controlList.append(GuiButton(6, self.width // 2 - 100,
+                                           self.height // 6 + 168, 'Cancel'))
         self._controlList[5].visible = False
 
         self._setLevels(['-', '-', '-', '-', '-'])
@@ -48,9 +48,9 @@ class GuiLoadLevel(GuiScreen):
         self._mc.setIngameFocus()
 
     def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self._width, self._height, 1610941696, -1607454624)
-        self.drawCenteredString(self._fontRenderer, self._title, self._width // 2, 20, 0xFFFFFF)
+        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+        self.drawCenteredString(self._fontRenderer, self._title, self.width // 2, 20, 0xFFFFFF)
         if not self.__loaded:
-            self.drawCenteredString(self._fontRenderer, self.__status, self._width // 2, self._height // 2 - 4, 0xFFFFFF)
+            self.drawCenteredString(self._fontRenderer, self.__status, self.width // 2, self.height // 2 - 4, 0xFFFFFF)
 
         super().drawScreen(xm, ym)

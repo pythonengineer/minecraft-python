@@ -21,6 +21,6 @@ cdef class BlockFluid(Block):
     cpdef int getMaterial(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
-    cdef dropBlockAsItemWithChance(self, World world, float chance)
-    cpdef int quantityDropped(self)
+    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
+    cpdef int quantityDropped(self, random)
     cdef int getRenderBlockPass(self)

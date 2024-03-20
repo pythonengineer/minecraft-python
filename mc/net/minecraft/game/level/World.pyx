@@ -3,7 +3,7 @@
 cimport cython
 
 from libc.stdlib cimport malloc, free
-from libc.math cimport floor, isnan
+from libc.math cimport sqrt, floor, isnan
 
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
 from mc.net.minecraft.game.level.material.Material import Material
@@ -60,8 +60,6 @@ cdef class World:
         self.addend = 1013904223
 
         self.survivalWorld = True
-
-        self.__explosionTime = 0
 
     def __dealloc__(self):
         free(self.__blocks)
@@ -181,13 +179,10 @@ cdef class World:
             depth = self.__heightMap[x + z * self.width]
             depth = 8 if y >= depth else 0
             block = self.__blocks[(y * self.length + z) * self.width + x]
-            if depth < blocks.lightValue[block]:
-                depth = blocks.lightValue[block]
-
             opacity = blocks.lightOpacity[block]
             if opacity > 100:
                 depth = 0
-            else:
+            elif depth < 7:
                 if opacity == 0:
                     opacity = 1
 
@@ -217,6 +212,8 @@ cdef class World:
                     if newDepth > depth:
                         depth = newDepth
 
+            depth = max(depth, blocks.lightValue[block])
+
             if x < x0:
                 x0 = x
             elif x > x1:
@@ -232,22 +229,22 @@ cdef class World:
 
             if (self.__data[(y * self.length + z) * self.width + x] & 255) != depth:
                 self.__data[(y * self.length + z) * self.width + x] = <char>depth
-                if x > 0:
+                if x > 0 and (self.__data[(y * self.length + z) * self.width + (x - 1)] & 255) != depth - 1:
                     self.__floodFillCounters[count] = x - 1 << 20 | y << 10 | z
                     count += 1
-                if x < self.width - 1:
+                if x < self.width - 1 and (self.__data[(y * self.length + z) * self.width + x + 1] & 255) != depth - 1:
                     self.__floodFillCounters[count] = x + 1 << 20 | y << 10 | z
                     count += 1
-                if y > 0:
+                if y > 0 and (self.__data[((y - 1) * self.length + z) * self.width + x] & 255) != depth - 1:
                     self.__floodFillCounters[count] = x << 20 | y - 1 << 10 | z
                     count += 1
-                if y < self.height - 1:
+                if y < self.height - 1 and (self.__data[((y + 1) * self.length + z) * self.width + x] & 255) != depth - 1:
                     self.__floodFillCounters[count] = x << 20 | y + 1 << 10 | z
                     count += 1
-                if z > 0:
+                if z > 0 and (self.__data[(y * self.length + (z - 1)) * self.width + x] & 255) != depth - 1:
                     self.__floodFillCounters[count] = x << 20 | y << 10 | z - 1
                     count += 1
-                if z < self.length - 1:
+                if z < self.length - 1 and (self.__data[(y * self.length + z + 1) * self.width + x] & 255) != depth - 1:
                     self.__floodFillCounters[count] = x << 20 | y << 10 | z + 1
                     count += 1
 
@@ -370,7 +367,7 @@ cdef class World:
 
     cpdef inline bint isHalfLit(self, int x, int y, int z):
         if x >= 0 and y >= 0 and z >= 0 and x < self.width and y < self.height and z < self.length:
-            return self.getBlockLightValue(x, y, z) > 0.5
+            return self.__data[(y * self.length + z) * self.width + x] > 3
         else:
             return True
 
@@ -792,6 +789,47 @@ cdef class World:
         except:
             pass
 
+    def createExplosion(self, entity, float x, float y, float z, float radius):
+        cdef int minX, maxX, minY, maxY, minZ, maxZ, xx, yy, zz, blockId
+        cdef float xd, yd, zd, d
+        cdef Block block
+
+        minX = <int>(x - radius - 1.0)
+        maxX = <int>(x + radius + 1.0)
+        minY = <int>(y - radius - 1.0)
+        maxY = <int>(y + radius + 1.0)
+        minZ = <int>(z - radius - 1.0)
+        maxZ = <int>(z + radius + 1.0)
+
+        for xx in range(minX, maxX):
+            for yy in range(maxY - 1, minY - 1, -1):
+                for zz in range(minZ, maxZ):
+                    xd = xx + 0.5 - x
+                    yd = yy + 0.5 - y
+                    zd = zz + 0.5 - z
+                    if xx >= 0 and yy >= 0 and zz >= 0 and xx < self.width and yy < self.height and \
+                       zz < self.length and xd * xd + yd * yd + zd * zd < radius * radius:
+                        blockId = self.getBlockId(xx, yy, zz)
+                        if blockId > 0:
+                            block = <Block>blocks.blocksList[blockId]
+                            if not block.canDrop():
+                                continue
+
+                            block.dropBlockAsItemWithChance(self, xx, yy, zz, 0.3)
+                            self.setBlockWithNotify(xx, yy, zz, 0)
+                            block.onBlockDestroyedByExplosion(self, xx, yy, zz)
+
+        self.entityMap.entitiesExcludingEntity.clear()
+        entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ,
+                                              self.entityMap.entitiesExcludingEntity)
+        for e in entities:
+            xd = e.posX - x
+            yd = e.posY - y
+            zd = e.posZ - z
+            d = sqrt(xd * xd + yd * yd + zd * zd) / radius
+            if d <= 1.0:
+                e.attackEntityFrom(None, <int>((1.0 - d) * 15.0 + 1.0))
+
     def findSubclassOf(self, cls):
         for entity in self.entityMap.entities:
             if isinstance(entity, cls):
@@ -799,73 +837,3 @@ cdef class World:
 
     def getMapHeight(self, int x, int z):
         return self.__heightMap[x + z * self.width]
-
-    cpdef bint createExplosion(self, int x, int y, int z, int blockType):
-        cdef char blockCenter, b
-        cdef int i, blockIdx, tiles, coord
-        cdef bint firstLoop, sameBlock, sameBlockLeft, sameBlockRight
-
-        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.height or z >= self.length:
-            return False
-
-        blockCenter = self.__blocks[(y * self.length + z) * self.width + x]
-        for i in range(sizeof(self.__coords)):
-            self.__coords[i] = 0
-
-        startTime = time.time_ns()
-        blockIdx = 0 + 1
-        self.__floodedBlocks[0] = x + (z << 10)
-        tiles = 0
-
-        while True:
-            coord = 0
-            firstLoop = True
-            while self.__coords[coord] == 1 or firstLoop:
-                firstLoop = False
-                if blockIdx <= 0:
-                    self.__explosionTime += 1
-                    t = time.time_ns()
-                    print((t - startTime) / 1000000.0, 'ms for', tiles, 'tiles')
-                    return True
-
-                blockIdx -= 1
-                coord = self.__floodedBlocks[blockIdx]
-
-            x = coord % 1024
-            z = coord // 1024
-            while x > 0 and self.__coords[coord - 1] == 0 and \
-                  self.__blocks[(y * self.length + z) * self.width + x - 1] == blockCenter:
-                coord -= 1
-                x -= 1
-
-            sameBlockLeft = False
-            sameBlockRight = False
-            while x < self.width and self.__coords[coord] == 0 and \
-                  self.__blocks[(y * self.length + z) * self.width + x] == blockCenter:
-                if z > 0:
-                    b = self.__blocks[(y * self.length + z - 1) * self.width + x]
-                    sameBlock = self.__coords[coord - 1024] == 0 and b == blockCenter
-                    if sameBlock and not sameBlockLeft:
-                        self.__floodedBlocks[blockIdx] = coord - 1024
-                        blockIdx += 1
-
-                    sameBlockLeft = sameBlock
-
-                if z < self.length - 1:
-                    b = self.__blocks[(y * self.length + z + 1) * self.width + x]
-                    sameBlock = self.__coords[coord + 1024] == 0 and b == blockCenter
-                    if sameBlock and not sameBlockRight:
-                        self.__floodedBlocks[blockIdx] = coord + 1024
-                        blockIdx += 1
-
-                    sameBlockRight = sameBlock
-
-                if self.__explosionTime % 2 == 1:
-                    self.setBlock(x, y, z, blockType)
-
-                self.__coords[coord] = 1
-                tiles += 1
-                coord += 1
-                x += 1
-
-        return True

@@ -38,7 +38,7 @@ cdef class AILiving:
                 if xd * xd + yd * yd + zd * zd < 1024.0:
                     self.__entityAge = 0
                 else:
-                    mob.remove()
+                    mob.setEntityDead()
 
         self.__entityLiving = mob
         if self.__fire > 0:

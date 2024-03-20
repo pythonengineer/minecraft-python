@@ -42,13 +42,11 @@ cdef class WorldRenderer:
     def __cinit__(self):
         self.__t = tessellator
         self.__glRenderList = -1
-        for i in range(2):
-            self.__skipRenderPass[i] = False
         self.isInFrustrum = False
         self.needsUpdate = False
 
     def __init__(self, World world, int posX, int posY, int posZ,
-                 int size, int lists, bint fake=False):
+                 int lists, bint fake=False):
         if fake:
             return
 
@@ -65,10 +63,9 @@ cdef class WorldRenderer:
 
     cpdef updateRenderer(self):
         cdef int layer, x0, y0, z0, xx, yy, zz, x, y, z, blockId
-        cdef bint z8, z9
-        cdef Block block, stone
+        cdef bint nextLayer, renderPass
+        cdef Block block
 
-        stone = blocks.stone
         self.chunksUpdates += 1
 
         x0 = self.__posX
@@ -82,11 +79,11 @@ cdef class WorldRenderer:
             self.__skipRenderPass[layer] = True
 
         for layer in range(2):
-            z8 = False
-            z9 = False
+            nextLayer = False
+            renderPass = False
 
-            gl.glNewList(self.__glRenderList + layer, gl.GL_COMPILE)
             self.__t.startDrawingQuads()
+            gl.glNewList(self.__glRenderList + layer, gl.GL_COMPILE)
 
             for x in range(x0, xx):
                 for y in range(y0, yy):
@@ -95,16 +92,16 @@ cdef class WorldRenderer:
                         if blockId > 0:
                             block = blocks.blocksList[blockId]
                             if block.getRenderBlockPass() != layer:
-                                z8 = True
+                                nextLayer = True
                             else:
-                                z9 |= self.__renderBlocks.renderBlockByRenderType(block, x, y, z)
+                                renderPass |= self.__renderBlocks.renderBlockByRenderType(block, x, y, z)
 
             self.__t.draw()
             gl.glEndList()
-            if z9:
+            if renderPass:
                 self.__skipRenderPass[layer] = False
 
-            if not z8:
+            if not nextLayer:
                 break
 
     cpdef float compare(self, player):

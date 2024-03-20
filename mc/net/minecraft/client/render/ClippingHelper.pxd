@@ -26,10 +26,9 @@ cdef class ClippingHelper:
 
         float[6][4] __frustrum
 
-    cpdef void init(self)
     cdef __normalize(self, int side)
-    cdef bint isBoundingBoxFullyInFrustrum(self, float x0, float y0, float z0,
-                                           float x1, float y1, float z1)
-    cdef bint isBoundingBoxInFrustrum(self, float x0, float y0, float z0,
-                                      float x1, float y1, float z1)
-    cdef bint isVisible(self, aabb)
+    cpdef bint isBoundingBoxFullyInFrustrum(self, float x0, float y0, float z0,
+                                            float x1, float y1, float z1)
+    cpdef bint isBoundingBoxInFrustrum(self, float x0, float y0, float z0,
+                                       float x1, float y1, float z1)
+    cpdef bint isVisible(self, aabb)

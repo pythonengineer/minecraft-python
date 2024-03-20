@@ -41,7 +41,10 @@ class FontRenderer:
 
     def drawStringWithShadow(self, string, x, y, color):
         self.__renderString(string, x + 1, y + 1, color, True)
-        self.__renderString(string, x, y, color)
+        self.drawString(string, x, y, color)
+
+    def drawString(self, string, x, y, color):
+        self.__renderString(string, x, y, color, False)
 
     def __renderString(self, string, x, y, color, darken=False):
         if string is not None:
@@ -94,7 +97,7 @@ class FontRenderer:
 
             t.draw()
 
-    def getWidth(self, string):
+    def getStringWidth(self, string):
         if string is None:
             return 0
         else:

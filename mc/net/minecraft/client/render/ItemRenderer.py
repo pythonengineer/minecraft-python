@@ -4,7 +4,7 @@ from mc.net.minecraft.client.render.Tessellator import tessellator
 class ItemRenderer:
 
     def __init__(self, minecraft):
-        self.minecraft = minecraft
+        self.mc = minecraft
         self.itemToRender = None
         self.equippedProgress = 0.0
         self.prevEquippedProgress = 0.0

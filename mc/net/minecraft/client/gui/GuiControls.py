@@ -13,12 +13,12 @@ class GuiControls(GuiScreen):
     def initGui(self, minecraft, width, height):
         super().initGui(minecraft, width, height)
         for i, binding in enumerate(self.__options.keyBindings):
-            self._controlList.append(GuiSmallButton(i, self._width // 2 - 155 + i % 2 * 160,
-                                                    self._height // 6 + 24 * (i >> 1),
+            self._controlList.append(GuiSmallButton(i, self.width // 2 - 155 + i % 2 * 160,
+                                                    self.height // 6 + 24 * (i >> 1),
                                                     self.__options.setKeyBindingString(i)))
 
-        self._controlList.append(GuiButton(200, self._width // 2 - 100,
-                                           self._height // 6 + 168, 'Done'))
+        self._controlList.append(GuiButton(200, self.width // 2 - 100,
+                                           self.height // 6 + 168, 'Done'))
 
     def _actionPerformed(self, button):
         for i, binding in enumerate(self.__options.keyBindings):
@@ -39,6 +39,6 @@ class GuiControls(GuiScreen):
             super()._keyTyped(key, char, motion)
 
     def drawScreen(self, xm, ym):
-        self._drawGradientRect(0, 0, self._width, self._height, 1610941696, -1607454624)
-        self.drawCenteredString(self._fontRenderer, self.__screenTitle, self._width // 2, 20, 16777215)
+        self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
+        self.drawCenteredString(self._fontRenderer, self.__screenTitle, self.width // 2, 20, 16777215)
         super().drawScreen(xm, ym)

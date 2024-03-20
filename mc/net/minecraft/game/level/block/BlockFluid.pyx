@@ -14,7 +14,7 @@ cdef class BlockFluid(Block):
         if material == Material.lava:
             self.blockIndexInTexture = 30
 
-        self.blocks.isBlockContainer[blockId] = True
+        self.blocks.isBlockFluid[blockId] = True
 
         self._movingId = blockId
         self._stillId = blockId + 1
@@ -126,13 +126,13 @@ cdef class BlockFluid(Block):
     cdef int tickRate(self):
         return 25 if self._material == Material.lava else 5
 
-    cdef dropBlockAsItemWithChance(self, World world, float chance):
+    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
         pass
 
-    def dropBlockAsItem(self, World world):
+    def dropBlockAsItem(self, World world, int x, int y, int z):
         pass
 
-    cpdef int quantityDropped(self):
+    cpdef int quantityDropped(self, random):
         return 0
 
     cdef int getRenderBlockPass(self):

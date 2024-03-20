@@ -1,8 +1,10 @@
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.entity.player.EntityPlayer import EntityPlayer
 from mc.net.minecraft.client.render.EntitySorter import EntitySorter
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.WorldRenderer import WorldRenderer
 from mc.net.minecraft.client.render.RenderManager import RenderManager
+from mc.net.minecraft.client.render.RenderSorter import RenderSorter
 from mc.CompatibilityShims import BufferUtils, getMillis
 from pyglet import gl
 from functools import cmp_to_key
@@ -17,10 +19,10 @@ class RenderGlobal:
         self.mc = minecraft
         self.renderEngine = renderEngine
         self.worldObj = None
-        self.renderIntBuffer = BufferUtils.createIntBuffer(65536)
-        self.worldRenderersToUpdate = []
+        self.__renderIntBuffer = BufferUtils.createIntBuffer(65536)
+        self.__worldRenderersToUpdate = []
         self.__sortedWorldRenderers = []
-        self.worldRenderers = []
+        self.__worldRenderers = []
         self.globalRenderBlocks = None
         self.renderManager = RenderManager()
         self.__chunkBuffer = [0] * 50000
@@ -33,14 +35,14 @@ class RenderGlobal:
         self.__glRenderListBase = gl.glGenLists(4096 << 6 << 1)
 
     def loadRenderers(self):
-        if self.worldRenderers:
-            for chunk in self.worldRenderers:
+        if self.__worldRenderers:
+            for chunk in self.__worldRenderers:
                 chunk.stopRendering()
 
         self.__renderChunksWide = self.worldObj.width // self.CHUNK_SIZE
         self.__renderChunksTall = self.worldObj.height // self.CHUNK_SIZE
         self.__renderChunksDeep = self.worldObj.length // self.CHUNK_SIZE
-        self.worldRenderers = [None] * self.__renderChunksWide * self.__renderChunksTall * self.__renderChunksDeep
+        self.__worldRenderers = [None] * self.__renderChunksWide * self.__renderChunksTall * self.__renderChunksDeep
         self.__sortedWorldRenderers = [None] * self.__renderChunksWide * self.__renderChunksTall * self.__renderChunksDeep
 
         lists = 0
@@ -48,16 +50,16 @@ class RenderGlobal:
             for y in range(self.__renderChunksTall):
                 for z in range(self.__renderChunksDeep):
                     i = (z * self.__renderChunksTall + y) * self.__renderChunksWide + x
-                    self.worldRenderers[i] = WorldRenderer(self.worldObj, x << 4, y << 4,
-                                                           z << 4, RenderGlobal.CHUNK_SIZE,
-                                                           self.__glRenderListBase + lists)
-                    self.__sortedWorldRenderers[i] = self.worldRenderers[i]
+                    self.__worldRenderers[i] = WorldRenderer(self.worldObj, x << 4, y << 4,
+                                                             z << 4,
+                                                             self.__glRenderListBase + lists)
+                    self.__sortedWorldRenderers[i] = self.__worldRenderers[i]
                     lists += 2
 
-        for chunk in self.worldRenderersToUpdate:
+        for chunk in self.__worldRenderersToUpdate:
             chunk.needsUpdate = False
 
-        self.worldRenderersToUpdate.clear()
+        self.__worldRenderersToUpdate.clear()
         gl.glNewList(self.glGenList, gl.GL_COMPILE)
         gl.glColor4f(0.5, 0.5, 0.5, 1.0)
         t = tessellator
@@ -142,6 +144,42 @@ class RenderGlobal:
         gl.glEndList()
         self.markBlocksForUpdate(0, 0, 0, self.worldObj.width, self.worldObj.height, self.worldObj.length)
 
+    def renderEntities(self, vec, clippingHelper, a):
+        player = self.worldObj.getPlayerEntity()
+        self.renderManager.playerViewY = player.prevRotationYaw + (player.rotationYaw - player.prevRotationYaw) * a
+
+        for x in range(self.worldObj.entityMap.xSlot):
+            x0 = (x << 4) - 2
+            x1 = (x + 1 << 4) + 2
+            for y in range(self.worldObj.entityMap.ySlot):
+                y0 = (y << 4) - 2
+                y1 = (y + 1 << 4) + 2
+                for z in range(self.worldObj.entityMap.zSlot):
+                    entities = self.worldObj.entityMap.entityGrid[(z * self.worldObj.entityMap.ySlot + y) * self.worldObj.entityMap.xSlot + x]
+                    if not entities:
+                        continue
+
+                    z0 = (z << 4) - 2
+                    z1 = (z + 1 << 4) + 2
+                    if clippingHelper.isBoundingBoxInFrustrum(x0, y0, z0, x1, y1, z1):
+                        exists = clippingHelper.isBoundingBoxFullyInFrustrum(x0, y0, z0,
+                                                                             x1, y1, z1)
+                        for entity in entities:
+                            if entity.shouldRender(vec) and (exists or clippingHelper.isVisible(entity.boundingBox)):
+                                if not isinstance(entity, EntityPlayer):
+                                    xd = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * a
+                                    yd = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * a
+                                    zd = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * a
+                                    light = self.worldObj.getBlockLightValue(
+                                        int(xd),
+                                        int(yd + entity.bbHeight * 2.0 / 3.0),
+                                        int(zd)
+                                    )
+                                    gl.glColor3f(light, light, light)
+                                    self.renderManager.renderEntityWithPosYaw(
+                                        entity, self.renderEngine, xd, yd, zd, 1.0, a
+                                    )
+
     def sortAndRender(self, player, layer):
         xd = player.posX - self.__prevSortX
         yd = player.posY - self.__prevSortY
@@ -159,14 +197,31 @@ class RenderGlobal:
         for chunk in self.__sortedWorldRenderers:
             startingIndex = chunk.getGLCallListForPass(self.__chunkBuffer, startingIndex, layer)
 
-        self.renderIntBuffer.clear()
-        self.renderIntBuffer.putOffset(self.__chunkBuffer, 0, startingIndex)
-        self.renderIntBuffer.flip()
-        if self.renderIntBuffer.remaining() > 0:
+        self.__renderIntBuffer.clear()
+        self.__renderIntBuffer.putOffset(self.__chunkBuffer, 0, startingIndex)
+        self.__renderIntBuffer.flip()
+        if self.__renderIntBuffer.remaining() > 0:
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderEngine.getTexture('terrain.png'))
-            self.renderIntBuffer.glCallLists(self.renderIntBuffer.capacity(), gl.GL_INT)
+            self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.capacity(), gl.GL_INT)
 
-        return self.renderIntBuffer.remaining()
+        return self.__renderIntBuffer.remaining()
+
+    def renderAllRenderLists(self):
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderEngine.getTexture('terrain.png'))
+        self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.capacity(), gl.GL_INT)
+
+    def updateRenderers(self, player):
+        self.__worldRenderersToUpdate = sorted(
+            self.__worldRenderersToUpdate,
+            key=cmp_to_key(RenderSorter(player).compare)
+        )
+
+        last = len(self.__worldRenderersToUpdate) - 1
+        for i in range(min(len(self.__worldRenderersToUpdate),
+                       RenderGlobal.MAX_REBUILDS_PER_FRAME)):
+            chunk = self.__worldRenderersToUpdate.pop(last - i)
+            chunk.updateRenderer()
+            chunk.needsUpdate = False
 
     def renderClouds(self, partialTicks):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderEngine.getTexture('clouds.png'))
@@ -181,24 +236,22 @@ class RenderGlobal:
             r = nr
 
         t = tessellator
-        f3 = 0.0
-        f4 = 0.5 / 1024
-        f3 = self.worldObj.height + 2.
-        f1 = (self.cloudOffsetX + partialTicks) * f4 * 0.03
-        f5 = 0.0
+        scale = 0.5 / 1024
+        y = self.worldObj.height + 2.
+        u = (self.cloudOffsetX + partialTicks) * scale * 0.03
         t.startDrawingQuads()
         t.setColorOpaque_F(r, g, b)
 
-        for i8 in range(-2048, self.worldObj.width + 2048, 512):
-            for i6 in range(-2048, self.worldObj.height + 2048, 512):
-                t.addVertexWithUV(i8, f3, i6 + 512., i8 * f4 + f1, (i6 + 512.) * f4)
-                t.addVertexWithUV(i8 + 512., f3, i6 + 512., (i8 + 512.) * f4 + f1, (i6 + 512.) * f4)
-                t.addVertexWithUV(i8 + 512., f3, i6, (i8 + 512.) * f4 + f1, i6 * f4)
-                t.addVertexWithUV(i8, f3, i6, i8 * f4 + f1, i6 * f4)
-                t.addVertexWithUV(i8, f3, i6, i8 * f4 + f1, i6 * f4)
-                t.addVertexWithUV(i8 + 512., f3, i6, (i8 + 512.) * f4 + f1, i6 * f4)
-                t.addVertexWithUV(i8 + 512., f3, i6 + 512., (i8 + 512.) * f4 + f1, (i6 + 512.) * f4)
-                t.addVertexWithUV(i8, f3, i6 + 512., i8 * f4 + f1, (i6 + 512.) * f4)
+        for x in range(-2048, self.worldObj.width + 2048, 512):
+            for z in range(-2048, self.worldObj.height + 2048, 512):
+                t.addVertexWithUV(x, y, z + 512., x * scale + u, (z + 512.) * scale)
+                t.addVertexWithUV(x + 512., y, z + 512., (x + 512.) * scale + u, (z + 512.) * scale)
+                t.addVertexWithUV(x + 512., y, z, (x + 512.) * scale + u, z * scale)
+                t.addVertexWithUV(x, y, z, x * scale + u, z * scale)
+                t.addVertexWithUV(x, y, z, x * scale + u, z * scale)
+                t.addVertexWithUV(x + 512., y, z, (x + 512.) * scale + u, z * scale)
+                t.addVertexWithUV(x + 512., y, z + 512., (x + 512.) * scale + u, (z + 512.) * scale)
+                t.addVertexWithUV(x, y, z + 512., x * scale + u, (z + 512.) * scale)
 
         t.draw()
         gl.glDisable(gl.GL_TEXTURE_2D)
@@ -213,14 +266,14 @@ class RenderGlobal:
             r = nr
 
         t.setColorOpaque_F(r, g, b)
-        f3 = self.worldObj.height + 10.
+        y = self.worldObj.height + 10.
 
-        for i7 in range(-2048, self.worldObj.width + 2048, 512):
-            for i8 in range(-2048, self.worldObj.height + 2048, 512):
-                t.addVertex(i7, f3, i8)
-                t.addVertex(i7 + 512., f3, i8)
-                t.addVertex(i7 + 512., f3, i8 + 512.)
-                t.addVertex(i7, f3, i8 + 512.)
+        for x in range(-2048, self.worldObj.width + 2048, 512):
+            for z in range(-2048, self.worldObj.height + 2048, 512):
+                t.addVertex(x, y, z)
+                t.addVertex(x + 512., y, z)
+                t.addVertex(x + 512., y, z + 512.)
+                t.addVertex(x, y, z + 512.)
 
         t.draw()
         gl.glEnable(gl.GL_TEXTURE_2D)
@@ -274,7 +327,11 @@ class RenderGlobal:
             for y in range(y0, y1 + 1):
                 for z in range(z0, z1 + 1):
                     i = (z * self.__renderChunksTall + y) * self.__renderChunksWide + x
-                    chunk = self.worldRenderers[i]
+                    chunk = self.__worldRenderers[i]
                     if not chunk.needsUpdate:
                         chunk.needsUpdate = True
-                        self.worldRenderersToUpdate.append(chunk)
+                        self.__worldRenderersToUpdate.append(chunk)
+
+    def clipRenderersByFrustrum(self, clippingHelper):
+        for chunk in self.__worldRenderers:
+            chunk.updateInFrustrum(clippingHelper)

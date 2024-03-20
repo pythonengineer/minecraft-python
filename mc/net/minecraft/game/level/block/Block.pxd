@@ -9,7 +9,8 @@ cdef class Block:
         public int blockIndexInTexture
         public int blockID
         public float blockParticleGravity
-        int __blockHardness
+        public bint blockIsDropped
+        int __hardness
 
         public float minX
         public float minY
@@ -28,8 +29,10 @@ cdef class Block:
     cpdef int getMaterial(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
-    cpdef int quantityDropped(self)
-    cdef dropBlockAsItemWithChance(self, World world, float chance)
+    cpdef int quantityDropped(self, random)
+    cpdef int idDropped(self)
+    cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
+    cdef bint canDrop(self)
     cdef collisionRayTrace(self, int x, int y, int z, v0, v1)
     cdef bint __isVecInsideYZBounds(self, vec)
     cdef bint __isVecInsideXZBounds(self, vec)

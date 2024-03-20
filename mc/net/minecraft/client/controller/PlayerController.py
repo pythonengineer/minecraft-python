@@ -5,7 +5,6 @@ class PlayerController:
 
     def __init__(self, mc):
         self._mc = mc
-        self.isInTestMode = False
 
     def onWorldChange(self, world):
         world.multiplayerWorld = True
@@ -41,7 +40,7 @@ class PlayerController:
         if block and change:
             block.onBlockDestroyedByPlayer(self._mc.theWorld, x, y, z)
 
-    def sendBlockRemoving(self, x, y, z, sideHit):
+    def sendBlockRemoving(self, x, y, z):
         pass
 
     def resetBlockRemoving(self):
@@ -52,9 +51,6 @@ class PlayerController:
 
     def getBlockReachDistance(self):
         return 5.0
-
-    def sendUseItem(self, player, quantity):
-        return False
 
     def preparePlayer(self, player):
         pass

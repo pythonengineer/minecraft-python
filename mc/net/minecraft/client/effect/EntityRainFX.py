@@ -30,11 +30,11 @@ class EntityRainFX(EntityFX):
         self._motionZ1 *= 0.98
         self._particleMaxAge -= 1
         if self._particleMaxAge - 1 <= 0:
-            self.remove()
+            self.setEntityDead()
 
         if self.onGround:
             if random.random() < 0.5:
-                self.remove()
+                self.setEntityDead()
 
             self._motionX1 *= 0.7
             self._motionZ1 *= 0.7

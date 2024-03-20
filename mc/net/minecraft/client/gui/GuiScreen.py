@@ -57,13 +57,13 @@ class GuiScreen(Gui):
     def initGui(self, minecraft, width, height):
         self._mc = minecraft
         self._fontRenderer = minecraft.fontRenderer
-        self._width = width
-        self._height = height
+        self.width = width
+        self.height = height
         self._controlList = []
 
     def handleMouseInput(self, button):
-        xm = self._mc.mouseX * self._width // self._mc.width
-        ym = self._height - self._mc.mouseY * self._height // self._mc.height - 1
+        xm = self._mc.mouseX * self.width // self._mc.width
+        ym = self.height - self._mc.mouseY * self.height // self._mc.height - 1
         self._mouseClicked(xm, ym, button)
 
     def handleKeyboardEvent(self, key=None, char=None, motion=None):
@@ -72,5 +72,5 @@ class GuiScreen(Gui):
     def updateScreen(self):
         pass
 
-    def onClose(self):
+    def onGuiClose(self):
         pass

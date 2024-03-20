@@ -14,6 +14,7 @@ class Session:
                      blocks.clothDarkGray, blocks.clothGray, blocks.clothWhite,
                      blocks.oreCoal, blocks.oreIron, blocks.oreGold, blocks.ironBlock,
                      blocks.goldBlock, blocks.bookShelf, blocks.tnt, blocks.obsidian)
+    print(len(allowedBlocks))
 
     def __init__(self, username):
         self.username = username
