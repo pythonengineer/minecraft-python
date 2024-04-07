@@ -1,13 +1,12 @@
-from mc.net.minecraft.game.level.block.BlockFlower import BlockFlower
+from mc.net.minecraft.game.level.block.BlockPlants import BlockPlants
 
 import math
 
-class BlockSapling(BlockFlower):
+class BlockSapling(BlockPlants):
 
-    def __init__(self, blocks, blockId):
+    def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, 6, 15)
-        b = 0.4
-        self._setBlockBounds(0.5 - b, 0.0, 0.5 - b, b + 0.5, b * 2.0, b + 0.5)
+        self._setBlockBounds(10.0 * 0.01, 0.0, 10.0 * 0.01, 0.9, 0.8, 0.9)
 
     def updateTick(self, world, x, y, z, random):
         below = world.getBlockId(x, y - 1, z)

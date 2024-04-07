@@ -2,7 +2,7 @@ from mc.net.minecraft.game.level.block.Block import Block
 
 class BlockSponge(Block):
 
-    def __init__(self, blocks):
+    def __init__(self, blocks, blockId):
         super().__init__(blocks, 19)
         self.blockIndexInTexture = 48
 

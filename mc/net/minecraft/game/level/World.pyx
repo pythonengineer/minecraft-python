@@ -48,7 +48,7 @@ cdef class World:
         self.rotSpawn = 0.0
 
         self.__worldAccesses = set()
-        self.__ticksList = set()
+        self.__tickList = set()
 
         self.rand = random.Random()
         self.__randId = self.rand.getrandbits(31)
@@ -78,7 +78,7 @@ cdef class World:
         self.__updateSkylight(0, 0, self.width, self.length)
         self.rand = random.Random()
         self.__randId = self.rand.getrandbits(31)
-        self.__ticksList = set()
+        self.__tickList = set()
 
         if self.waterLevel == 0:
             self.waterLevel = self.height // 2
@@ -95,7 +95,7 @@ cdef class World:
         if not self.entityMap:
             self.entityMap = EntityMap(self.width, self.height, self.length)
 
-    def generate(self, int w, int h, int d, bytearray blocks):
+    def setLevel(self, int w, int h, int d, bytearray blocks):
         self.width = w
         self.height = h
         self.length = d
@@ -110,10 +110,10 @@ cdef class World:
             self.__heightMap[i] = h
         self.__updateSkylight(0, 0, w, d)
 
-        for renderGlobal in self.__worldAccesses:
-            renderGlobal.loadRenderers()
+        for worldAccess in self.__worldAccesses:
+            worldAccess.loadRenderers()
 
-        self.__ticksList.clear()
+        self.__tickList.clear()
         self.findSpawn()
         self.load()
         gc.collect()
@@ -248,18 +248,17 @@ cdef class World:
                     self.__floodFillCounters[count] = x << 20 | y << 10 | z + 1
                     count += 1
 
-        for renderGlobal in self.__worldAccesses:
-            renderGlobal.markBlocksForUpdate(x0 - 1, y0 - 1, z0 - 1,
-                                             x1 + 1, y1 + 1, z1 + 1)
+        for worldAccess in self.__worldAccesses:
+            worldAccess.markBlockRangeNeedsUpdate(x0, y0, z0, x1, y1, z1)
 
-    def addRenderer(self, renderGlobal):
-        self.__worldAccesses.add(renderGlobal)
+    def addWorldAccess(self, worldAccess):
+        self.__worldAccesses.add(worldAccess)
 
     def finalize(self):
         pass
 
-    def removeRenderer(self, renderGlobal):
-        self.__worldAccesses.remove(renderGlobal)
+    def removeWorldAccess(self, worldAccess):
+        self.__worldAccesses.remove(worldAccess)
 
     def getCollidingBoundingBoxes(self, AxisAlignedBB box):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
@@ -326,9 +325,8 @@ cdef class World:
         self.__updateSkylight(x, z, 1, 1)
         self.__updateLight(x, y, z, x + 1, y + 1, z + 1)
 
-        for renderGlobal in self.__worldAccesses:
-            renderGlobal.markBlocksForUpdate(x - 1, y - 1, z - 1,
-                                             x + 1, y + 1, z + 1)
+        for worldAccess in self.__worldAccesses:
+            worldAccess.markBlockAndNeighborsNeedsUpdate(x, y, z)
 
         return True
 
@@ -382,7 +380,7 @@ cdef class World:
         return False if block is None else block.isOpaqueCube()
 
     cpdef void updateEntities(self):
-        self.entityMap.tickAll()
+        self.entityMap.updateEntities()
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
@@ -406,12 +404,12 @@ cdef class World:
         w = self.width - 1
         h = self.height - 1
 
-        ticks = min(len(self.__ticksList), self.__maxTicks)
+        ticks = min(len(self.__tickList), self.__maxTicks)
         for i in range(ticks):
-            posType = self.__ticksList.pop()
+            posType = self.__tickList.pop()
             if posType.scheduledTime > 0:
                 posType.scheduledTime -= 1
-                self.__ticksList.add(posType)
+                self.__tickList.add(posType)
             else:
                 b = self.__blocks[(posType.yCoord * self.length + posType.zCoord) * self.width + posType.xCoord]
                 if self.__isInLevelBounds(posType.xCoord, posType.yCoord, posType.zCoord) and \
@@ -435,7 +433,7 @@ cdef class World:
 
     def entitiesInLevelList(self, cls):
         count = 0
-        for obj in self.entityMap.entities:
+        for obj in self.entityMap.all:
             if isinstance(obj, cls):
                 count += 1
 
@@ -447,7 +445,7 @@ cdef class World:
     cpdef inline float getGroundLevel(self):
         return self.waterLevel - 2.0
 
-    cpdef inline float rgetGroundLevel(self):
+    cpdef inline float getWaterLevel(self):
         return self.waterLevel
 
     cdef bint getIsAnyLiquid(self, AxisAlignedBB box):
@@ -477,7 +475,7 @@ cdef class World:
             for y in range(minY, maxY):
                 for z in range(minZ, maxZ):
                     block = blocks.blocksList[self.getBlockId(x, y, z)]
-                    if block and block.getMaterial() != Material.air:
+                    if block and block.getBlockMaterial() != Material.air:
                         return True
 
         return False
@@ -509,7 +507,7 @@ cdef class World:
             for y in range(minY, maxY):
                 for z in range(minZ, maxZ):
                     block = blocks.blocksList[self.getBlockId(x, y, z)]
-                    if block and block.getMaterial() == material:
+                    if block and block.getBlockMaterial() == material:
                         return True
 
         return False
@@ -523,7 +521,7 @@ cdef class World:
             tickDelay = (<Block>blocks.blocksList[blockType]).tickRate()
             posType.scheduledTime = tickDelay
 
-        self.__ticksList.add(posType)
+        self.__tickList.add(posType)
 
     cpdef bint checkIfAABBIsClear(self, AxisAlignedBB aabb):
         return len(self.entityMap.getEntitiesWithinAABBExcludingEntity(None, aabb)) == 0
@@ -531,26 +529,26 @@ cdef class World:
     def getEntitiesWithinAABBExcludingEntity(self, entity, AxisAlignedBB aabb):
         return self.entityMap.getEntitiesWithinAABBExcludingEntity(entity, aabb)
 
-    cpdef inline bint isSolid(self, int x, int y, int z, int offset):
-        if self.__isBlockOpaque(x - offset, y - offset, z - offset):
+    cpdef inline bint isSolid(self, float x, float y, float z, float offset):
+        if self.__isBlockOpaque(x - 0.1, y - 0.1, z - 0.1):
             return True
-        elif self.__isBlockOpaque(x - offset, y - offset, z + offset):
+        elif self.__isBlockOpaque(x - 0.1, y - 0.1, z + 0.1):
             return True
-        elif self.__isBlockOpaque(x - offset, y + offset, z - offset):
+        elif self.__isBlockOpaque(x - 0.1, y + 0.1, z - 0.1):
             return True
-        elif self.__isBlockOpaque(x - offset, y + offset, z + offset):
+        elif self.__isBlockOpaque(x - 0.1, y + 0.1, z + 0.1):
             return True
-        elif self.__isBlockOpaque(x + offset, y - offset, z - offset):
+        elif self.__isBlockOpaque(x + 0.1, y - 0.1, z - 0.1):
             return True
-        elif self.__isBlockOpaque(x + offset, y - offset, z + offset):
+        elif self.__isBlockOpaque(x + 0.1, y - 0.1, z + 0.1):
             return True
-        elif self.__isBlockOpaque(x + offset, y + offset, z - offset):
+        elif self.__isBlockOpaque(x + 0.1, y + 0.1, z - 0.1):
             return True
         else:
-            return self.__isBlockOpaque(x + offset, y + offset, z + offset)
+            return self.__isBlockOpaque(x + 0.1, y + 0.1, z + 0.1)
 
-    cdef inline bint __isBlockOpaque(self, int x, int y, int z):
-        cdef int block = self.getBlockId(int(x), int(y), int(z))
+    cdef inline bint __isBlockOpaque(self, float x, float y, float z):
+        cdef int block = self.getBlockId(<int>x, <int>y, <int>z)
         return block > 0 and (<Block>blocks.blocksList[block]).isOpaqueCube()
 
     cpdef __getFirstUncoveredBlock(self, int x, int z):
@@ -558,7 +556,7 @@ cdef class World:
         y = self.height
         blockId = self.getBlockId(x, y - 1, z)
         while (blockId == 0 or \
-               (<Block>blocks.blocksList[blockId]).getMaterial() != Material.air) and y > 0:
+               (<Block>blocks.blocksList[blockId]).getBlockMaterial() != Material.air) and y > 0:
             y -= 1
             blockId = self.getBlockId(x, y - 1, z)
 
@@ -581,11 +579,11 @@ cdef class World:
         if block == 0:
             return Material.air
 
-        return (<Block>blocks.blocksList[block]).getMaterial()
+        return (<Block>blocks.blocksList[block]).getBlockMaterial()
 
     cpdef inline bint isWater(self, int x, int y, int z):
         cdef int block = self.getBlockId(x, y, z)
-        return block > 0 and (<Block>blocks.blocksList[block]).getMaterial() == Material.water
+        return block > 0 and (<Block>blocks.blocksList[block]).getBlockMaterial() == Material.water
 
     @cython.cdivision(True)
     def rayTraceBlocks(self, vec1, vec2):
@@ -700,7 +698,7 @@ cdef class World:
             blockId = self.getBlockId(x1, y1, z1)
             if blockId > 0:
                 block = blocks.blocksList[blockId]
-                if block.getMaterial() == Material.air:
+                if block.getBlockMaterial() == Material.air:
                     if block.renderAsNormalBlock():
                         hitResult = block.collisionRayTrace(x1, y1, z1, vec1, vec2)
                         if hitResult:
@@ -769,37 +767,27 @@ cdef class World:
 
         return True
 
-    def getPlayerEntity(self):
+    def getPlayer(self):
         return self.playerEntity
 
     def spawnEntityInWorld(self, entity):
-        self.entityMap.entities.append(entity)
-        self.entityMap.slot0.init(entity.posX, entity.posY, entity.posZ).add(entity)
-        entity.lastTickPosX = entity.posX
-        entity.lastTickPosY = entity.posY
-        entity.lastTickPosZ = entity.posZ
-        entity.worldObj = self
+        self.entityMap.add(entity)
+        entity.setWorld(self)
 
     def releaseEntitySkin(self, entity):
-        self.entityMap.slot0.init(entity.lastTickPosX,
-                                  entity.lastTickPosY,
-                                  entity.lastTickPosZ).remove(entity)
-        try:
-            self.entityMap.entities.remove(entity)
-        except:
-            pass
+        self.entityMap.remove(entity)
 
     def createExplosion(self, entity, float x, float y, float z, float radius):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, xx, yy, zz, blockId
         cdef float xd, yd, zd, d
         cdef Block block
 
-        minX = <int>(x - radius - 1.0)
-        maxX = <int>(x + radius + 1.0)
-        minY = <int>(y - radius - 1.0)
-        maxY = <int>(y + radius + 1.0)
-        minZ = <int>(z - radius - 1.0)
-        maxZ = <int>(z + radius + 1.0)
+        minX = <int>(x - 4.0 - 1.0)
+        maxX = <int>(x + 4.0 + 1.0)
+        minY = <int>(y - 4.0 - 1.0)
+        maxY = <int>(y + 4.0 + 1.0)
+        minZ = <int>(z - 4.0 - 1.0)
+        maxZ = <int>(z + 4.0 + 1.0)
 
         for xx in range(minX, maxX):
             for yy in range(maxY - 1, minY - 1, -1):
@@ -808,32 +796,42 @@ cdef class World:
                     yd = yy + 0.5 - y
                     zd = zz + 0.5 - z
                     if xx >= 0 and yy >= 0 and zz >= 0 and xx < self.width and yy < self.height and \
-                       zz < self.length and xd * xd + yd * yd + zd * zd < radius * radius:
+                       zz < self.length and xd * xd + yd * yd + zd * zd < 16.0:
                         blockId = self.getBlockId(xx, yy, zz)
                         if blockId > 0:
                             block = <Block>blocks.blocksList[blockId]
-                            if not block.canDrop():
+                            if not block.isExplosionResistant():
                                 continue
 
                             block.dropBlockAsItemWithChance(self, xx, yy, zz, 0.3)
                             self.setBlockWithNotify(xx, yy, zz, 0)
                             block.onBlockDestroyedByExplosion(self, xx, yy, zz)
 
-        self.entityMap.entitiesExcludingEntity.clear()
-        entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ,
-                                              self.entityMap.entitiesExcludingEntity)
+        entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ)
         for e in entities:
             xd = e.posX - x
             yd = e.posY - y
             zd = e.posZ - z
-            d = sqrt(xd * xd + yd * yd + zd * zd) / radius
+            d = sqrt(xd * xd + yd * yd + zd * zd) / 4.0
             if d <= 1.0:
                 e.attackEntityFrom(None, <int>((1.0 - d) * 15.0 + 1.0))
 
     def findSubclassOf(self, cls):
-        for entity in self.entityMap.entities:
+        for entity in self.entityMap.all:
             if isinstance(entity, cls):
                 return entity
 
     def getMapHeight(self, int x, int z):
         return self.__heightMap[x + z * self.width]
+
+    def playSoundEffect(self, entity, name, float volume, float pitch):
+        cdef float xd, yd, zd
+        for worldAccess in self.__worldAccesses:
+            xd = self.playerEntity.posX - entity.posX
+            yd = self.playerEntity.posY - entity.posY
+            zd = self.playerEntity.posZ - entity.posZ
+            if xd * xd + yd * yd + zd * zd < 256.0:
+                worldAccess.playSound(
+                    name, entity.posX, entity.posY - entity.yOffset,
+                    entity.posZ, volume, pitch
+                )

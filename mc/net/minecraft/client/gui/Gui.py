@@ -56,13 +56,12 @@ class Gui:
     def drawString(font, string, x, y, color):
         font.drawStringWithShadow(string, x, y, color)
 
-    def drawTexturedModal(self, i1, i2, i3, i4, i5, i6):
-        f7 = 0.00390625
-        f8 = 0.00390625
+    def drawTexturedModalRect(self, x, y, xOffset, yOffset, w, h):
+        f = 0.00390625
         t = tessellator
         t.startDrawingQuads()
-        t.addVertexWithUV(i1, i2 + i6, self._zLevel, i3 * f7, (i4 + i6) * f8)
-        t.addVertexWithUV(i1 + i5, i2 + i6, self._zLevel, (i3 + i5) * f7, (i4 + i6) * f8)
-        t.addVertexWithUV(i1 + i5, i2, self._zLevel, (i3 + i5) * f7, i4 * f8)
-        t.addVertexWithUV(i1, i2, self._zLevel, i3 * f7, i4 * f8)
+        t.addVertexWithUV(x, y + h, self._zLevel, xOffset * f, (yOffset + h) * f)
+        t.addVertexWithUV(x + w, y + h, self._zLevel, (xOffset + w) * f, (yOffset + h) * f)
+        t.addVertexWithUV(x + w, y, self._zLevel, (xOffset + w) * f, yOffset * f)
+        t.addVertexWithUV(x, y, self._zLevel, xOffset * f, yOffset * f)
         t.draw()

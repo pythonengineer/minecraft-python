@@ -1,5 +1,5 @@
 from mc.net.minecraft.client.gui.GuiLoadLevel import GuiLoadLevel
-from mc.net.minecraft.client.gui.GuiNameLevel import GuiNameLevel
+from mc.net.minecraft.client.gui.GuiSaveBase import GuiSaveBase
 
 class GuiSaveLevel(GuiLoadLevel):
 
@@ -17,4 +17,4 @@ class GuiSaveLevel(GuiLoadLevel):
             self._controlList[i].visible = True
 
     def _openLevel(self, i):
-        self._mc.displayGuiScreen(GuiNameLevel(self, self._controlList[i].displayString, i))
+        self._mc.displayGuiScreen(GuiSaveBase(self, self._controlList[i].displayString, i))

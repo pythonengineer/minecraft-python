@@ -29,8 +29,8 @@ class GuiGameOver(GuiScreen):
         self._drawGradientRect(0, 0, self.width, self.height, 0x60500000, -1602211792)
         gl.glPushMatrix()
         gl.glScalef(2.0, 2.0, 2.0)
-        self.drawCenteredString(self._fontRenderer, 'Game over!', self.width // 2 // 2, 30, 0xFFFFFF)
+        self.drawCenteredString(self._font, 'Game over!', self.width // 2 // 2, 30, 0xFFFFFF)
         gl.glPopMatrix()
-        self.drawCenteredString(self._fontRenderer, 'Score: &e' + str(self._mc.thePlayer.getScore()),
+        self.drawCenteredString(self._font, 'Score: &e' + str(self._mc.thePlayer.getScore()),
                                 self.width // 2, 100, 0xFFFFFF)
         super().drawScreen(xm, ym)

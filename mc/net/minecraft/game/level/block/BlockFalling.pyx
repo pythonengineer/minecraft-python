@@ -4,7 +4,7 @@ from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.material.Material cimport Material
 from mc.net.minecraft.game.level.World cimport World
 
-cdef class BlockSand(Block):
+cdef class BlockFalling(Block):
 
     def onBlockPlaced(self, World world, int x, int y, int z):
         self.__fall(world, x, y, z)
@@ -22,13 +22,13 @@ cdef class BlockSand(Block):
             if blockId == 0:
                 stop = True
             else:
-                material = self.blocks.blocksList[blockId].getMaterial()
+                material = self.blocks.blocksList[blockId].getBlockMaterial()
                 stop = True if material == Material.water else material == Material.lava
 
             if not stop or newY <= 0:
                 if newY != y:
                     blockId = world.getBlockId(x, newY, z)
-                    if blockId > 0 and self.blocks.blocksList[blockId].getMaterial() != Material.air:
+                    if blockId > 0 and self.blocks.blocksList[blockId].getBlockMaterial() != Material.air:
                         world.setTileNoUpdate(x, newY, z, 0)
 
                     world.swap(x, y, z, x, newY, z)

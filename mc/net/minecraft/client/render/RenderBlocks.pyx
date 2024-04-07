@@ -11,13 +11,23 @@ cdef class RenderBlocks:
     def __init__(self, Tessellator t, World world=None):
         self.__tessellator = t
         self.__blockAccess = world
-        self.overrideBlockTexture = -1
-        self.flipTexture = False
+        self.__overrideBlockTexture = -1
+        self.__renderSide = False
+
+    def renderBlockAllFacesHit(self, Block block, int x, int y, int z, int tex):
+        self.__overrideBlockTexture = tex
+        self.renderBlockByRenderType(block, x, y, z)
+        self.__overrideBlockTexture = -1
+
+    def renderBlockAllFaces(self, Block block, int x, int y, int z):
+        self.__renderSide = True
+        self.renderBlockByRenderType(block, x, y, z)
+        self.__renderSide = False
 
     cpdef bint renderBlockByRenderType(self, Block block, int x, int y, int z):
         cdef int renderType
-        cdef float b, offset, color1, color2, color3
         cdef bint layerOk
+        cdef float b
 
         renderType = block.getRenderType()
         if renderType != 0:
@@ -29,16 +39,14 @@ cdef class RenderBlocks:
             elif renderType == 2:
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z)
                 self.__tessellator.setColorOpaque_F(b, b, b)
-                offset = 0.5
-                b = 0.2
                 if self.__blockAccess.isBlockNormalCube(x - 1, y, z):
-                    self.__renderBlockTorch(block, x, y + b, z, -offset, 0.0)
+                    self.__renderBlockTorch(block, x, y + 0.2, z, -0.5, 0.0)
                 elif self.__blockAccess.isBlockNormalCube(x + 1, y, z):
-                    self.__renderBlockTorch(block, x, y + b, z, offset, 0.0)
+                    self.__renderBlockTorch(block, x, y + 0.2, z, 0.5, 0.0)
                 elif self.__blockAccess.isBlockNormalCube(x, y, z - 1):
-                    self.__renderBlockTorch(block, x, y + b, z, 0.0, -offset)
+                    self.__renderBlockTorch(block, x, y + 0.2, z, 0.0, -0.5)
                 elif self.__blockAccess.isBlockNormalCube(x, y, z + 1):
-                    self.__renderBlockTorch(block, x, y + b, z, 0.0, offset)
+                    self.__renderBlockTorch(block, x, y + 0.2, z, 0.0, 0.5)
                 else:
                     self.__renderBlockTorch(block, x, y, z, 0.0, 0.0)
 
@@ -47,37 +55,34 @@ cdef class RenderBlocks:
                 return False
         else:
             layerOk = False
-            color1 = 0.5
-            color2 = 0.8
-            color3 = 0.6
-            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y - 1, z, 0):
+            if self.__renderSide or block.shouldSideBeRendered(self.__blockAccess, x, y - 1, z, 0):
                 b = block.getBlockBrightness(self.__blockAccess, x, y - 1, z)
-                self.__tessellator.setColorOpaque_F(color1 * b, color1 * b, color1 * b)
+                self.__tessellator.setColorOpaque_F(0.5 * b, 0.5 * b, 0.5 * b)
                 self.__renderBlockBottom(block, x, y, z, block.getBlockTexture(0))
                 layerOk = True
-            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y + 1, z, 1):
+            if self.__renderSide or block.shouldSideBeRendered(self.__blockAccess, x, y + 1, z, 1):
                 b = block.getBlockBrightness(self.__blockAccess, x, y + 1, z)
                 self.__tessellator.setColorOpaque_F(b, b, b)
                 self.__renderBlockTop(block, x, y, z, block.getBlockTexture(1))
                 layerOk = True
-            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z - 1, 2):
+            if self.__renderSide or block.shouldSideBeRendered(self.__blockAccess, x, y, z - 1, 2):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z - 1)
-                self.__tessellator.setColorOpaque_F(color2 * b, color2 * b, color2 * b)
+                self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
                 self.__renderBlockNorth(block, x, y, z, block.getBlockTexture(2))
                 layerOk = True
-            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z + 1, 3):
+            if self.__renderSide or block.shouldSideBeRendered(self.__blockAccess, x, y, z + 1, 3):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z + 1)
-                self.__tessellator.setColorOpaque_F(color2 * b, color2 * b, color2 * b)
+                self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
                 self.__renderBlockSouth(block, x, y, z, block.getBlockTexture(3))
                 layerOk = True
-            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x - 1, y, z, 4):
+            if self.__renderSide or block.shouldSideBeRendered(self.__blockAccess, x - 1, y, z, 4):
                 b = block.getBlockBrightness(self.__blockAccess, x - 1, y, z)
-                self.__tessellator.setColorOpaque_F(color3 * b, color3 * b, color3 * b)
+                self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
                 self.__renderBlockWest(block, x, y, z, block.getBlockTexture(4))
                 layerOk = True
-            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x + 1, y, z, 5):
+            if self.__renderSide or block.shouldSideBeRendered(self.__blockAccess, x + 1, y, z, 5):
                 b = block.getBlockBrightness(self.__blockAccess, x + 1, y, z)
-                self.__tessellator.setColorOpaque_F(color3 * b, color3 * b, color3 * b)
+                self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
                 self.__renderBlockEast(block, x, y, z, block.getBlockTexture(5))
                 layerOk = True
 
@@ -89,8 +94,8 @@ cdef class RenderBlocks:
         cdef float u0, u1, v0, v1, x0, x1, z0, z1, rot
 
         tex = block.getBlockTexture(0)
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -127,8 +132,8 @@ cdef class RenderBlocks:
         cdef float u0, u1, v0, v1, x1, z1
 
         tex = block.getBlockTexture(0)
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -161,8 +166,8 @@ cdef class RenderBlocks:
         cdef int xt
         cdef float u0, u1, v0, v1, x0, x1, y0, z0, z1
 
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -184,8 +189,8 @@ cdef class RenderBlocks:
         cdef int xt
         cdef float u0, u1, v0, v1, x0, x1, y1, z0, z1
 
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -207,8 +212,8 @@ cdef class RenderBlocks:
         cdef int xt
         cdef float u0, u1, v0, v1, x0, x1, y0, y1, z0
 
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -237,8 +242,8 @@ cdef class RenderBlocks:
         cdef int xt
         cdef float u0, u1, v0, v1, x0, x1, y0, y1, z1
 
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -267,8 +272,8 @@ cdef class RenderBlocks:
         cdef int xt
         cdef float u0, u1, v0, v1, x0, y0, y1, z0, z1
 
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240
@@ -297,8 +302,8 @@ cdef class RenderBlocks:
         cdef int xt
         cdef float u0, u1, v0, v1, x1, y0, y1, z0, z1
 
-        if self.overrideBlockTexture >= 0:
-            tex = self.overrideBlockTexture
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
 
         xt = (tex & 15) << 4
         tex &= 240

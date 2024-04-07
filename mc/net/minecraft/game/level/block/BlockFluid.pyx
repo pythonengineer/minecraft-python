@@ -19,10 +19,7 @@ cdef class BlockFluid(Block):
         self._movingId = blockId
         self._stillId = blockId + 1
 
-        cdef float b = 0.01
-        cdef float dd = 0.1
-        self._setBlockBounds(b + 0.0, 0.0 - dd + b, b + 0.0,
-                             b + 1.0, 1.0 - dd + b, b + 1.0)
+        self._setBlockBounds(0.01, -0.09, 0.01, 1.01, 0.90999997, 1.01)
         self._setTickOnLoad(True)
 
     cpdef int getBlockTexture(self, int face):
@@ -108,14 +105,14 @@ cdef class BlockFluid(Block):
     cpdef bint isOpaqueCube(self):
         return False
 
-    cpdef int getMaterial(self):
+    cpdef int getBlockMaterial(self):
         return self._material
 
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
         cdef int material
 
         if blockType != 0:
-            material = (<Block>self.blocks.blocksList[blockType]).getMaterial()
+            material = (<Block>self.blocks.blocksList[blockType]).getBlockMaterial()
             if self._material == Material.water and material == Material.lava or \
                material == Material.water and self._material == Material.lava:
                 world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)

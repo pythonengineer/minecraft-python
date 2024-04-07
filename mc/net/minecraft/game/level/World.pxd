@@ -26,7 +26,7 @@ cdef class World:
         public float rotSpawn
 
         set __worldAccesses
-        set __ticksList
+        set __tickList
 
         int* __heightMap
 
@@ -69,13 +69,13 @@ cdef class World:
     cpdef inline bint isBlockNormalCube(self, int x, int y, int z)
     cdef inline bint __isInLevelBounds(self, int x, int y, int z)
     cpdef inline float getGroundLevel(self)
-    cpdef inline float rgetGroundLevel(self)
+    cpdef inline float getWaterLevel(self)
     cdef bint getIsAnyLiquid(self, AxisAlignedBB box)
     cdef bint handleMaterialAcceleration(self, AxisAlignedBB box, int liquidId)
     cpdef inline scheduleBlockUpdate(self, int x, int y, int z, int blockType)
     cpdef bint checkIfAABBIsClear(self, AxisAlignedBB aabb)
-    cpdef inline bint isSolid(self, int x, int y, int z, int f4)
-    cdef inline bint __isBlockOpaque(self, int x, int y, int z)
+    cpdef inline bint isSolid(self, float x, float y, float z, float offset)
+    cdef inline bint __isBlockOpaque(self, float x, float y, float z)
     cpdef __getFirstUncoveredBlock(self, int x, int z)
     cpdef setSpawnLocation(self, int x, int y, int z, float rotationYaw)
     cpdef inline float getBlockLightValue(self, int x, int y, int z)

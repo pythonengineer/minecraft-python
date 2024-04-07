@@ -7,40 +7,43 @@ import ctypes
 class RenderEngine:
 
     def __init__(self, options):
-        self.options = options
-        self.textureMap = {}
-        self.textureContentsMap = {}
+        self.__options = options
+        self.__textureMap = {}
+        self.__textureContentsMap = {}
         self.__singleIntBuffer = gl.GLuint(1)
-        self.imageData = BufferUtils.createByteBuffer(262144)
-        self.textureList = []
-        self.clampTexture = False
+        self.__imageData = BufferUtils.createByteBuffer(262144)
+        self.__textureList = []
+        self.__clampTexture = False
+
+    def setClampTexture(self, clampTexture):
+        self.__clampTexture = clampTexture
 
     def getTexture(self, resourceName):
-        if resourceName in self.textureMap:
-            return self.textureMap[resourceName]
+        if resourceName in self.__textureMap:
+            return self.__textureMap[resourceName]
         else:
             gl.glGenTextures(1, ctypes.byref(self.__singleIntBuffer))
             id_ = self.__singleIntBuffer.value
             if resourceName.startswith('##'):
-                self.setupTexture(RenderEngine.unwrapImageByColumns(Resources.textures[resourceName]), id_)
+                self.__setupTexture(RenderEngine.__unwrapImageByColumns(Resources.textures[resourceName]), id_)
             else:
-                self.setupTexture(Resources.textures[resourceName], id_)
+                self.__setupTexture(Resources.textures[resourceName], id_)
 
-            self.textureMap[resourceName] = id_
+            self.__textureMap[resourceName] = id_
             return id_
 
     def getTextureImg(self, img):
         gl.glGenTextures(1, ctypes.byref(self.__singleIntBuffer))
         id_ = self.__singleIntBuffer.value
-        self.setupTexture(img, id_)
-        self.textureContentsMap[id_] = img
+        self.__setupTexture(img, id_)
+        self.__textureContentsMap[id_] = img
         return id_
 
     @staticmethod
-    def unwrapImageByColumns(img):
+    def __unwrapImageByColumns(img):
         return img
 
-    def setupTexture(self, img, id_):
+    def __setupTexture(self, img, id_):
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
@@ -56,7 +59,7 @@ class RenderEngine:
             w = img[0]
             h = img[1]
 
-        self.imageData.clear()
+        self.__imageData.clear()
 
         if not isinstance(img, tuple):
             argb = bytearray(w * h << 2)
@@ -75,7 +78,7 @@ class RenderEngine:
                 r = rgb[i] >> 16 & 255
                 g = rgb[i] >> 8 & 255
                 b = rgb[i] & 255
-                if self.options.anaglyph:
+                if self.__options.anaglyph:
                     nr = (r * 30 + g * 59 + b * 11) // 100
                     g = (r * 30 + g * 70) // 100
                     b = (r * 30 + b * 70) // 100
@@ -86,11 +89,11 @@ class RenderEngine:
                 argb[(i << 2) + 2] = b
                 argb[(i << 2) + 3] = a
 
-            self.imageData.putBytes(argb)
-            self.imageData.position(0).limit(len(argb))
+            self.__imageData.putBytes(argb)
+            self.__imageData.position(0).limit(len(argb))
         else:
             rgb = list(img[2])
-            if self.options.anaglyph:
+            if self.__options.anaglyph:
                 argb = bytearray(w * h << 2)
                 for i in range(w * h):
                     r = rgb[i << 2] & 255
@@ -110,19 +113,44 @@ class RenderEngine:
             else:
                 argb = rgb
 
-            self.imageData.putBytes(argb)
-            self.imageData.position(0).limit(len(argb))
+            self.__imageData.putBytes(argb)
+            self.__imageData.position(0).limit(len(argb))
 
-        if self.clampTexture:
+        if self.__clampTexture:
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP)
         else:
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_REPEAT)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_REPEAT)
 
-        self.imageData.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h,
-                                    0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
+        self.__imageData.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h,
+                                      0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
 
     def registerTextureFX(self, textureFx):
-        self.textureList.append(textureFx)
+        self.__textureList.append(textureFx)
         textureFx.onTick()
+
+    def updateDynamicTextures(self):
+        for texture in self.__textureList:
+            texture.anaglyphEnabled = self.__options.anaglyph
+            texture.onTick()
+            self.__imageData.clear()
+            self.__imageData.putBytes(texture.imageData)
+            self.__imageData.position(0).limit(len(texture.imageData))
+            self.__imageData.glTexSubImage2D(gl.GL_TEXTURE_2D, 0,
+                                             texture.iconIndex % 16 << 4,
+                                             texture.iconIndex // 16 << 4,
+                                             16, 16, gl.GL_RGBA,
+                                             gl.GL_UNSIGNED_BYTE)
+
+    def refreshTextures(self):
+        for id_, img in self.__textureContentsMap.items():
+            self.__setupTexture(img, id_)
+
+        for string, id_ in self.__textureMap.items():
+            if string.startswith('##'):
+                img = RenderEngine.__unwrapImageByColumns(Resources.textures[string[2:]])
+            else:
+                img = Resources.textures[string]
+
+                self.__setupTexture(img, id_)

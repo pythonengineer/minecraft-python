@@ -2,7 +2,7 @@
 
 from mc.net.minecraft.game.level.generator.noise.NoiseGeneratorOctaves cimport NoiseGeneratorOctaves
 
-cdef class NoiseGeneratorDistort:
+cdef class NoiseGeneratorCombined:
 
     cdef:
         NoiseGeneratorOctaves __source

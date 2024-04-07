@@ -17,28 +17,27 @@ class GuiIngame(Gui):
         self.__ingameWidth = width * 240 // height
         self.__ingameHeight = height * 240 // height
         self.__blockRenderer = RenderBlocks(tessellator)
-        self.chatMessageList = []
-        self.updateCounter = 0
+        self.__chatMessages = []
+        self.__updateCounter = 0
 
     def renderGameOverlay(self):
         self.__mc.entityRenderer.setupOverlayRendering()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/gui.png'))
-        t = tessellator
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glEnable(gl.GL_BLEND)
         self._zLevel = -90.0
-        self.drawTexturedModal(self.__ingameWidth / 2 - 91, self.__ingameHeight - 22, 0, 0, 182, 22)
-        self.drawTexturedModal(self.__ingameWidth / 2 - 91 - 1 + self.__mc.thePlayer.inventory.currentItem * 20,
+        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91, self.__ingameHeight - 22, 0, 0, 182, 22)
+        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91 - 1 + self.__mc.thePlayer.inventory.currentSlot * 20,
                                self.__ingameHeight - 22 - 1, 0, 22, 24, 22)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/icons.png'))
-        self.drawTexturedModal(self.__ingameWidth / 2 - 7, self.__ingameHeight / 2 - 7, 0, 0, 16, 16)
-        invulnerable = 1 if self.__mc.thePlayer.scoreValue // 3 % 2 == 1 else 0
-        if self.__mc.thePlayer.scoreValue < 10:
+        self.drawTexturedModalRect(self.__ingameWidth / 2 - 7, self.__ingameHeight / 2 - 7, 0, 0, 16, 16)
+        invulnerable = 1 if self.__mc.thePlayer.heartsLife // 3 % 2 == 1 else 0
+        if self.__mc.thePlayer.heartsLife < 10:
             invulnerable = 0
 
         health = self.__mc.thePlayer.health
         prevHealth = self.__mc.thePlayer.prevHealth
-        self.__rand.seed(self.updateCounter * 312871)
+        self.__rand.seed(self.__updateCounter * 312871)
         if self.__mc.playerController.shouldDrawHUD():
             for i in range(10):
                 n5 = 0
@@ -50,28 +49,28 @@ class GuiIngame(Gui):
                 if health <= 4:
                     n3 += self.__rand.randint(0, 1)
 
-                self.drawTexturedModal(n4, n3, 16 + n5 * 9, 0, 9, 9)
+                self.drawTexturedModalRect(n4, n3, 16 + n5 * 9, 0, 9, 9)
                 if invulnerable != 0:
                     if (i << 1) + 1 < prevHealth:
-                        self.drawTexturedModal(n4, n3, 70, 0, 9, 9)
+                        self.drawTexturedModalRect(n4, n3, 70, 0, 9, 9)
                     elif (i << 1) + 1 == prevHealth:
-                        self.drawTexturedModal(n4, n3, 79, 0, 9, 9)
+                        self.drawTexturedModalRect(n4, n3, 79, 0, 9, 9)
 
                 if (i << 1) + 1 < health:
-                    self.drawTexturedModal(n4, n3, 52, 0, 9, 9)
+                    self.drawTexturedModalRect(n4, n3, 52, 0, 9, 9)
                 elif (i << 1) + 1 == health:
-                    self.drawTexturedModal(n4, n3, 61, 0, 9, 9)
+                    self.drawTexturedModalRect(n4, n3, 61, 0, 9, 9)
 
             if self.__mc.thePlayer.isInsideOfMaterial():
                 n6 = math.ceil((self.__mc.thePlayer.air - 2) * 10.0 / 300.0)
                 n5 = math.ceil(self.__mc.thePlayer.air * 10.0 / 300.0) - n6
                 for n4 in range(n6 + n5):
                     if n4 < n6:
-                        self.drawTexturedModal(self.__ingameWidth / 2 - 91 + (n4 << 3),
-                                               self.__ingameHeight - 32 - 9, 16, 18, 9, 9)
+                        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91 + (n4 << 3),
+                                                   self.__ingameHeight - 32 - 9, 16, 18, 9, 9)
                     else:
-                        self.drawTexturedModal(self.__ingameWidth / 2 - 91 + (n4 << 3),
-                                               self.__ingameHeight - 32 - 9, 25, 18, 9, 9)
+                        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91 + (n4 << 3),
+                                                   self.__ingameHeight - 32 - 9, 25, 18, 9, 9)
 
         gl.glDisable(gl.GL_BLEND)
         gl.glEnable(gl.GL_NORMALIZE)
@@ -89,7 +88,7 @@ class GuiIngame(Gui):
                     gl.glDisable(gl.GL_LIGHTING)
                     tex = this.mc.renderEngine.getTexture('gui/items.png')
                     gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-                    self.drawTexturedModal(width, height, 240, 63 - slot << 4, 16, 16)
+                    self.drawTexturedModalRect(width, height, 240, 63 - slot << 4, 16, 16)
                     gl.glEnable(gl.GL_LIGHTING)
 
                 continue
@@ -112,7 +111,7 @@ class GuiIngame(Gui):
                 gl.glDisable(gl.GL_LIGHTING)
                 tex = self.__mc.renderEngine.getTexture('gui/items.png')
                 gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-                self.drawTexturedModal(width, height, stack.iconIndex % 16 << 4,
+                self.drawTexturedModalRect(width, height, stack.iconIndex % 16 << 4,
                                        stack.iconIndex // 16 << 4, 16, 16)
                 gl.glEnable(gl.GL_LIGHTING)
 
@@ -143,7 +142,7 @@ class GuiIngame(Gui):
                 self.__ingameWidth // 2 + 8, self.__ingameHeight - 33, 16777215
             )
 
-        for i, message in enumerate(self.chatMessageList):
+        for i, message in enumerate(self.__chatMessages):
             if i >= 10:
                 break
 
@@ -151,3 +150,8 @@ class GuiIngame(Gui):
                 self.__mc.fontRenderer.drawStringWithShadow(
                     None, 2, self.__ingameHeight - 8 - i * 9 - 20, 0xFFFFFF
                 )
+
+    def updateChatMessages(self):
+        self.__updateCounter += 1
+        for message in self.__chatMessages.copy():
+            message.updateCounter += 1

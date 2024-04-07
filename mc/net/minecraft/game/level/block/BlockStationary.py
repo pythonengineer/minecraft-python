@@ -21,7 +21,7 @@ class BlockStationary(BlockFluid):
         if world.getBlockId(x, y - 1, z) == 0: hasAirNeighbor = True
 
         if blockType != 0:
-            material = self.blocks.blocksList[blockType].getMaterial()
+            material = self.blocks.blocksList[blockType].getBlockMaterial()
             if self._material == Material.water and material == Material.lava or \
                material == Material.water and self._material == Material.lava:
                 world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)

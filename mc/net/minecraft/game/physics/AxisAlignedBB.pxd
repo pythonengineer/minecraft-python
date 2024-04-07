@@ -6,6 +6,8 @@ cimport cython
 cdef class AxisAlignedBB:
 
     cdef:
+        float __epsilon
+
         public float x0
         public float y0
         public float z0
@@ -19,7 +21,7 @@ cdef class AxisAlignedBB:
     cdef float clipZCollide(self, AxisAlignedBB c, float za)
     cpdef void offset(self, float xa, float ya, float za)
     cdef AxisAlignedBB copy(self)
-    cpdef clip(self, vec1, vec2)
-    cdef bint isVecInYZ(self, xa)
-    cdef bint isVecInXZ(self, ya)
-    cdef bint isVecInXY(self, za)
+    cpdef calculateIntercept(self, vec1, vec2)
+    cdef bint __isVecInYZ(self, xa)
+    cdef bint __isVecInXZ(self, ya)
+    cdef bint __isVecInXY(self, za)

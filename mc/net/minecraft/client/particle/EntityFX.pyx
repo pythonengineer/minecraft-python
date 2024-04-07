@@ -37,17 +37,17 @@ cdef class EntityFX(Entity):
 
         self._particleMaxAge = <int>(4 // (self._random.randFloat() * 0.9 + 0.1))
         self.__particleAge = 0
-        self.makeStepSound = False
+        self._makeStepSound = False
 
     def multiplyVelocity(self, power):
-        self._motionX1 *= power
-        self._motionY1 = (self._motionY1 - 0.1) * power + 0.1
-        self._motionZ1 *= power
+        self._motionX1 *= 0.2
+        self._motionY1 = (self._motionY1 - 0.1) * 0.2 + 0.1
+        self._motionZ1 *= 0.2
         return self
 
     def multipleParticleScaleBy(self, scale):
-        self.setSize(0.2 * scale, 0.2 * scale)
-        self._particleScale *= scale
+        self.setSize(0.120000005, 0.120000005)
+        self._particleScale *= 0.6
         return self
 
     cpdef onEntityUpdate(self):

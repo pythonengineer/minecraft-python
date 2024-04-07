@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-cdef class NoiseGeneratorDistort:
+cdef class NoiseGeneratorCombined:
 
     def __init__(self, NoiseGeneratorOctaves source, NoiseGeneratorOctaves distort):
         self.__source = source

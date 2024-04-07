@@ -34,7 +34,7 @@ cdef class Entity:
         self.bbHeight = 1.8
         self.prevDistanceWalkedModified = 0.0
         self.distanceWalkedModified = 0.0
-        self.makeStepSound = True
+        self._makeStepSound = True
         self._fallDistance = 0.0
         self.__nextStep = 1
         self.lastTickPosX = 0.0
@@ -42,29 +42,31 @@ cdef class Entity:
         self.lastTickPosZ = 0.0
         self.__ySize = 0.0
         self.stepHeight = 0.0
-        self.rand = Random()
+        self.__noClip = False
+        self.__entityCollisionReduction = 0.0
+        self._rand = Random()
         self.ticksExisted = 0
 
     def __init__(self, world):
-        self.worldObj = world
+        self._worldObj = world
         self.setPosition(0.0, 0.0, 0.0)
 
     def preparePlayerToSpawn(self):
-        if not self.worldObj:
+        if not self._worldObj:
             return
 
-        x = self.worldObj.xSpawn + 0.5
-        y = self.worldObj.ySpawn
-        z = self.worldObj.zSpawn + 0.5
+        x = self._worldObj.xSpawn + 0.5
+        y = self._worldObj.ySpawn
+        z = self._worldObj.zSpawn + 0.5
         while y > 0.0:
             self.setPosition(x, y, z)
-            if len(self.worldObj.getCollidingBoundingBoxes(self.boundingBox)) == 0:
+            if len(self._worldObj.getCollidingBoundingBoxes(self.boundingBox)) == 0:
                 break
 
             y += 1.0
 
         self.motionX = self.motionY = self.motionZ = 0.0
-        self.rotationYaw = self.worldObj.rotSpawn
+        self.rotationYaw = self._worldObj.rotSpawn
         self.rotationPitch = 0.0
 
     def setEntityDead(self):
@@ -113,11 +115,11 @@ cdef class Entity:
 
     cpdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za):
         cdef AxisAlignedBB axisAlignedBB = self.boundingBox.cloneMove(xa, ya, za)
-        aABBs = self.worldObj.getCollidingBoundingBoxes(axisAlignedBB)
+        aABBs = self._worldObj.getCollidingBoundingBoxes(axisAlignedBB)
         if len(aABBs) > 0:
             return False
 
-        return not self.worldObj.getIsAnyLiquid(axisAlignedBB)
+        return not self._worldObj.getIsAnyLiquid(axisAlignedBB)
 
     cpdef moveEntity(self, float x, float y, float z):
         cdef int block
@@ -132,7 +134,7 @@ cdef class Entity:
         zaOrg = z
 
         aabbOrg = self.boundingBox.copy()
-        aABBs = self.worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(x, y, z))
+        aABBs = self._worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(x, y, z))
         for aABB in aABBs:
             y = aABB.clipYCollide(self.boundingBox, y)
 
@@ -170,7 +172,7 @@ cdef class Entity:
             z = zaOrg
             aabb = self.boundingBox.copy()
             self.boundingBox = aabbOrg.copy()
-            aABBs = self.worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(xaOrg, y, zaOrg))
+            aABBs = self._worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(xaOrg, y, zaOrg))
             for aABB in aABBs:
                 y = aABB.clipYCollide(self.boundingBox, y)
 
@@ -206,6 +208,9 @@ cdef class Entity:
             else:
                 self.__ySize += 0.5
 
+        self.posX = (self.boundingBox.x0 + self.boundingBox.x1) * (1 / 2)
+        self.posY = self.boundingBox.y0 + self.yOffset - self.__ySize
+        self.posZ = (self.boundingBox.z0 + self.boundingBox.z1) * (1 / 2)
         self.horizontalCollision = xaOrg != x or zaOrg != z
         self.onGround = yaOrg != y and yaOrg < 0.0
         if self.onGround:
@@ -222,19 +227,18 @@ cdef class Entity:
         if zaOrg != z:
             self.motionZ = 0.0
 
-        self.posX = (self.boundingBox.x0 + self.boundingBox.x1) * (1 / 2)
-        self.posY = self.boundingBox.y0 + self.yOffset - self.__ySize
-        self.posZ = (self.boundingBox.z0 + self.boundingBox.z1) * (1 / 2)
-
         xd = self.posX - xOrg
         zd = self.posZ - zOrg
         self.distanceWalkedModified = <float>(self.distanceWalkedModified + sqrt(xd * xd + zd * zd) * 0.6)
-        if self.makeStepSound:
-            block = self.worldObj.getBlockId(<int>self.posX,
-                                             <int>(self.posY - 0.2 - self.yOffset),
-                                             <int>self.posZ)
+        if self._makeStepSound:
+            block = self._worldObj.getBlockId(<int>self.posX,
+                                              <int>(self.posY - 0.2 - self.yOffset),
+                                              <int>self.posZ)
             if self.distanceWalkedModified > self.__nextStep and block > 0:
                 self.__nextStep += 1
+                sound = blocks.blocksList[block].stepSound
+                self._worldObj.playSoundEffect(self, 'step.' + sound.name,
+                                               sound.speed * 0.15, sound.pitch)
 
         self.__ySize *= 0.4
 
@@ -242,21 +246,21 @@ cdef class Entity:
         pass
 
     cdef bint handleWaterMovement(self):
-        return self.worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
-                                                        Material.water)
+        return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
+                                                         Material.water)
 
     def isInsideOfMaterial(self):
-        block = self.worldObj.getBlockId(<int>self.posX,
-                                         <int>(self.posY + 0.12),
-                                         <int>self.posZ)
+        block = self._worldObj.getBlockId(<int>self.posX,
+                                          <int>(self.posY + 0.12),
+                                          <int>self.posZ)
         if block != 0:
-            return blocks.blocksList[block].getMaterial() == Material.water
+            return blocks.blocksList[block].getBlockMaterial() == Material.water
 
         return False
 
     cdef bint handleLavaMovement(self):
-        return self.worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
-                                                        Material.lava)
+        return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
+                                                         Material.lava)
 
     cpdef moveFlying(self, float xa, float za, float speed):
         cdef float dist, si, co
@@ -283,17 +287,20 @@ cdef class Entity:
         x = <int>self.posX
         y = <int>(self.posY + self.yOffset / 2.0)
         z = <int>self.posZ
-        return self.worldObj.getBlockLightValue(x, y, z)
+        return self._worldObj.getBlockLightValue(x, y, z)
 
-    def addVelocity(self, float x, float z):
-        self.motionX += x
-        self.motionY = self.motionY
-        self.motionZ += z
+    def setWorld(self, world):
+        self._worldObj = world
 
-    def attackEntityFrom(self, player, damage):
-        pass
+    def setLocationAndAngles(self, x, y, z, yaw, pitch):
+        self.prevPosX = self.posX = x
+        self.prevPosY = self.posY = y
+        self.prevPosZ = self.posZ = z
+        self.rotationYaw = yaw
+        self.rotationPitch = 0.0
+        self.setPosition(x, y, z)
 
-    cdef push(self, entity):
+    cdef applyEntityCollision(self, entity):
         cdef float x, z, d
         x = entity.posX - self.posX
         z = entity.posZ - self.posZ
@@ -306,8 +313,16 @@ cdef class Entity:
             z /= d
             x *= 0.05
             z *= 0.05
-            self.addVelocity(-x, -z)
-            entity.addVelocity(x, z)
+            self.__addVelocity(-x, -z)
+            entity.__addVelocity(x, z)
+
+    def __addVelocity(self, float x, float z):
+        self.motionX += x
+        self.motionY = self.motionY
+        self.motionZ += z
+
+    def attackEntityFrom(self, player, damage):
+        pass
 
     def canBeCollidedWith(self):
         return False

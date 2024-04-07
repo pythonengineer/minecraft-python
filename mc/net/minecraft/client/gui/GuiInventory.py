@@ -33,7 +33,7 @@ class GuiInventory(GuiScreen):
         gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
         w = (self.width - 176) // 2
         h = (self.height - 184) // 2
-        self.drawTexturedModal(w, h, 0, 0, 176, 184)
+        self.drawTexturedModalRect(w, h, 0, 0, 176, 184)
         gl.glPushMatrix()
         gl.glRotatef(180.0, 1.0, 0.0, 0.0)
         RenderHelper.enableStandardItemLighting()
@@ -48,7 +48,7 @@ class GuiInventory(GuiScreen):
         gl.glRotatef(10.0, 0.0, 1.0, 0.0)
         gl.glRotatef(10.0, 1.0, 0.0, 0.0)
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        self._mc.renderGlobal.renderManager.renderEntityWithPosYaw(
+        self._mc.renderGlobal.renderManager.doRender(
             self._mc.thePlayer, self._mc.renderEngine, 0.0, 0.0, 0.0, 0.0, 0.0
         )
         gl.glPopMatrix()
@@ -80,10 +80,10 @@ class GuiInventory(GuiScreen):
         RenderHelper.disableStandardItemLighting()
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_DEPTH_TEST)
-        self._fontRenderer.drawString('PLAYER NAME', 84, 8, 4210752)
-        self._fontRenderer.drawString('ATK: 100', 84, 24, 4210752)
-        self._fontRenderer.drawString('DEF: 100', 84, 32, 4210752)
-        self._fontRenderer.drawString('SPD: 100', 84, 40, 4210752)
+        self._font.drawString('PLAYER NAME', 84, 8, 4210752)
+        self._font.drawString('ATK: 100', 84, 24, 4210752)
+        self._font.drawString('DEF: 100', 84, 32, 4210752)
+        self._font.drawString('SPD: 100', 84, 40, 4210752)
         gl.glEnable(gl.GL_LIGHTING)
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glPopMatrix()
@@ -109,7 +109,7 @@ class GuiInventory(GuiScreen):
                 gl.glDisable(gl.GL_LIGHTING)
                 tex = self._mc.renderEngine.getTexture('gui/items.png')
                 gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-                self.drawTexturedModal(xPos, yPos, item.iconIndex % 16 << 4,
+                self.drawTexturedModalRect(xPos, yPos, item.iconIndex % 16 << 4,
                                        item.iconIndex // 16 << 4, 16, 16)
                 gl.glEnable(gl.GL_LIGHTING)
 
@@ -117,8 +117,8 @@ class GuiInventory(GuiScreen):
                 size = '' + str(item.stackSize)
                 gl.glDisable(gl.GL_LIGHTING)
                 gl.glDisable(gl.GL_DEPTH_TEST)
-                self._fontRenderer.drawStringWithShadow(
-                    size, xPos + 19 - 2 - self._fontRenderer.getStringWidth(size),
+                self._font.drawStringWithShadow(
+                    size, xPos + 19 - 2 - self._font.getStringWidth(size),
                     yPos + 6 + 3, 16777215
                 )
                 gl.glEnable(gl.GL_LIGHTING)
@@ -127,7 +127,7 @@ class GuiInventory(GuiScreen):
             gl.glDisable(gl.GL_LIGHTING)
             tex = self._mc.renderEngine.getTexture('gui/items.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-            self.drawTexturedModal(xPos, yPos, 240, 63 - slotIndex << 4, 16, 16)
+            self.drawTexturedModalRect(xPos, yPos, 240, 63 - slotIndex << 4, 16, 16)
             gl.glEnable(gl.GL_LIGHTING)
 
     def _mouseClicked(self, xm, ym, button):

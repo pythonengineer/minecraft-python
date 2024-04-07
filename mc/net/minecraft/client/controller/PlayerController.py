@@ -1,10 +1,11 @@
-from mc.net.minecraft.client.effect.EntityDiggingFX import EntityDiggingFX
+from mc.net.minecraft.client.particle.EntityDiggingFX import EntityDiggingFX
 from mc.net.minecraft.game.level.block.Blocks import blocks
 
 class PlayerController:
 
     def __init__(self, mc):
         self._mc = mc
+        self.isInTestMode = False
 
     def onWorldChange(self, world):
         world.multiplayerWorld = True
@@ -15,32 +16,32 @@ class PlayerController:
     def clickBlock(self, x, y, z):
         self.sendBlockRemoved(x, y, z)
 
-    def canPlace(self, block):
+    def canPlace(self, x, y, z, block):
+        if block > 0:
+            block = blocks.blocksList[block]
+            if block:
+                speed = (block.stepSound.speed + 1.0) / 2.0
+                self._mc.sndManager.playSoundAtPos(
+                    f'step.{block.stepSound.name}', x + 0.5, y + 0.5, z + 0.5,
+                    speed, block.stepSound.pitch * 0.8
+                )
+
         return True
 
     def sendBlockRemoved(self, x, y, z):
-        blockId = self._mc.theWorld.getBlockId(x, y, z)
-        if blockId:
-            block = blocks.blocksList[blockId]
-
-            for i in range(4):
-                for j in range(4):
-                    for k in range(4):
-                        xx = x + (i + 0.5) / 4
-                        yy = y + (j + 0.5) / 4
-                        zz = z + (k + 0.5) / 4
-                        self._mc.effectRenderer.addEffect(
-                            EntityDiggingFX(self._mc.effectRenderer.worldObj,
-                                            xx, yy, zz, xx - x - 0.5, yy - y - 0.5,
-                                            zz - z - 0.5, block)
-                        )
+        self._mc.effectRenderer.addBlockDigEffects(x, y, z)
 
         block = blocks.blocksList[self._mc.theWorld.getBlockId(x, y, z)]
         change = self._mc.theWorld.setBlockWithNotify(x, y, z, 0)
         if block and change:
+            speed = (block.stepSound.speed + 1.0) / 2.0
+            self._mc.sndManager.playSoundAtPos(
+                f'step.{block.stepSound.name}', x + 0.5, y + 0.5, z + 0.5,
+                speed, block.stepSound.pitch * 0.8
+            )
             block.onBlockDestroyedByPlayer(self._mc.theWorld, x, y, z)
 
-    def sendBlockRemoving(self, x, y, z):
+    def hitBlock(self, x, y, z, sideHit):
         pass
 
     def resetBlockRemoving(self):
@@ -52,7 +53,7 @@ class PlayerController:
     def getBlockReachDistance(self):
         return 5.0
 
-    def preparePlayer(self, player):
+    def onRespawn(self, player):
         pass
 
     def onUpdate(self):

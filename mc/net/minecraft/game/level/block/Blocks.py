@@ -1,11 +1,11 @@
 from mc.net.minecraft.game.level.block.Block import Block
-from mc.net.minecraft.game.level.block.BlockSand import BlockSand
+from mc.net.minecraft.game.level.block.BlockFalling import BlockFalling
 from mc.net.minecraft.game.level.block.BlockFluid import BlockFluid
 from mc.net.minecraft.game.level.block.BlockStationary import BlockStationary
 from mc.net.minecraft.game.level.block.BlockBookshelf import BlockBookshelf
 from mc.net.minecraft.game.level.block.BlockSponge import BlockSponge
 from mc.net.minecraft.game.level.block.BlockMushroom import BlockMushroom
-from mc.net.minecraft.game.level.block.BlockFlower import BlockFlower
+from mc.net.minecraft.game.level.block.BlockPlants import BlockPlants
 from mc.net.minecraft.game.level.block.BlockGlass import BlockGlass
 from mc.net.minecraft.game.level.block.BlockGrass import BlockGrass
 from mc.net.minecraft.game.level.block.BlockDirt import BlockDirt
@@ -18,6 +18,7 @@ from mc.net.minecraft.game.level.block.BlockStep import BlockStep
 from mc.net.minecraft.game.level.block.BlockStone import BlockStone
 from mc.net.minecraft.game.level.block.BlockTNT import BlockTNT
 from mc.net.minecraft.game.level.block.BlockSapling import BlockSapling
+from mc.net.minecraft.game.level.block.StepSound import StepSound
 from mc.net.minecraft.game.level.material.Material import Material
 
 class Blocks:
@@ -31,86 +32,140 @@ class Blocks:
         self.isBlockFluid = [False] * 256
         self.lightValue = [0] * 256
 
-        self.stone = BlockStone(self, 1, 1).setResistance(1.0)
+        self.soundPowderFootstep = StepSound('stone', 1.0, 1.0)
+        self.soundWoodFootstep = StepSound('wood', 1.0, 1.0)
+        self.soundGravelFootstep = StepSound('gravel', 1.0, 1.0)
+        self.soundGrassFootstep = StepSound('grass', 1.0, 1.0)
+        self.soundStoneFootstep = StepSound('stone', 1.0, 1.0)
+        self.soundMetalFootstep = StepSound('stone', 1.0, 1.5)
+
+        self.stone = BlockStone(self, 1, 1).setHardness(1.0)
         self.stone.blockIsDropped = False
+        self.stone.stepSound = self.soundStoneFootstep
 
-        self.grass = BlockGrass(self).setResistance(0.6)
-        self.dirt = BlockDirt(self).setResistance(0.5)
-        self.cobblestone = Block(self, 4, 16).setResistance(1.5)
+        self.grass = BlockGrass(self, 2).setHardness(0.6)
+        self.grass.stepSound = self.soundGrassFootstep
+
+        self.dirt = BlockDirt(self, 3, 2).setHardness(0.5)
+        self.dirt.stepSound = self.soundGravelFootstep
+        self.cobblestone = Block(self, 4, 16).setHardness(1.5)
         self.cobblestone.blockIsDropped = False
-        self.planks = Block(self, 5, 4).setResistance(1.5)
-        self.sapling = BlockSapling(self, 6).setResistance(0.0)
-        self.bedrock = Block(self, 7, 17).setResistance(999.0)
+        self.cobblestone.stepSound = self.soundStoneFootstep
+        self.planks = Block(self, 5, 4).setHardness(1.5)
+        self.planks.stepSound = self.soundWoodFootstep
+        self.sapling = BlockSapling(self, 6, 15).setHardness(0.0)
+        self.sapling.stepSound = self.soundGrassFootstep
+        self.bedrock = Block(self, 7, 17).setHardness(999.0)
         self.bedrock.blockIsDropped = False
+        self.bedrock.stepSound = self.soundStoneFootstep
 
-        self.waterMoving = BlockFluid(self, 8, Material.water).setResistance(100.0).setLightOpacity(2)
-        self.waterStill = BlockStationary(self, 9, Material.water).setResistance(100.0).setLightOpacity(2)
+        self.waterMoving = BlockFluid(self, 8, Material.water).setHardness(100.0).setLightOpacity(2)
+        self.waterStill = BlockStationary(self, 9, Material.water).setHardness(100.0).setLightOpacity(2)
 
-        self.lavaMoving = BlockFluid(self, 10, Material.lava).setResistance(0.0).setLightValue(0.8).setLightOpacity(255)
-        self.lavaStill = BlockStationary(self, 11, Material.lava).setResistance(100.0).setLightValue(0.8).setLightOpacity(255)
+        self.lavaMoving = BlockFluid(self, 10, Material.lava).setHardness(0.0).setLightValue(0.8).setLightOpacity(255)
+        self.lavaStill = BlockStationary(self, 11, Material.lava).setHardness(100.0).setLightValue(0.8).setLightOpacity(255)
 
-        self.sand = BlockSand(self, 12, 18).setResistance(0.5)
-        self.gravel = BlockSand(self, 13, 19).setResistance(0.6)
+        self.sand = BlockFalling(self, 12, 18).setHardness(0.5)
+        self.sand.stepSound = self.soundGravelFootstep
+        self.gravel = BlockFalling(self, 13, 19).setHardness(0.6)
+        self.gravel.stepSound = self.soundGravelFootstep
 
-        self.oreGold = BlockOre(self, 14, 32).setResistance(3.0)
+        self.oreGold = BlockOre(self, 14, 32).setHardness(3.0)
         self.oreGold.blockIsDropped = False
-        self.oreIron = BlockOre(self, 15, 33).setResistance(3.0)
+        self.oreGold.stepSound = self.soundStoneFootstep
+        self.oreIron = BlockOre(self, 15, 33).setHardness(3.0)
         self.oreIron.blockIsDropped = False
-        self.oreCoal = BlockOre(self, 16, 34).setResistance(3.0)
+        self.oreIron.stepSound = self.soundStoneFootstep
+        self.oreCoal = BlockOre(self, 16, 34).setHardness(3.0)
         self.oreCoal.blockIsDropped = False
+        self.oreCoal.stepSound = self.soundStoneFootstep
 
-        self.log = BlockLog(self).setResistance(2.5)
-        self.leaves = BlockLeaves(self).setResistance(0.2).setLightOpacity(1)
+        self.log = BlockLog(self, 17).setHardness(2.5)
+        self.log.stepSound = self.soundWoodFootstep
+        self.leaves = BlockLeaves(self, 18, 22).setHardness(0.2).setLightOpacity(1)
+        self.leaves.stepSound = self.soundGrassFootstep
 
-        self.sponge = BlockSponge(self).setResistance(0.6)
-        self.glass = BlockGlass(self).setResistance(0.3)
+        self.sponge = BlockSponge(self, 19).setHardness(0.6)
+        self.sponge.stepSound = self.soundGrassFootstep
+        self.glass = BlockGlass(self, 20, 49, False).setHardness(0.3)
+        self.glass.stepSound = self.soundMetalFootstep
 
-        self.clothRed = Block(self, 21, 64).setResistance(0.8)
-        self.clothOrange = Block(self, 22, 65).setResistance(0.8)
-        self.clothYellow = Block(self, 23, 66).setResistance(0.8)
-        self.clothChartreuse = Block(self, 24, 67).setResistance(0.8)
-        self.clothGreen = Block(self, 25, 68).setResistance(0.8)
-        self.clothSpringGreen = Block(self, 26, 69).setResistance(0.8)
-        self.clothCyan = Block(self, 27, 70).setResistance(0.8)
-        self.clothCapri = Block(self, 28, 71).setResistance(0.8)
-        self.clothUltramarine = Block(self, 29, 72).setResistance(0.8)
-        self.clothViolet = Block(self, 30, 73).setResistance(0.8)
-        self.clothPurple = Block(self, 31, 74).setResistance(0.8)
-        self.clothMagenta = Block(self, 32, 75).setResistance(0.8)
-        self.clothRose = Block(self, 33, 76).setResistance(0.8)
-        self.clothDarkGray = Block(self, 34, 77).setResistance(0.8)
-        self.clothGray = Block(self, 35, 78).setResistance(0.8)
-        self.clothWhite = Block(self, 36, 79).setResistance(0.8)
+        self.clothRed = Block(self, 21, 64).setHardness(0.8)
+        self.clothRed.stepSound = self.soundGrassFootstep
+        self.clothOrange = Block(self, 22, 65).setHardness(0.8)
+        self.clothOrange.stepSound = self.soundGrassFootstep
+        self.clothYellow = Block(self, 23, 66).setHardness(0.8)
+        self.clothYellow.stepSound = self.soundGrassFootstep
+        self.clothChartreuse = Block(self, 24, 67).setHardness(0.8)
+        self.clothChartreuse.stepSound = self.soundGrassFootstep
+        self.clothGreen = Block(self, 25, 68).setHardness(0.8)
+        self.clothGreen.stepSound = self.soundGrassFootstep
+        self.clothSpringGreen = Block(self, 26, 69).setHardness(0.8)
+        self.clothSpringGreen.stepSound = self.soundGrassFootstep
+        self.clothCyan = Block(self, 27, 70).setHardness(0.8)
+        self.clothCyan.stepSound = self.soundGrassFootstep
+        self.clothCapri = Block(self, 28, 71).setHardness(0.8)
+        self.clothCapri.stepSound = self.soundGrassFootstep
+        self.clothUltramarine = Block(self, 29, 72).setHardness(0.8)
+        self.clothUltramarine.stepSound = self.soundGrassFootstep
+        self.clothViolet = Block(self, 30, 73).setHardness(0.8)
+        self.clothViolet.stepSound = self.soundGrassFootstep
+        self.clothPurple = Block(self, 31, 74).setHardness(0.8)
+        self.clothPurple.stepSound = self.soundGrassFootstep
+        self.clothMagenta = Block(self, 32, 75).setHardness(0.8)
+        self.clothMagenta.stepSound = self.soundGrassFootstep
+        self.clothRose = Block(self, 33, 76).setHardness(0.8)
+        self.clothRose.stepSound = self.soundGrassFootstep
+        self.clothDarkGray = Block(self, 34, 77).setHardness(0.8)
+        self.clothDarkGray.stepSound = self.soundGrassFootstep
+        self.clothGray = Block(self, 35, 78).setHardness(0.8)
+        self.clothGray.stepSound = self.soundGrassFootstep
+        self.clothWhite = Block(self, 36, 79).setHardness(0.8)
+        self.clothWhite.stepSound = self.soundGrassFootstep
 
-        self.plantYellow = BlockFlower(self, 37, 13).setResistance(0.0)
-        self.plantRed = BlockFlower(self, 38, 12).setResistance(0.0)
+        self.plantYellow = BlockPlants(self, 37, 13).setHardness(0.0)
+        self.plantYellow.stepSound = self.soundGrassFootstep
+        self.plantRed = BlockPlants(self, 38, 12).setHardness(0.0)
+        self.plantRed.stepSound = self.soundGrassFootstep
 
-        self.mushroomBrown = BlockMushroom(self, 39, 29).setResistance(0.0)
-        self.mushroomRed = BlockMushroom(self, 40, 28).setResistance(0.0)
+        self.mushroomBrown = BlockMushroom(self, 39, 29).setHardness(0.0)
+        self.mushroomBrown.stepSound = self.soundGrassFootstep
+        self.mushroomRed = BlockMushroom(self, 40, 28).setHardness(0.0)
+        self.mushroomRed.stepSound = self.soundGrassFootstep
 
-        self.goldBlock = BlockOreBlock(self, 41, 40).setResistance(3.0)
+        self.goldBlock = BlockOreBlock(self, 41, 40).setHardness(3.0)
         self.goldBlock.blockIsDropped = False
-        self.ironBlock = BlockOreBlock(self, 42, 39).setResistance(5.0)
+        self.goldBlock.stepSound = self.soundMetalFootstep
+        self.ironBlock = BlockOreBlock(self, 42, 39).setHardness(5.0)
         self.ironBlock.blockIsDropped = False
+        self.ironBlock.stepSound = self.soundMetalFootstep
 
-        self.stairDouble = BlockStep(self, 43, True).setResistance(2.0)
-        self.stairDouble.blockIsDropped = False
-        self.stairSingle = BlockStep(self, 44, False).setResistance(2.0)
+        self.slabDouble = BlockStep(self, 43, True).setHardness(2.0)
+        self.slabDouble.blockIsDropped = False
+        self.slabDouble.stepSound = self.soundStoneFootstep
+        self.stairSingle = BlockStep(self, 44, False).setHardness(2.0)
         self.stairSingle.blockIsDropped = False
+        self.stairSingle.stepSound = self.soundStoneFootstep
 
-        self.brick = Block(self, 45, 7).setResistance(2.0)
+        self.brick = Block(self, 45, 7).setHardness(2.0)
         self.brick.blockIsDropped = False
+        self.brick.stepSound = self.soundStoneFootstep
 
-        self.tnt = BlockTNT(self).setResistance(0.0)
+        self.tnt = BlockTNT(self, 46, 8).setHardness(0.0)
+        self.tnt.stepSound = self.soundGrassFootstep
 
-        self.bookShelf = BlockBookshelf(self).setResistance(1.5)
+        self.bookshelf = BlockBookshelf(self, 47, 35).setHardness(1.5)
+        self.bookshelf.stepSound = self.soundWoodFootstep
 
-        self.cobblestoneMossy = Block(self, 48, 36).setResistance(1.0)
+        self.cobblestoneMossy = Block(self, 48, 36).setHardness(1.0)
         self.cobblestoneMossy.blockIsDropped = False
-        self.obsidian = BlockStone(self, 49, 37).setResistance(10.0)
+        self.cobblestoneMossy.stepSound = self.soundStoneFootstep
+        self.obsidian = BlockStone(self, 49, 37).setHardness(10.0)
         self.obsidian.blockIsDropped = False
+        self.obsidian.stepSound = self.soundStoneFootstep
 
-        self.torch = BlockTorch(self).setResistance(0.0).setLightValue(1.0)
+        self.torch = BlockTorch(self, 50, 80).setHardness(0.0).setLightValue(1.0)
+        self.torch.stepSound = self.soundWoodFootstep
 
         self.blocksList[1:50] = [self.stone, self.grass, self.dirt, self.cobblestone, self.planks,
                                  self.sapling, self.bedrock, self.waterMoving, self.waterStill,
@@ -123,8 +178,8 @@ class Blocks:
                                  self.clothRose, self.clothDarkGray, self.clothGray,
                                  self.clothWhite, self.plantYellow, self.plantRed,
                                  self.mushroomBrown, self.mushroomRed, self.goldBlock,
-                                 self.ironBlock, self.stairDouble, self.stairSingle,
-                                 self.brick, self.tnt, self.bookShelf, self.cobblestoneMossy,
+                                 self.ironBlock, self.slabDouble, self.stairSingle,
+                                 self.brick, self.tnt, self.bookshelf, self.cobblestoneMossy,
                                  self.obsidian, self.torch]
 
 blocks = Blocks()

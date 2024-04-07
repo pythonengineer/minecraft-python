@@ -14,7 +14,7 @@ class EntityItem(Entity):
         self.motionX1 = random.random() * 0.2 - 0.1
         self.motionY1 = 0.2
         self.motionZ1 = random.random() * 0.2 - 0.1
-        self.makeStepSound = False
+        self._makeStepSound = False
         self.__unknownEntityItemInt = 0
         self.__age = 0
         self.delayBeforeCanPickup = 0

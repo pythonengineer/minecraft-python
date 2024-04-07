@@ -1,6 +1,4 @@
 from mc.net.minecraft.client.KeyBinding import KeyBinding
-from mc.net.minecraft.client.render.RenderEngine import RenderEngine
-from mc import Resources
 from pyglet import window
 
 import pathlib
@@ -189,16 +187,7 @@ class GameSettings:
             self.viewBobbing = not self.viewBobbing
         elif option == 6:
             self.anaglyph = not self.anaglyph
-            for id_, img in self.__mc.renderEngine.textureContentsMap.items():
-                self.__mc.renderEngine.setupTexture(img, id_)
-
-            for string, id_ in self.__mc.renderEngine.textureMap.items():
-                if string.startswith('##'):
-                    img = RenderEngine.unwrapImageByColumns(Resources.textures[string[2:]])
-                else:
-                    img = Resources.textures[string]
-
-                self.__mc.renderEngine.setupTexture(img, id_)
+            self.__mc.renderEngine.refreshTextures()
         elif option == 7:
             self.limitFramerate = not self.limitFramerate
 

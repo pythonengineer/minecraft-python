@@ -18,7 +18,7 @@ cdef class BlockFluid(Block):
     cdef float getBlockBrightness(self, World world, int x, int y, int z)
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer)
     cpdef bint isOpaqueCube(self)
-    cpdef int getMaterial(self)
+    cpdef int getBlockMaterial(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)

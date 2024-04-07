@@ -12,11 +12,10 @@ cdef class EntityLiving(Entity):
         float __prevRotationYawHead
         float __rotationYawHead
         int __maxAir
-        public float _animStep
-        public float _animStepO
+        bint __splashed
         public int health
         public int prevHealth
-        public int scoreValue
+        public int heartsLife
         public int air
         public int hurtTime
         public int maxHurtTime
@@ -25,7 +24,7 @@ cdef class EntityLiving(Entity):
         int __attackTime
         public float prevCameraPitch
         public float cameraPitch
-        public AILiving entityAI
+        public AILiving _entityAI
 
     cpdef onEntityUpdate(self)
     cpdef onLivingUpdate(self)

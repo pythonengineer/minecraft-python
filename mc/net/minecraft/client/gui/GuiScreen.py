@@ -7,37 +7,7 @@ class GuiScreen(Gui):
 
     def drawScreen(self, xMouse, yMouse):
         for button in self._controlList:
-            if not button.visible:
-                continue
-
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self._mc.renderEngine.getTexture('gui/gui.png'))
-            gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-            z6 = True if xMouse >= button.x and yMouse >= button.y and \
-                         xMouse < button.x + button.width and \
-                         yMouse < button.y + button.height else False
-            b9 = 1
-            if not button.enabled:
-                b9 = 0
-            elif z6:
-                b9 = 2
-
-            button.drawTexturedModal(button.x, button.y, 0, 46 + b9 * 20,
-                                     button.width / 2, button.height)
-            button.drawTexturedModal(button.x + button.width / 2, button.y,
-                                     200 - button.width / 2, 46 + b9 * 20,
-                                     button.width / 2, button.height)
-            if not button.enabled:
-                button.drawCenteredString(self._fontRenderer, button.displayString,
-                                          button.x + button.width // 2,
-                                          button.y + (button.height - 8) // 2, -6250336)
-            elif z6:
-                button.drawCenteredString(self._fontRenderer, button.displayString,
-                                          button.x + button.width // 2,
-                                          button.y + (button.height - 8) // 2, 0xFFFFA0)
-            else:
-                button.drawCenteredString(self._fontRenderer, button.displayString,
-                                          button.x + button.width // 2,
-                                          button.y + (button.height - 8) // 2, 0xE0E0E0)
+            button.drawButton(self._mc, xMouse, yMouse)
 
     def _keyTyped(self, key, char, motion):
         if key == window.key.ESCAPE:
@@ -47,8 +17,8 @@ class GuiScreen(Gui):
     def _mouseClicked(self, xm, ym, button):
         if button == window.mouse.LEFT:
             for button in self._controlList:
-                if button.enabled and xm >= button.x and ym >= button.y and \
-                   xm < button.x + button.width and ym < button.y + button.height:
+                if button.mousePressed(xm, ym):
+                    self._mc.sndManager.playSound('random.click', 1.0, 1.0)
                     self._actionPerformed(button)
 
     def _actionPerformed(self, button):
@@ -56,7 +26,7 @@ class GuiScreen(Gui):
 
     def initGui(self, minecraft, width, height):
         self._mc = minecraft
-        self._fontRenderer = minecraft.fontRenderer
+        self._font = minecraft.fontRenderer
         self.width = width
         self.height = height
         self._controlList = []

@@ -20,7 +20,7 @@ cdef class Entity:
         public float prevRotationYaw
         public float prevRotationPitch
 
-        public World worldObj
+        public World _worldObj
         public AxisAlignedBB boundingBox
         public bint onGround
         public bint horizontalCollision
@@ -32,7 +32,7 @@ cdef class Entity:
         public float bbHeight
         public float prevDistanceWalkedModified
         public float distanceWalkedModified
-        public bint makeStepSound
+        public bint _makeStepSound
         public float _fallDistance
         int __nextStep
         public float lastTickPosX
@@ -40,7 +40,9 @@ cdef class Entity:
         public float lastTickPosZ
         float __ySize
         public float stepHeight
-        public object rand
+        bint __noClip
+        float __entityCollisionReduction
+        public object _rand
         public int ticksExisted
 
     cpdef onEntityUpdate(self)
@@ -51,6 +53,6 @@ cdef class Entity:
     cdef bint handleLavaMovement(self)
     cpdef moveFlying(self, float xa, float za, float speed)
     cpdef float getBrightness(self)
-    cdef push(self, entity)
+    cdef applyEntityCollision(self, entity)
     cpdef bint shouldRender(self, vec)
     cdef bint shouldRenderAtSqrDistance(self, float d)

@@ -17,6 +17,7 @@ cdef class Block:
         if tex:
             self.blockIndexInTexture = tex
         self.blockIsDropped = True
+        self.stepSound = blocks.soundPowderFootstep
         self.blockParticleGravity = 1.0
         self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
         self.blocks.opaqueCubeLookup[blockId] = self.isOpaqueCube()
@@ -38,7 +39,7 @@ cdef class Block:
     cpdef int getRenderType(self):
         return 0
 
-    def setResistance(self, float pitch):
+    def setHardness(self, float pitch):
         self.__hardness = <int>(pitch * 20.0)
         return self
 
@@ -80,7 +81,7 @@ cdef class Block:
     def onBlockDestroyedByPlayer(self, World world, int x, int y, int z):
         pass
 
-    cpdef int getMaterial(self):
+    cpdef int getBlockMaterial(self):
         return Material.air
 
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
@@ -112,22 +113,23 @@ cdef class Block:
 
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
         cdef int i
-        cdef float move, xx, yy, zz
+        cdef float xx, yy, zz
 
         for i in range(self.quantityDropped(world.rand)):
             if world.rand.random() > chance:
                 continue
 
-            move = 0.7
-            xx = world.rand.random() * move + (1.0 - move) * 0.5
-            yy = world.rand.random() * move + (1.0 - move) * 0.5
-            zz = world.rand.random() * move + (1.0 - move) * 0.5
-            world.spawnEntityInWorld(EntityItem(
-                    world, x + xx, y + yy, z + zz,
-                    ItemStack(self.blocks.blocksList[self.idDropped()], 1)
-                ))
+            xx = world.rand.random() * 0.7 + 0.15
+            yy = world.rand.random() * 0.7 + 0.15
+            zz = world.rand.random() * 0.7 + 0.15
+            item = EntityItem(
+                world, x + xx, y + yy, z + zz,
+                ItemStack(self.blocks.blocksList[self.idDropped()], 1)
+            )
+            item.delayBeforeCanPickup = 20
+            world.spawnEntityInWorld(item)
 
-    cdef bint canDrop(self):
+    cdef bint isExplosionResistant(self):
         return self.blockIsDropped
 
     cdef collisionRayTrace(self, int x, int y, int z, v0, v1):

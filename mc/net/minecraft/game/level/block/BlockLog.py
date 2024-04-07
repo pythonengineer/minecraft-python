@@ -5,7 +5,7 @@ import math
 
 class BlockLog(Block):
 
-    def __init__(self, blocks):
+    def __init__(self, blocks, blockId):
         super().__init__(blocks, 17)
         self.blockIndexInTexture = 20
 

@@ -25,8 +25,8 @@ class MobSpawner:
             if not self.__worldObj.isBlockNormalCube(blockX, blockY, blockZ) and \
                self.__worldObj.getBlockMaterial(blockX, blockY, blockZ) == Material.air and \
                (not self.__worldObj.isHalfLit(blockX, blockY, blockZ) or \
-               math.floor(self.__worldObj.rand.random() * 5) == 0):
-                for j in range(3):
+                math.floor(self.__worldObj.rand.random() * 5) == 0):
+                for j in range(8):
                     xx = blockX
                     yy = blockY
                     zz = blockZ
@@ -34,7 +34,7 @@ class MobSpawner:
                         xx += math.floor(self.__worldObj.rand.random() * 6) - math.floor(self.__worldObj.rand.random() * 6)
                         yy += math.floor(self.__worldObj.rand.random() * 1) - math.floor(self.__worldObj.rand.random() * 1)
                         zz += math.floor(self.__worldObj.rand.random() * 6) - math.floor(self.__worldObj.rand.random() * 6)
-                        if xx >= 0 and zz >= 1 and yy >= 0 and \
+                        if xx >= 0 and zz >= 0 and yy >= 0 and \
                            yy < self.__worldObj.height - 2 and xx < self.__worldObj.width and zz < self.__worldObj.length and \
                            self.__worldObj.isBlockNormalCube(xx, yy - 1, zz) and not \
                            self.__worldObj.isBlockNormalCube(xx, yy, zz) and not \
@@ -46,23 +46,18 @@ class MobSpawner:
                                 xd = x - entity.posX
                                 yd = y - entity.posY
                                 zd = z - entity.posZ
-                                if xd * xd + yd * yd + zd * zd < 256.0:
-                                    continue
                             else:
                                 xd = x - self.__worldObj.xSpawn
                                 yd = y - self.__worldObj.ySpawn
                                 zd = z - self.__worldObj.zSpawn
-                                if xd * xd + yd * yd + zd * zd < 256.0:
-                                    continue
+
+                            if xd * xd + yd * yd + zd * zd < 256.0:
+                                continue
 
                             mob = EntityLiving(self.__worldObj)
-                            mob.prevPosX = mob.posX = x
-                            mob.prevPosY = mob.posY = y
-                            mob.prevPosZ = mob.posZ = z
-                            mob.rotationYaw = self.__worldObj.rand.random() * 360.0
-                            mob.rotationPitch = 0.0
-                            mob.setPosition(x, y, z)
-                            mob.entityAI = AILiving()
+                            yaw = self.__worldObj.rand.random() * 360.0
+                            mob.setLocationAndAngles(x, y, z, yaw, 0.0)
+                            mob.setEntityAI(AILiving())
                             if self.__worldObj.checkIfAABBIsClear(mob.boundingBox):
                                 mobs += 1
                                 self.__worldObj.spawnEntityInWorld(mob)

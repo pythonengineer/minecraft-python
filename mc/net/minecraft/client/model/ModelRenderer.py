@@ -10,23 +10,23 @@ class ModelRenderer:
         self.__textureOffsetY = yTexOffs
         self.mirror = False
 
-    def addBox(self, x0, y0, z0, w, h, d, f):
+    def setBounds(self, x0, y0, z0, w, h, d, ofs):
         self.__corners = [None] * 8
         self.__faces = [None] * 6
 
         x1 = x0 + w
         y1 = y0 + h
         z1 = z0 + d
-        x0 -= f
-        y0 -= f
-        z0 -= f
-        x1 += f
-        y1 += f
-        z1 += f
+        x0 -= ofs
+        y0 -= ofs
+        z0 -= ofs
+        x1 += ofs
+        y1 += ofs
+        z1 += ofs
         if self.mirror:
-            f = x1
+            prevX = x1
             x1 = x0
-            x0 = f
+            x0 = prevX
 
         u0 = PositionTextureVertex.fromPos(x0, y0, z0, 0.0, 0.0)
         u1 = PositionTextureVertex.fromPos(x1, y0, z0, 0.0, 8.0)

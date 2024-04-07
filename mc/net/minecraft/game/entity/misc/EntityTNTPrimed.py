@@ -14,7 +14,7 @@ class EntityTNTPrimed(Entity):
         self.__motionX1 = -math.sin(r * math.pi / 180.0) * 0.02
         self.__motionY1 = 0.2
         self.__motionZ1 = -math.cos(r * math.pi / 180.0) * 0.02
-        self.makeStepSound = False
+        self._makeStepSound = False
         self.fuse = 40
         self.prevPosX = x
         self.prevPosY = y
@@ -38,8 +38,12 @@ class EntityTNTPrimed(Entity):
             self.__motionY1 *= -0.5
 
         if self.fuse <= 0:
+            self._worldObj.playSoundEffect(
+                self, 'random.explode', 2.0,
+                1.0 + (self._rand.random() - self._rand.random()) * 0.2
+            )
             self.setEntityDead()
-            self.worldObj.createExplosion(
+            self._worldObj.createExplosion(
                 None, self.posX, self.posY, self.posZ, 4.0
             )
 

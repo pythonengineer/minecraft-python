@@ -6,6 +6,7 @@ from libc.math cimport sin, cos, ceil, sqrt, atan2, pi
 
 from mc.net.minecraft.game.entity.Entity cimport Entity
 from mc.net.minecraft.game.entity.AILiving cimport AILiving
+from mc.net.minecraft.game.level.block.Blocks import blocks
 from pyglet import gl
 
 import random
@@ -22,9 +23,10 @@ cdef class EntityLiving(Entity):
         self.__prevRotationYawHead = 0.0
         self.__rotationYawHead = 0.0
         self.__maxAir = EntityLiving.TOTAL_AIR_SUPPLY
+        self.__splashed = False
         self.health = 20
         self.prevHealth = 0
-        self.scoreValue = 0
+        self.heartsLife = 0
         self.air = EntityLiving.TOTAL_AIR_SUPPLY
         self.hurtTime = 0
         self.maxHurtTime = 0
@@ -33,7 +35,7 @@ cdef class EntityLiving(Entity):
         self.__attackTime = 0
         self.prevCameraPitch = 0.0
         self.cameraPitch = 0.0
-        self.entityAI = AILiving()
+        self._entityAI = AILiving()
         self.stepHeight = 0.5
         self.setPosition(self.posX, self.posY, self.posZ)
 
@@ -54,8 +56,8 @@ cdef class EntityLiving(Entity):
             self.__attackTime -= 1
         if self.hurtTime > 0:
             self.hurtTime -= 1
-        if self.scoreValue > 0:
-            self.scoreValue -= 1
+        if self.heartsLife > 0:
+            self.heartsLife -= 1
         if self.health <= 0:
             self.deathTime += 1
             if self.deathTime > 20:
@@ -70,7 +72,22 @@ cdef class EntityLiving(Entity):
             self.air = self.__maxAir
 
         if self.handleWaterMovement():
+            if not self.__splashed:
+                volume = sqrt(self.motionX * self.motionX * 0.2 + self.motionY * \
+                              self.motionY + self.motionZ * self.motionZ * 0.2) * 0.2
+                if volume > 1.0:
+                    volume = 1.0
+
+                self._worldObj.playSoundEffect(
+                    self, 'random.splash', volume,
+                    1.0 + (self._rand.random() - self._rand.random()) * 0.4
+                )
+
             self._fallDistance = 0.0
+            self.__splashed = True
+        else:
+            self.__splashed = False
+
         if self.handleLavaMovement():
             self.attackEntityFrom(None, 10)
 
@@ -133,8 +150,8 @@ cdef class EntityLiving(Entity):
         self.__prevRotationYawHead += step
 
     cpdef onLivingUpdate(self):
-        if self.entityAI:
-            self.entityAI.onLivingUpdate(self.worldObj, self)
+        if self._entityAI:
+            self._entityAI.onLivingUpdate(self._worldObj, self)
 
     def heal(self, int hp):
         if self.health <= 0:
@@ -144,41 +161,44 @@ cdef class EntityLiving(Entity):
         if self.health > 20:
             self.health = 20
 
-        self.scoreValue = self.__heartsHalvesLife // 2
+        self.heartsLife = self.__heartsHalvesLife // 2
 
     def attackEntityFrom(self, Entity entity, int damage):
-        cdef float xd, zd, f3, f4
+        cdef float xd, zd, d
 
-        if not self.worldObj.survivalWorld:
+        if not self._worldObj.survivalWorld:
             return
 
         if self.health <= 0:
             return
 
-        if self.scoreValue > self.__heartsHalvesLife // 2.0:
+        if self.heartsLife > self.__heartsHalvesLife // 2.0:
             if self.prevHealth - damage >= self.health:
                 return
 
             self.health = self.prevHealth - damage
         else:
             self.prevHealth = self.health
-            self.scoreValue = self.__heartsHalvesLife
+            self.heartsLife = self.__heartsHalvesLife
             self.health -= damage
             self.hurtTime = self.maxHurtTime = 10
 
+        self._worldObj.playSoundEffect(
+            self, 'random.hurt', 1.0,
+            (self._rand.random() - self._rand.random()) * 0.2 + 1.0
+        )
         self.attackedAtYaw = 0.0
         if entity:
             xd = entity.posX - self.posX
             zd = entity.posZ - self.posZ
             self.attackedAtYaw = (atan2(zd, xd) * 180.0 / pi) - self.rotationYaw
-            f3 = sqrt(xd * xd + zd * zd)
-            f4 = 0.4
+            d = sqrt(xd * xd + zd * zd)
             self.motionX /= 2.0
             self.motionY /= 2.0
             self.motionZ /= 2.0
-            self.motionX -= xd / f3 * f4
+            self.motionX -= xd / d * 0.4
             self.motionY += 0.4
-            self.motionZ -= zd / f3 * f4
+            self.motionZ -= zd / d * 0.4
             if self.motionY > 0.4:
                 self.motionY = 0.4
         else:
@@ -194,6 +214,17 @@ cdef class EntityLiving(Entity):
         cdef int damage = <int>ceil(d - 3.0)
         if damage > 0:
             self.attackEntityFrom(None, damage)
+            block = self._worldObj.getBlockId(<int>self.posX,
+                                              <int>(self.posY - 0.2 - self.yOffset),
+                                              <int>self.posZ)
+            if block > 0:
+                sound = blocks.blocksList[block].stepSound
+                self._worldObj.playSoundEffect(self, 'step.' + sound.name,
+                                               sound.speed * 0.5,
+                                               sound.pitch * (12.0 / 16.0))
+
+    def setEntityAI(self, ai):
+        self._entityAI = ai
 
     cdef travel(self, float x, float z):
         if self.handleWaterMovement():

@@ -5,7 +5,7 @@ import math
 
 class BlockTNT(Block):
 
-    def __init__(self, blocks):
+    def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, 46, 8)
 
     def getBlockTexture(self, face):
@@ -25,4 +25,6 @@ class BlockTNT(Block):
         world.spawnEntityInWorld(entity)
 
     def onBlockDestroyedByPlayer(self, world, x, y, z):
-        world.spawnEntityInWorld(EntityTNTPrimed(world, x + 0.5, y + 0.5, z + 0.5))
+        entity = EntityTNTPrimed(world, x + 0.5, y + 0.5, z + 0.5)
+        world.spawnEntityInWorld(entity)
+        world.playSoundEffect(entity, 'random.fuse', 1.0, 1.0)

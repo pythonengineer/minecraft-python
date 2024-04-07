@@ -1,13 +1,12 @@
 from mc.net.minecraft.game.level.block.Block import Block
 
-class BlockFlower(Block):
+class BlockPlants(Block):
 
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, blockId, tex)
         self.blockIndexInTexture = tex
         self._setTickOnLoad(True)
-        b = 0.2
-        self._setBlockBounds(0.5 - b, 0.0, 0.5 - b, b + 0.5, b * 3.0, b + 0.5)
+        self._setBlockBounds(0.3, 0.0, 0.3, 0.7, 0.6, 0.7)
 
     def updateTick(self, world, x, y, z, random):
         if not world.multiplayerWorld:

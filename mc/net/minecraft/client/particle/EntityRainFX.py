@@ -1,4 +1,4 @@
-from mc.net.minecraft.client.effect.EntityFX import EntityFX
+from mc.net.minecraft.client.particle.EntityFX import EntityFX
 
 import random
 

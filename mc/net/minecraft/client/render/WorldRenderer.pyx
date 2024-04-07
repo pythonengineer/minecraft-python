@@ -46,7 +46,7 @@ cdef class WorldRenderer:
         self.needsUpdate = False
 
     def __init__(self, World world, int posX, int posY, int posZ,
-                 int lists, bint fake=False):
+                 int size, int lists, bint fake=False):
         if fake:
             return
 

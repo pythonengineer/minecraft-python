@@ -10,14 +10,13 @@ from libc.time cimport time
 from pyglet import gl
 
 import ctypes
+import time as pytime
 
 import numpy as np
 cimport numpy as np
 
 cpdef unsigned long long getMillis():
-    cdef double timestamp = time(NULL)
-    cdef unsigned long long milliseconds = <unsigned long long>(timestamp * 1000)
-    return milliseconds
+    return <unsigned long long>(pytime.time() * 1000)
 
 cdef bint Random_seeded = False
 
@@ -451,6 +450,21 @@ cdef class FloatBuffer(Buffer):
 
     cpdef inline float getAt(self, int idx):
         return self[self.checkIndex(idx)]
+
+    def getBytes(self, b):
+        cdef int rem
+
+        assert self.checkBounds(0, len(b), len(b))
+        assert self._position <= self._limit
+        rem = self._limit - self._position if self._position <= self._limit else 0
+        if len(b) > rem:
+            raise Exception
+
+        sliced = self[self._position:self._position + len(b)]
+        b[:] = [<float>e for e in sliced]
+
+        self._position += len(b)
+        return self
 
     cdef getFloats(self, float* array, int size):
         cdef int rem, i

@@ -12,8 +12,8 @@ cdef class RenderBlocks:
     cdef:
         Tessellator __tessellator
         World __blockAccess
-        public int overrideBlockTexture
-        public bint flipTexture
+        int __overrideBlockTexture
+        bint __renderSide
 
     cpdef bint renderBlockByRenderType(self, Block block, int x, int y, int z)
     cdef __renderBlockTorch(self, Block block, float x, float y, float z,

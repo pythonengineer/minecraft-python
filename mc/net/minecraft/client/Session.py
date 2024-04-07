@@ -13,8 +13,8 @@ class Session:
                      blocks.clothPurple, blocks.clothMagenta, blocks.clothRose,
                      blocks.clothDarkGray, blocks.clothGray, blocks.clothWhite,
                      blocks.oreCoal, blocks.oreIron, blocks.oreGold, blocks.ironBlock,
-                     blocks.goldBlock, blocks.bookShelf, blocks.tnt, blocks.obsidian)
+                     blocks.goldBlock, blocks.bookshelf, blocks.tnt, blocks.obsidian)
     print(len(allowedBlocks))
 
-    def __init__(self, username):
+    def __init__(self, username, sessionId):
         self.username = username

@@ -7,7 +7,7 @@ cdef class BlockGrass(Block):
     def __cinit__(self):
         self.__rand = Random()
 
-    def __init__(self, blocks):
+    def __init__(self, blocks, blockId):
         Block.__init__(self, blocks, 2)
         self.blockIndexInTexture = 3
         self._setTickOnLoad(True)

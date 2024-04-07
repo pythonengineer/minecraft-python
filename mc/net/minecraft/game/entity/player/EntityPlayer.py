@@ -21,17 +21,18 @@ class EntityPlayer(EntityLiving):
         self.yOffset = 1.62
         self.inventory = InventoryPlayer()
         self.health = EntityPlayer.MAX_HEALTH
+        self.userType = 0
         self.prevCameraYaw = 0.0
         self.cameraYaw = 0.0
-        self.score = 0
+        self.__getScore = 0
         self.getArrows = EntityPlayer.MAX_ARROWS
 
     def preparePlayerToSpawn(self):
         self.yOffset = 1.62
         self.setSize(0.6, 1.8)
         super().preparePlayerToSpawn()
-        if self.worldObj:
-            self.worldObj.playerEntity = self
+        if self._worldObj:
+            self._worldObj.playerEntity = self
 
         self.health = EntityPlayer.MAX_HEALTH
         self.deathTime = 0
@@ -52,38 +53,19 @@ class EntityPlayer(EntityLiving):
 
         self.cameraYaw += (d - self.cameraYaw) * 0.4
         self.cameraPitch += (t - self.cameraPitch) * 0.8
-        entities = self.worldObj.getEntitiesWithinAABBExcludingEntity(self, self.boundingBox.expand(1.0, 0.0, 1.0))
+        entities = self._worldObj.getEntitiesWithinAABBExcludingEntity(self, self.boundingBox.expand(1.0, 0.0, 1.0))
         if self.health > 0 and entities:
             for entity in entities:
                 if isinstance(entity, EntityItem):
-                    if entity.delayBeforeCanPickup == 0:
-                        delete = False
-                        stack = entity.item
-                        if stack.itemID > 0:
-                            item = stack.itemID
-                            slot = self.inventory.getInventorySlotContainItem(item)
-                            if slot < 0:
-                                slot = self.inventory.getFirstEmptyStack()
-
-                            if slot >= 0:
-                                if not self.inventory.mainInventory[slot]:
-                                    self.inventory.mainInventory[slot] = ItemStack(blocks.blocksList[item], 0)
-
-                                if self.inventory.mainInventory[slot].stackSize < 99:
-                                    self.inventory.mainInventory[slot].stackSize += 1
-                                    self.inventory.mainInventory[slot].animationsToGo = 5
-                                    delete = True
-                        else:
-                            slot = self.inventory.getFirstEmptyStack()
-                            if slot >= 0:
-                                self.inventory.mainInventory[slot] = stack
-                                delete = True
-
-                        if delete:
-                            self.worldObj.releaseEntitySkin(entity)
+                    if entity.delayBeforeCanPickup == 0 and self.inventory.addItemStackToInventory(entity.item):
+                        self._worldObj.playSoundEffect(
+                            entity, 'random.pop', 0.2,
+                            ((self._rand.random() - self._rand.random()) * 0.7 + 1.0) * 2.0
+                        )
+                        self._worldObj.releaseEntitySkin(entity)
 
     def getScore(self):
-        return 0
+        return self.__getScore
 
     def onDeath(self, entity):
         self.setSize(0.2, 0.2)
@@ -107,12 +89,12 @@ class EntityPlayer(EntityLiving):
                 self.inventory.mainInventory[currentItem] = None
             else:
                 self.inventory.mainInventory[currentItem].stackSize -= 1
-                stack = ItemStack(self.inventory.mainInventory[currentItem])
+                stack = ItemStack(self.inventory.mainInventory[currentItem], 1)
         else:
             stack = None
 
         if stack:
-            item = EntityItem(self.worldObj, self.posX, self.posY - 0.3,
+            item = EntityItem(self._worldObj, self.posX, self.posY - 0.3,
                               self.posZ, stack)
             item.delayBeforeCanPickup = 40
             item.motionX1 = math.sin(self.rotationYaw / 180.0 * math.pi) * 0.2
@@ -123,4 +105,4 @@ class EntityPlayer(EntityLiving):
             item.motionX1 = item.motionX1 + math.cos(angle) * scale
             item.motionY1 += (self.rand.random() - self.rand.random()) * 0.1
             item.motionZ1 = item.motionZ1 + math.sin(angle) * scale
-            self.worldObj.spawnEntityInWorld(item)
+            self._worldObj.spawnEntityInWorld(item)

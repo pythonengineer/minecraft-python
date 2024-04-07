@@ -83,11 +83,11 @@ class MD3Loader:
             buffer.position(ofsSurfaces)
 
             for i in range(buffers):
-                vertices.buffersMD3[i] = self.__getMD3Buffer(buffer, ofsSurfaces)
+                vertices.buffersMD3[i] = self.__getMD3Buffer(buffer)
 
             return vertices
 
-    def __getMD3Buffer(self, buffer, ofsSurfaces):
+    def __getMD3Buffer(self, buffer):
         ofsSurfaces = buffer.position()
         header = MD3Loader.__loadMD3Info(buffer, 4)
         if header != 'IDP3':

@@ -2,7 +2,7 @@ from mc.net.minecraft.game.level.block.Block import Block
 
 class BlockLeavesBase(Block):
 
-    def __init__(self, blocks, blockId, tex):
+    def __init__(self, blocks, blockId, tex, _):
         super().__init__(blocks, blockId, tex)
         self.__graphicsLevel = True
 

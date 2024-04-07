@@ -5,7 +5,7 @@ from pyglet import window
 class GuiNewLevel(GuiScreen):
 
     def __init__(self, screen):
-        self.__parentScreen = screen
+        self.__parentScr = screen
 
     def initGui(self, minecraft, width, height):
         super().initGui(minecraft, width, height)
@@ -21,7 +21,7 @@ class GuiNewLevel(GuiScreen):
 
     def _actionPerformed(self, button):
         if button.id == 3:
-            self._mc.displayGuiScreen(self.__parentScreen)
+            self._mc.displayGuiScreen(self.__parentScr)
         else:
             self._mc.generateNewLevel(button.id)
             self._mc.displayGuiScreen(None)
@@ -29,6 +29,6 @@ class GuiNewLevel(GuiScreen):
 
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
-        self.drawCenteredString(self._fontRenderer, 'Generate new level',
+        self.drawCenteredString(self._font, 'Generate new level',
                                 self.width // 2, 40, 0xFFFFFF)
         super().drawScreen(xm, ym)

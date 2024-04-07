@@ -19,10 +19,7 @@ class MD3Model:
                 gl.glNewList(self.__displayList + frame, gl.GL_COMPILE)
 
                 for md3 in self.__vertices.buffersMD3:
-                    md3.triangles.position(0).limit(md3.triangles.capacity())
-                    md3.xBuffer.position(0).limit(md3.xBuffer.capacity())
-                    md3.vertices.clear().position(0 * md3.verts * 3).limit(1 * md3.verts * 3)
-                    md3.normals.clear().position(0 * md3.verts * 3).limit(1 * md3.verts * 3)
+                    md3.setAndClearBuffers(frame, frame, 0.0)
                     md3.vertices.position(0)
                     md3.triangles.position(0)
                     md3.normals.position(0)

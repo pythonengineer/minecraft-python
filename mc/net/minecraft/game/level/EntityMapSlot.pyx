@@ -19,24 +19,24 @@ cdef class EntityMapSlot:
         if self.zSlot < 0:
             self.zSlot = 0
 
-        if self.xSlot >= self.__entityMap.xSlot:
-            self.xSlot = self.__entityMap.xSlot - 1
-        if self.ySlot >= self.__entityMap.ySlot:
-            self.ySlot = self.__entityMap.ySlot - 1
-        if self.zSlot >= self.__entityMap.zSlot:
-            self.zSlot = self.__entityMap.zSlot - 1
+        if self.xSlot >= self.__entityMap.width:
+            self.xSlot = self.__entityMap.width - 1
+        if self.ySlot >= self.__entityMap.depth:
+            self.ySlot = self.__entityMap.depth - 1
+        if self.zSlot >= self.__entityMap.height:
+            self.zSlot = self.__entityMap.height - 1
 
         return self
 
     cdef add(self, entity):
         if self.xSlot >= 0 and self.ySlot >= 0 and self.zSlot >= 0:
-            self.__entityMap.entityGrid[(self.zSlot * self.__entityMap.ySlot + self.ySlot) * \
-                                        self.__entityMap.xSlot + self.xSlot].append(entity)
+            self.__entityMap.entityGrid[(self.zSlot * self.__entityMap.depth + self.ySlot) * \
+                                        self.__entityMap.width + self.xSlot].append(entity)
 
     cdef remove(self, entity):
         if self.xSlot >= 0 and self.ySlot >= 0 and self.zSlot >= 0:
             try:
-                self.__entityMap.entityGrid[(self.zSlot * self.__entityMap.ySlot + self.ySlot) * \
-                                            self.__entityMap.xSlot + self.xSlot].remove(entity)
+                self.__entityMap.entityGrid[(self.zSlot * self.__entityMap.depth + self.ySlot) * \
+                                            self.__entityMap.width + self.xSlot].remove(entity)
             except:
                 pass

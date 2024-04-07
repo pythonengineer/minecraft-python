@@ -5,6 +5,9 @@ from pyglet import gl
 
 cdef class AxisAlignedBB:
 
+    def __cinit__(self):
+        self.__epsilon = 0.0
+
     def __init__(self, x0, y0, z0, x1, y1, z1):
         self.x0 = x0
         self.y0 = y0
@@ -174,7 +177,7 @@ cdef class AxisAlignedBB:
         zd = self.z1 - self.z0
         return (xd + yd + zd) / 3.0
 
-    cpdef clip(self, vec1, vec2):
+    cpdef calculateIntercept(self, vec1, vec2):
         cdef char b
 
         vecX0 = vec1.getIntermediateWithXValue(vec2, self.x0)
@@ -183,17 +186,17 @@ cdef class AxisAlignedBB:
         vecY1 = vec1.getIntermediateWithYValue(vec2, self.y1)
         vecZ0 = vec1.getIntermediateWithZValue(vec2, self.z0)
         vecZ1 = vec1.getIntermediateWithZValue(vec2, self.z1)
-        if not self.isVecInYZ(vecX0):
+        if not self.__isVecInYZ(vecX0):
             vecX0 = None
-        if not self.isVecInYZ(vecX1):
+        if not self.__isVecInYZ(vecX1):
             vecX1 = None
-        if not self.isVecInXZ(vecY0):
+        if not self.__isVecInXZ(vecY0):
             vecY0 = None
-        if not self.isVecInXZ(vecY1):
+        if not self.__isVecInXZ(vecY1):
             vecY1 = None
-        if not self.isVecInXY(vecZ0):
+        if not self.__isVecInXY(vecZ0):
             vecZ0 = None
-        if not self.isVecInXY(vecZ1):
+        if not self.__isVecInXY(vecZ1):
             vecZ1 = None
 
         vec38 = None
@@ -230,14 +233,14 @@ cdef class AxisAlignedBB:
 
         return MovingObjectPosition(0, 0, 0, b, vec38)
 
-    cdef bint isVecInYZ(self, xa):
+    cdef bint __isVecInYZ(self, xa):
         return False if not xa else xa.yCoord >= self.y0 and xa.yCoord <= self.y1 and \
                xa.zCoord >= self.z0 and xa.zCoord <= self.z1
 
-    cdef bint isVecInXZ(self, ya):
+    cdef bint __isVecInXZ(self, ya):
         return False if not ya else ya.xCoord >= self.x0 and ya.xCoord <= self.x1 and \
                ya.zCoord >= self.z0 and ya.zCoord <= self.z1
 
-    cdef bint isVecInXY(self, za):
+    cdef bint __isVecInXY(self, za):
         return False if not za else za.xCoord >= self.x0 and za.xCoord <= self.x1 and \
                za.yCoord >= self.y0 and za.yCoord <= self.y1
