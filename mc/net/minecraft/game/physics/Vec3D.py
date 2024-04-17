@@ -10,7 +10,7 @@ class Vec3D:
     def addVector(self, x, y, z):
         return Vec3D(self.xCoord + x, self.yCoord + y, self.zCoord + z)
 
-    def distanceTo(self, vec):
+    def distance(self, vec):
         xd = vec.xCoord - self.xCoord
         yd = vec.yCoord - self.yCoord
         zd = vec.zCoord - self.zCoord

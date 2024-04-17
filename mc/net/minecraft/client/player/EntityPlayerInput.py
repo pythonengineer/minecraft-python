@@ -7,6 +7,6 @@ class EntityPlayerInput(AILiving):
         self.__player = player
 
     def updatePlayerActionState(self):
-        self._moveStrafing = self.__player.playerKeys.moveStrafe
-        self._moveForward = self.__player.playerKeys.moveForward
-        self._isJumping = self.__player.playerKeys.jump
+        self._moveStrafing = self.__player.movementInput.moveStrafe
+        self._moveForward = self.__player.movementInput.moveForward
+        self._isJumping = self.__player.movementInput.jump

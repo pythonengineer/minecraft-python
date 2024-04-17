@@ -14,17 +14,18 @@ import random
 cdef class EntityLiving(Entity):
     ATTACK_DURATION = 5
     TOTAL_AIR_SUPPLY = 300
+    HEALTH = 20
 
     def __init__(self, world):
         super().__init__(world)
-        self.__heartsHalvesLife = 20
+        self.heartsHalvesLife = EntityLiving.HEALTH
         self.renderYawOffset = 0.0
         self.prevRenderYawOffset = 0.0
         self.__prevRotationYawHead = 0.0
         self.__rotationYawHead = 0.0
         self.__maxAir = EntityLiving.TOTAL_AIR_SUPPLY
-        self.__splashed = False
-        self.health = 20
+        self.__inWater = False
+        self.health = EntityLiving.HEALTH
         self.prevHealth = 0
         self.heartsLife = 0
         self.air = EntityLiving.TOTAL_AIR_SUPPLY
@@ -68,28 +69,37 @@ cdef class EntityLiving(Entity):
                 self.air -= 1
             else:
                 self.attackEntityFrom(None, 2)
+
+            self.fire = 0
         else:
             self.air = self.__maxAir
 
         if self.handleWaterMovement():
-            if not self.__splashed:
+            if not self.__inWater:
                 volume = sqrt(self.motionX * self.motionX * 0.2 + self.motionY * \
                               self.motionY + self.motionZ * self.motionZ * 0.2) * 0.2
                 if volume > 1.0:
                     volume = 1.0
 
-                self._worldObj.playSoundEffect(
+                self._worldObj.playSoundAtEntity(
                     self, 'random.splash', volume,
                     1.0 + (self._rand.random() - self._rand.random()) * 0.4
                 )
 
             self._fallDistance = 0.0
-            self.__splashed = True
+            self.__inWater = True
         else:
-            self.__splashed = False
+            self.__inWater = False
+
+        if self.fire > 0:
+            if self.fire % 20 == 0:
+                self.attackEntityFrom(None, 1)
+
+            self.fire -= 1
 
         if self.handleLavaMovement():
             self.attackEntityFrom(None, 10)
+            self.fire = 600
 
         self.prevRenderYawOffset = self.renderYawOffset
         self.prevRotationYaw = self.rotationYaw
@@ -158,10 +168,10 @@ cdef class EntityLiving(Entity):
             return
 
         self.health += hp
-        if self.health > 20:
-            self.health = 20
+        if self.health > EntityLiving.HEALTH:
+            self.health = EntityLiving.HEALTH
 
-        self.heartsLife = self.__heartsHalvesLife // 2
+        self.heartsLife = self.heartsHalvesLife // 2
 
     def attackEntityFrom(self, Entity entity, int damage):
         cdef float xd, zd, d
@@ -172,18 +182,18 @@ cdef class EntityLiving(Entity):
         if self.health <= 0:
             return
 
-        if self.heartsLife > self.__heartsHalvesLife // 2.0:
+        if self.heartsLife > self.heartsHalvesLife // 2.0:
             if self.prevHealth - damage >= self.health:
                 return
 
             self.health = self.prevHealth - damage
         else:
             self.prevHealth = self.health
-            self.heartsLife = self.__heartsHalvesLife
+            self.heartsLife = self.heartsHalvesLife
             self.health -= damage
             self.hurtTime = self.maxHurtTime = 10
 
-        self._worldObj.playSoundEffect(
+        self._worldObj.playSoundAtEntity(
             self, 'random.hurt', 1.0,
             (self._rand.random() - self._rand.random()) * 0.2 + 1.0
         )
@@ -219,9 +229,9 @@ cdef class EntityLiving(Entity):
                                               <int>self.posZ)
             if block > 0:
                 sound = blocks.blocksList[block].stepSound
-                self._worldObj.playSoundEffect(self, 'step.' + sound.name,
-                                               sound.speed * 0.5,
-                                               sound.pitch * (12.0 / 16.0))
+                self._worldObj.playSoundAtEntity(self, 'step.' + sound.soundDir,
+                                               sound.soundVolume * 0.5,
+                                               sound.soundPitch * (12.0 / 16.0))
 
     def setEntityAI(self, ai):
         self._entityAI = ai
@@ -234,7 +244,7 @@ cdef class EntityLiving(Entity):
             self.motionY *= 0.8
             self.motionZ *= 0.8
             self.motionY -= 0.02
-            if self.horizontalCollision and self.isOffsetPositionInLiquid(
+            if self.isCollidedHorizontally and self.isOffsetPositionInLiquid(
                 self.motionX, self.motionY + 0.6 - self.posY + self.posY, self.motionZ
             ):
                 self.motionY = 0.3
@@ -245,7 +255,7 @@ cdef class EntityLiving(Entity):
             self.motionY *= 0.5
             self.motionZ *= 0.5
             self.motionY -= 0.02
-            if self.horizontalCollision and self.isOffsetPositionInLiquid(
+            if self.isCollidedHorizontally and self.isOffsetPositionInLiquid(
                 self.motionX, self.motionY + 0.6 - self.posY + self.posY, self.motionZ
             ):
                 self.motionY = 0.3

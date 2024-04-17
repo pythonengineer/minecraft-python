@@ -1,5 +1,5 @@
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
-from mc.CompatibilityShims import BufferUtils
+from mc.JavaUtils import BufferUtils
 from pyglet import gl
 
 class RenderHelper:

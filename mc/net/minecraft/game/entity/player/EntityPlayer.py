@@ -1,7 +1,7 @@
 from mc.net.minecraft.game.entity.player.InventoryPlayer import InventoryPlayer
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
-from mc.net.minecraft.game.entity.player.ItemStack import ItemStack
+from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from pyglet import gl
 
@@ -10,22 +10,24 @@ import math
 class EntityPlayer(EntityLiving):
     MAX_HEALTH = 20
     MAX_ARROWS = 99
+    FIRE_RESISTANCE = 20
 
     def __init__(self, world):
         super().__init__(world)
         if world:
             world.playerEntity = self
+            world.onPickup(self)
             world.releaseEntitySkin(self)
-            world.spawnEntityInWorld(self)
 
         self.yOffset = 1.62
         self.inventory = InventoryPlayer()
         self.health = EntityPlayer.MAX_HEALTH
+        self.fireResistance = EntityPlayer.FIRE_RESISTANCE
         self.userType = 0
         self.prevCameraYaw = 0.0
         self.cameraYaw = 0.0
         self.__getScore = 0
-        self.getArrows = EntityPlayer.MAX_ARROWS
+        self.arrows = EntityPlayer.MAX_ARROWS
 
     def preparePlayerToSpawn(self):
         self.yOffset = 1.62
@@ -58,11 +60,11 @@ class EntityPlayer(EntityLiving):
             for entity in entities:
                 if isinstance(entity, EntityItem):
                     if entity.delayBeforeCanPickup == 0 and self.inventory.addItemStackToInventory(entity.item):
-                        self._worldObj.playSoundEffect(
+                        self._worldObj.playSoundAtEntity(
                             entity, 'random.pop', 0.2,
                             ((self._rand.random() - self._rand.random()) * 0.7 + 1.0) * 2.0
                         )
-                        self._worldObj.releaseEntitySkin(entity)
+                        self._worldObj.onPickup(entity)
 
     def getScore(self):
         return self.__getScore
@@ -89,7 +91,9 @@ class EntityPlayer(EntityLiving):
                 self.inventory.mainInventory[currentItem] = None
             else:
                 self.inventory.mainInventory[currentItem].stackSize -= 1
-                stack = ItemStack(self.inventory.mainInventory[currentItem], 1)
+                stack = self.inventory.mainInventory[currentItem]
+                stack.stackSize -= 1
+                stack = ItemStack(stack.itemID, 1)
         else:
             stack = None
 
@@ -97,12 +101,20 @@ class EntityPlayer(EntityLiving):
             item = EntityItem(self._worldObj, self.posX, self.posY - 0.3,
                               self.posZ, stack)
             item.delayBeforeCanPickup = 40
-            item.motionX1 = math.sin(self.rotationYaw / 180.0 * math.pi) * 0.2
-            item.motionZ1 = -math.cos(self.rotationYaw / 180.0 * math.pi) * 0.2
-            item.motionY1 = 0.2
-            angle = self.rand.random() * math.pi * 2.0
-            scale = self.rand.random() * 0.1
-            item.motionX1 = item.motionX1 + math.cos(angle) * scale
-            item.motionY1 += (self.rand.random() - self.rand.random()) * 0.1
-            item.motionZ1 = item.motionZ1 + math.sin(angle) * scale
-            self._worldObj.spawnEntityInWorld(item)
+            item.itemMotionX1 = math.sin(self.rotationYaw / 180.0 * math.pi) * 0.2
+            item.itemMotionZ1 = -math.cos(self.rotationYaw / 180.0 * math.pi) * 0.2
+            item.itemMotionY1 = 0.2
+            angle = self._rand.random() * math.pi * 2.0
+            scale = self._rand.random() * 0.1
+            item.itemMotionX1 = item.itemMotionX1 + math.cos(angle) * scale
+            item.itemMotionY1 += (self._rand.random() - self._rand.random()) * 0.1
+            item.itemMotionZ1 = item.itemMotionZ1 + math.sin(angle) * scale
+            self._worldObj.releaseEntitySkin(item)
+
+    def canHarvestBlock(self, block):
+        strength = 1.0
+        stack = self.inventory.mainInventory[self.inventory.currentItem]
+        if stack:
+            strength = 1.0 * stack.getItem().getStrVsBlock(block)
+
+        return strength

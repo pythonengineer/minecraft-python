@@ -14,10 +14,10 @@ class GuiIngame(Gui):
 
     def __init__(self, minecraft, width, height):
         self.__mc = minecraft
-        self.__ingameWidth = width * 240 // height
-        self.__ingameHeight = height * 240 // height
+        self.__scaledWidth = width * 240 // height
+        self.__scaledHeight = height * 240 // height
         self.__blockRenderer = RenderBlocks(tessellator)
-        self.__chatMessages = []
+        self.__chatMessageList = []
         self.__updateCounter = 0
 
     def renderGameOverlay(self):
@@ -26,11 +26,11 @@ class GuiIngame(Gui):
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glEnable(gl.GL_BLEND)
         self._zLevel = -90.0
-        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91, self.__ingameHeight - 22, 0, 0, 182, 22)
-        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91 - 1 + self.__mc.thePlayer.inventory.currentSlot * 20,
-                               self.__ingameHeight - 22 - 1, 0, 22, 24, 22)
+        self.drawTexturedModalRect(self.__scaledWidth / 2 - 91, self.__scaledHeight - 22, 0, 0, 182, 22)
+        self.drawTexturedModalRect(self.__scaledWidth / 2 - 91 - 1 + self.__mc.thePlayer.inventory.currentItem * 20,
+                                   self.__scaledHeight - 22 - 1, 0, 22, 24, 22)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/icons.png'))
-        self.drawTexturedModalRect(self.__ingameWidth / 2 - 7, self.__ingameHeight / 2 - 7, 0, 0, 16, 16)
+        self.drawTexturedModalRect(self.__scaledWidth / 2 - 7, self.__scaledHeight / 2 - 7, 0, 0, 16, 16)
         invulnerable = 1 if self.__mc.thePlayer.heartsLife // 3 % 2 == 1 else 0
         if self.__mc.thePlayer.heartsLife < 10:
             invulnerable = 0
@@ -44,8 +44,8 @@ class GuiIngame(Gui):
                 if invulnerable != 0:
                     n5 = 1
 
-                n4 = self.__ingameWidth / 2 - 91 + (i << 3)
-                n3 = self.__ingameHeight - 32
+                n4 = self.__scaledWidth / 2 - 91 + (i << 3)
+                n3 = self.__scaledHeight - 32
                 if health <= 4:
                     n3 += self.__rand.randint(0, 1)
 
@@ -66,11 +66,11 @@ class GuiIngame(Gui):
                 n5 = math.ceil(self.__mc.thePlayer.air * 10.0 / 300.0) - n6
                 for n4 in range(n6 + n5):
                     if n4 < n6:
-                        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91 + (n4 << 3),
-                                                   self.__ingameHeight - 32 - 9, 16, 18, 9, 9)
+                        self.drawTexturedModalRect(self.__scaledWidth / 2 - 91 + (n4 << 3),
+                                                   self.__scaledHeight - 32 - 9, 16, 18, 9, 9)
                     else:
-                        self.drawTexturedModalRect(self.__ingameWidth / 2 - 91 + (n4 << 3),
-                                                   self.__ingameHeight - 32 - 9, 25, 18, 9, 9)
+                        self.drawTexturedModalRect(self.__scaledWidth / 2 - 91 + (n4 << 3),
+                                                   self.__scaledHeight - 32 - 9, 25, 18, 9, 9)
 
         gl.glDisable(gl.GL_BLEND)
         gl.glEnable(gl.GL_NORMALIZE)
@@ -80,8 +80,8 @@ class GuiIngame(Gui):
         gl.glPopMatrix()
 
         for slot in range(9):
-            width = self.__ingameWidth // 2 - 90 + slot * 20 + 2
-            height = self.__ingameHeight - 16 - 3
+            width = self.__scaledWidth // 2 - 90 + slot * 20 + 2
+            height = self.__scaledHeight - 16 - 3
             stack = self.__mc.thePlayer.inventory.mainInventory[slot]
             if not stack:
                 if slot > 50:
@@ -94,7 +94,7 @@ class GuiIngame(Gui):
                 continue
 
             item = stack.itemID
-            if item > 0:
+            if item < 256:
                 tex = self.__mc.renderEngine.getTexture('terrain.png')
                 gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
                 block = blocks.blocksList[item]
@@ -107,12 +107,14 @@ class GuiIngame(Gui):
                 gl.glColor4f(1.0, 1.0, 1.0, 1.0)
                 self.__blockRenderer.renderBlockOnInventory(block)
                 gl.glPopMatrix()
-            elif stack.iconIndex >= 0:
+            elif stack.getItem().getIconIndex() >= 0:
                 gl.glDisable(gl.GL_LIGHTING)
                 tex = self.__mc.renderEngine.getTexture('gui/items.png')
                 gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-                self.drawTexturedModalRect(width, height, stack.iconIndex % 16 << 4,
-                                       stack.iconIndex // 16 << 4, 16, 16)
+                self.drawTexturedModalRect(
+                    width, height, stack.getItem().getIconIndex() % 16 << 4,
+                    stack.getItem().getIconIndex() // 16 << 4, 16, 16
+                )
                 gl.glEnable(gl.GL_LIGHTING)
 
             if stack.stackSize > 1:
@@ -134,24 +136,24 @@ class GuiIngame(Gui):
         if isinstance(self.__mc.playerController, PlayerControllerSP):
             score = 'Score: &e' + str(self.__mc.thePlayer.getScore())
             self.__mc.fontRenderer.drawStringWithShadow(
-                score, self.__ingameWidth - self.__mc.fontRenderer.getStringWidth(score) - 2,
+                score, self.__scaledWidth - self.__mc.fontRenderer.getStringWidth(score) - 2,
                 2, 16777215
             )
             self.__mc.fontRenderer.drawStringWithShadow(
-                'Arrows: ' + str(self.__mc.thePlayer.getArrows),
-                self.__ingameWidth // 2 + 8, self.__ingameHeight - 33, 16777215
+                'Arrows: ' + str(self.__mc.thePlayer.arrows),
+                self.__scaledWidth // 2 + 8, self.__scaledHeight - 33, 16777215
             )
 
-        for i, message in enumerate(self.__chatMessages):
+        for i, message in enumerate(self.__chatMessageList):
             if i >= 10:
                 break
 
             if message.updateCounter < 200:
                 self.__mc.fontRenderer.drawStringWithShadow(
-                    None, 2, self.__ingameHeight - 8 - i * 9 - 20, 0xFFFFFF
+                    None, 2, self.__scaledHeight - 8 - i * 9 - 20, 0xFFFFFF
                 )
 
-    def updateChatMessages(self):
+    def addChatMessage(self):
         self.__updateCounter += 1
-        for message in self.__chatMessages.copy():
+        for message in self.__chatMessageList.copy():
             message.updateCounter += 1

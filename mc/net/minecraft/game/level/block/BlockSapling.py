@@ -1,14 +1,15 @@
-from mc.net.minecraft.game.level.block.BlockPlants import BlockPlants
+from mc.net.minecraft.game.level.block.BlockFlower import BlockFlower
 
+import random
 import math
 
-class BlockSapling(BlockPlants):
+class BlockSapling(BlockFlower):
 
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, 6, 15)
         self._setBlockBounds(10.0 * 0.01, 0.0, 10.0 * 0.01, 0.9, 0.8, 0.9)
 
-    def updateTick(self, world, x, y, z, random):
+    def updateTick(self, world, x, y, z):
         below = world.getBlockId(x, y - 1, z)
         if world.isHalfLit(x, y, z) and (below == self.blocks.dirt.blockID or \
            below == self.blocks.grass.blockID):

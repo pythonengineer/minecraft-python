@@ -9,20 +9,20 @@ cdef class AxisAlignedBB:
         self.__epsilon = 0.0
 
     def __init__(self, x0, y0, z0, x1, y1, z1):
-        self.x0 = x0
-        self.y0 = y0
-        self.z0 = z0
-        self.x1 = x1
-        self.y1 = y1
-        self.z1 = z1
+        self.minX = x0
+        self.minY = y0
+        self.minZ = z0
+        self.maxX = x1
+        self.maxY = y1
+        self.maxZ = z1
 
     cpdef AxisAlignedBB addCoord(self, float xa, float ya, float za):
-        _x0 = self.x0
-        _y0 = self.y0
-        _z0 = self.z0
-        _x1 = self.x1
-        _y1 = self.y1
-        _z1 = self.z1
+        _x0 = self.minX
+        _y0 = self.minY
+        _z0 = self.minZ
+        _x1 = self.maxX
+        _y1 = self.maxY
+        _z1 = self.maxZ
 
         if xa < 0.0: _x0 += xa
         if xa > 0.0: _x1 += xa
@@ -34,158 +34,158 @@ cdef class AxisAlignedBB:
         return AxisAlignedBB(_x0, _y0, _z0, _x1, _y1, _z1)
 
     def expand(self, xa, ya, za):
-        _x0 = self.x0 - xa
-        _y0 = self.y0 - ya
-        _z0 = self.z0 - za
-        _x1 = self.x1 + xa
-        _y1 = self.y1 + ya
-        _z1 = self.z1 + za
+        _x0 = self.minX - xa
+        _y0 = self.minY - ya
+        _z0 = self.minZ - za
+        _x1 = self.maxX + xa
+        _y1 = self.maxY + ya
+        _z1 = self.maxZ + za
 
         return AxisAlignedBB(_x0, _y0, _z0, _x1, _y1, _z1)
 
     def cloneMove(self, xa, ya, za):
-        return AxisAlignedBB(self.x0 + za, self.y0 + ya, self.z0 + za,
-                             self.x1 + xa, self.y1 + ya, self.z1 + za)
+        return AxisAlignedBB(self.minX + za, self.minY + ya, self.minZ + za,
+                             self.maxX + xa, self.maxY + ya, self.maxZ + za)
 
-    cdef float clipXCollide(self, AxisAlignedBB c, float xa):
+    cdef float calculateXOffset(self, AxisAlignedBB c, float xa):
         cdef float maximum
 
-        if c.y1 <= self.y0 or c.y0 >= self.y1:
+        if c.maxY <= self.minY or c.minY >= self.maxY:
             return xa
-        if c.z1 <= self.z0 or c.z0 >= self.z1:
+        if c.maxZ <= self.minZ or c.minZ >= self.maxZ:
             return xa
 
-        if xa > 0.0 and c.x1 <= self.x0:
-            maximum = self.x0 - c.x1
+        if xa > 0.0 and c.maxX <= self.minX:
+            maximum = self.minX - c.maxX
             if maximum < xa:
                 xa = maximum
 
-        if xa < 0.0 and c.x0 >= self.x1:
-            maximum = self.x1 - c.x0
+        if xa < 0.0 and c.minX >= self.maxX:
+            maximum = self.maxX - c.minX
             if maximum > xa:
                 xa = maximum
 
         return xa
 
-    cdef float clipYCollide(self, AxisAlignedBB c, float ya):
+    cdef float calculateYOffset(self, AxisAlignedBB c, float ya):
         cdef float maximum
 
-        if c.x1 <= self.x0 or c.x0 >= self.x1:
+        if c.maxX <= self.minX or c.minX >= self.maxX:
             return ya
-        if c.z1 <= self.z0 or c.z0 >= self.z1:
+        if c.maxZ <= self.minZ or c.minZ >= self.maxZ:
             return ya
 
-        if ya > 0.0 and c.y1 <= self.y0:
-            maximum = self.y0 - c.y1
+        if ya > 0.0 and c.maxY <= self.minY:
+            maximum = self.minY - c.maxY
             if maximum < ya:
                 ya = maximum
 
-        if ya < 0.0 and c.y0 >= self.y1:
-            maximum = self.y1 - c.y0
+        if ya < 0.0 and c.minY >= self.maxY:
+            maximum = self.maxY - c.minY
             if maximum > ya:
                 ya = maximum
 
         return ya
 
-    cdef float clipZCollide(self, AxisAlignedBB c, float za):
+    cdef float calculateZOffset(self, AxisAlignedBB c, float za):
         cdef float maximum
 
-        if c.x1 <= self.x0 or c.x0 >= self.x1:
+        if c.maxX <= self.minX or c.minX >= self.maxX:
             return za
-        if c.y1 <= self.y0 or c.y0 >= self.y1:
+        if c.maxY <= self.minY or c.minY >= self.maxY:
             return za
 
-        if za > 0.0 and c.z1 <= self.z0:
-            maximum = self.z0 - c.z1
+        if za > 0.0 and c.maxZ <= self.minZ:
+            maximum = self.minZ - c.maxZ
             if maximum < za:
                 za = maximum
 
-        if za < 0.0 and c.z0 >= self.z1:
-            maximum = self.z1 - c.z0
+        if za < 0.0 and c.minZ >= self.maxZ:
+            maximum = self.maxZ - c.minZ
             if maximum > za:
                 za = maximum
 
         return za
 
     def intersectsBB(self, c):
-        if c.x1 <= self.x0 or c.x0 >= self.x1:
+        if c.maxX <= self.minX or c.minX >= self.maxX:
             return False
-        if c.y1 <= self.y0 or c.y0 >= self.y1:
+        if c.maxY <= self.minY or c.minY >= self.maxY:
             return False
-        if c.z1 <= self.x0 or c.z0 >= self.x1:
+        if c.maxZ <= self.minX or c.minZ >= self.maxX:
             return False
 
         return True
 
     def intersectsWith(self, c):
-        if c.x1 >= self.x0 and c.x0 <= self.x1:
-            if c.y1 >= self.y0 and c.y0 <= self.y1:
-                return c.z1 >= self.z0 and c.z0 <= self.z1
+        if c.maxX >= self.minX and c.minX <= self.maxX:
+            if c.maxY >= self.minY and c.minY <= self.maxY:
+                return c.maxZ >= self.minZ and c.minZ <= self.maxZ
 
         return False
 
     cpdef void offset(self, float xa, float ya, float za):
-        self.x0 += xa
-        self.y0 += ya
-        self.z0 += za
-        self.x1 += xa
-        self.y1 += ya
-        self.z1 += za
+        self.minX += xa
+        self.minY += ya
+        self.minZ += za
+        self.maxX += xa
+        self.maxY += ya
+        self.maxZ += za
 
     cdef AxisAlignedBB copy(self):
-        return AxisAlignedBB(self.x0, self.y0, self.z0, self.x1, self.y1, self.z1)
+        return AxisAlignedBB(self.minX, self.minY, self.minZ, self.maxX, self.maxY, self.maxZ)
 
     def intersects(self, minX, minY, minZ, maxX, maxY, maxZ):
-        if maxX <= self.x0 or minX >= self.x1:
+        if maxX <= self.minX or minX >= self.maxX:
             return False
-        if maxY <= self.y0 or minY >= self.y1:
+        if maxY <= self.minY or minY >= self.maxY:
             return False
-        if maxZ <= self.z0 or minZ >= self.z1:
+        if maxZ <= self.minZ or minZ >= self.maxZ:
             return False
 
         return True
 
     def render(self):
         gl.glBegin(gl.GL_LINE_STRIP)
-        gl.glVertex3f(self.x0, self.y0, self.z0)
-        gl.glVertex3f(self.x1, self.y0, self.z0)
-        gl.glVertex3f(self.x1, self.y0, self.z1)
-        gl.glVertex3f(self.x0, self.y0, self.z1)
-        gl.glVertex3f(self.x0, self.y0, self.z0)
+        gl.glVertex3f(self.minX, self.minY, self.minZ)
+        gl.glVertex3f(self.maxX, self.minY, self.minZ)
+        gl.glVertex3f(self.maxX, self.minY, self.maxZ)
+        gl.glVertex3f(self.minX, self.minY, self.maxZ)
+        gl.glVertex3f(self.minX, self.minY, self.minZ)
         gl.glEnd()
         gl.glBegin(gl.GL_LINE_STRIP)
-        gl.glVertex3f(self.x0, self.y1, self.z0)
-        gl.glVertex3f(self.x1, self.y1, self.z0)
-        gl.glVertex3f(self.x1, self.y1, self.z1)
-        gl.glVertex3f(self.x0, self.y1, self.z1)
-        gl.glVertex3f(self.x0, self.y1, self.z0)
+        gl.glVertex3f(self.minX, self.maxY, self.minZ)
+        gl.glVertex3f(self.maxX, self.maxY, self.minZ)
+        gl.glVertex3f(self.maxX, self.maxY, self.maxZ)
+        gl.glVertex3f(self.minX, self.maxY, self.maxZ)
+        gl.glVertex3f(self.minX, self.maxY, self.minZ)
         gl.glEnd()
         gl.glBegin(gl.GL_LINES)
-        gl.glVertex3f(self.x0, self.y0, self.z0)
-        gl.glVertex3f(self.x0, self.y1, self.z0)
-        gl.glVertex3f(self.x1, self.y0, self.z0)
-        gl.glVertex3f(self.x1, self.y1, self.z0)
-        gl.glVertex3f(self.x1, self.y0, self.z1)
-        gl.glVertex3f(self.x1, self.y1, self.z1)
-        gl.glVertex3f(self.x0, self.y0, self.z1)
-        gl.glVertex3f(self.x0, self.y1, self.z1)
+        gl.glVertex3f(self.minX, self.minY, self.minZ)
+        gl.glVertex3f(self.minX, self.maxY, self.minZ)
+        gl.glVertex3f(self.maxX, self.minY, self.minZ)
+        gl.glVertex3f(self.maxX, self.maxY, self.minZ)
+        gl.glVertex3f(self.maxX, self.minY, self.maxZ)
+        gl.glVertex3f(self.maxX, self.maxY, self.maxZ)
+        gl.glVertex3f(self.minX, self.minY, self.maxZ)
+        gl.glVertex3f(self.minX, self.maxY, self.maxZ)
         gl.glEnd()
 
     def getSize(self):
-        xd = self.x1 - self.x0
-        yd = self.y1 - self.y0
-        zd = self.z1 - self.z0
+        xd = self.maxX - self.minX
+        yd = self.maxY - self.minY
+        zd = self.maxZ - self.minZ
         return (xd + yd + zd) / 3.0
 
     cpdef calculateIntercept(self, vec1, vec2):
         cdef char b
 
-        vecX0 = vec1.getIntermediateWithXValue(vec2, self.x0)
-        vecX1 = vec1.getIntermediateWithXValue(vec2, self.x1)
-        vecY0 = vec1.getIntermediateWithYValue(vec2, self.y0)
-        vecY1 = vec1.getIntermediateWithYValue(vec2, self.y1)
-        vecZ0 = vec1.getIntermediateWithZValue(vec2, self.z0)
-        vecZ1 = vec1.getIntermediateWithZValue(vec2, self.z1)
+        vecX0 = vec1.getIntermediateWithXValue(vec2, self.minX)
+        vecX1 = vec1.getIntermediateWithXValue(vec2, self.maxX)
+        vecY0 = vec1.getIntermediateWithYValue(vec2, self.minY)
+        vecY1 = vec1.getIntermediateWithYValue(vec2, self.maxY)
+        vecZ0 = vec1.getIntermediateWithZValue(vec2, self.minZ)
+        vecZ1 = vec1.getIntermediateWithZValue(vec2, self.maxZ)
         if not self.__isVecInYZ(vecX0):
             vecX0 = None
         if not self.__isVecInYZ(vecX1):
@@ -234,13 +234,13 @@ cdef class AxisAlignedBB:
         return MovingObjectPosition(0, 0, 0, b, vec38)
 
     cdef bint __isVecInYZ(self, xa):
-        return False if not xa else xa.yCoord >= self.y0 and xa.yCoord <= self.y1 and \
-               xa.zCoord >= self.z0 and xa.zCoord <= self.z1
+        return False if not xa else xa.yCoord >= self.minY and xa.yCoord <= self.maxY and \
+               xa.zCoord >= self.minZ and xa.zCoord <= self.maxZ
 
     cdef bint __isVecInXZ(self, ya):
-        return False if not ya else ya.xCoord >= self.x0 and ya.xCoord <= self.x1 and \
-               ya.zCoord >= self.z0 and ya.zCoord <= self.z1
+        return False if not ya else ya.xCoord >= self.minX and ya.xCoord <= self.maxX and \
+               ya.zCoord >= self.minZ and ya.zCoord <= self.maxZ
 
     cdef bint __isVecInXY(self, za):
-        return False if not za else za.xCoord >= self.x0 and za.xCoord <= self.x1 and \
-               za.yCoord >= self.y0 and za.yCoord <= self.y1
+        return False if not za else za.xCoord >= self.minX and za.xCoord <= self.maxX and \
+               za.yCoord >= self.minY and za.yCoord <= self.maxY

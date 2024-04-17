@@ -1,7 +1,7 @@
-from mc.net.minecraft.game.level.block.BlockFluid import BlockFluid
+from mc.net.minecraft.game.level.block.BlockFlowing import BlockFlowing
 from mc.net.minecraft.game.level.material.Material import Material
 
-class BlockStationary(BlockFluid):
+class BlockStationary(BlockFlowing):
 
     def __init__(self, blocks, blockId, material):
         super().__init__(blocks, blockId, material)
@@ -9,16 +9,16 @@ class BlockStationary(BlockFluid):
         self._stillId = blockId
         self._setTickOnLoad(False)
 
-    def updateTick(self, world, x, y, z, random):
+    def updateTick(self, world, x, y, z):
         pass
 
     def onNeighborBlockChange(self, world, x, y, z, blockType):
         hasAirNeighbor = False
-        if world.getBlockId(x - 1, y, z) == 0: hasAirNeighbor = True
-        if world.getBlockId(x + 1, y, z) == 0: hasAirNeighbor = True
-        if world.getBlockId(x, y, z - 1) == 0: hasAirNeighbor = True
-        if world.getBlockId(x, y, z + 1) == 0: hasAirNeighbor = True
-        if world.getBlockId(x, y - 1, z) == 0: hasAirNeighbor = True
+        if self._canFlow(world, x - 1, y, z): hasAirNeighbor = True
+        if self._canFlow(world, x + 1, y, z): hasAirNeighbor = True
+        if self._canFlow(world, x, y, z - 1): hasAirNeighbor = True
+        if self._canFlow(world, x, y, z + 1): hasAirNeighbor = True
+        if self._canFlow(world, x, y - 1, z): hasAirNeighbor = True
 
         if blockType != 0:
             material = self.blocks.blocksList[blockType].getBlockMaterial()
@@ -26,6 +26,9 @@ class BlockStationary(BlockFluid):
                material == Material.water and self._material == Material.lava:
                 world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)
                 return
+
+        if self.blocks.fire.canBlockIdCatchFire(blockType):
+            hasAirNeighbor = True
 
         if hasAirNeighbor:
             world.setTileNoUpdate(x, y, z, self._movingId)

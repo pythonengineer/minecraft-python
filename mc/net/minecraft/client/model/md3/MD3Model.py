@@ -1,4 +1,4 @@
-from mc.CompatibilityShims import BufferUtils
+from mc.JavaUtils import BufferUtils
 
 from pyglet import gl
 

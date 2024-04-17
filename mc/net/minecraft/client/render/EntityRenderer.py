@@ -2,14 +2,14 @@ from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
-from mc.net.minecraft.client.render.ClippingHelper import ClippingHelper
+from mc.net.minecraft.client.render.Frustum import Frustum
 from mc.net.minecraft.client.render.ItemRenderer import ItemRenderer
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.Tessellator import tessellator
-from mc.net.minecraft.client.particle.EntityRainFX import EntityRainFX
+from mc.net.minecraft.client.effect.EntityRainFX import EntityRainFX
 from mc.net.minecraft.client.RenderHelper import RenderHelper
 from mc.net.minecraft.client.controller.PlayerControllerCreative import PlayerControllerCreative
-from mc.CompatibilityShims import BufferUtils
+from mc.JavaUtils import BufferUtils
 
 from pyglet import gl
 from PIL import Image
@@ -28,6 +28,7 @@ class EntityRenderer:
     __rainTicks = 0
     __pointedEntity = None
 
+    __entityDecimalFormat = '{:04d}'
     __entityByteBuffer = None
     __entityFloatBuffer = BufferUtils.createFloatBuffer(16)
 
@@ -48,7 +49,7 @@ class EntityRenderer:
     def __init__(self, minecraft):
         self.__mc = minecraft
         self.itemRenderer = ItemRenderer(self.__mc)
-        self.__clippingHelper = ClippingHelper()
+        self.__frustum = Frustum()
 
     def updateRenderer(self):
         self.__prevFogColor = self.__fogColor
@@ -62,7 +63,7 @@ class EntityRenderer:
 
         self.itemRenderer.updateEquippedItem()
 
-        if self.__mc.thirdPersonView:
+        if self.__mc.renderRain:
             x = self.__mc.thePlayer.posX
             y = self.__mc.thePlayer.posY
             z = self.__mc.thePlayer.posZ
@@ -115,7 +116,7 @@ class EntityRenderer:
 
     def updateCameraAndRender(self, alpha):
         if self.__displayActive and not self.__mc.isActive():
-            self.__mc.displayIngameMenu()
+            self.__mc.displayInGameMenu()
 
         self.__displayActive = self.__mc.isActive()
 
@@ -138,7 +139,7 @@ class EntityRenderer:
             vec2 = rotVec.addVector(xy * d, x2 * d, y1 * d)
             self.__mc.objectMouseOver = self.__mc.theWorld.rayTraceBlocks(rotVec, vec2)
             if self.__mc.objectMouseOver:
-                d = self.__mc.objectMouseOver.hitVec.distanceTo(rotVec)
+                d = self.__mc.objectMouseOver.hitVec.distance(rotVec)
 
             vec = self.__orientCamera(alpha)
             if isinstance(self.__mc.playerController, PlayerControllerCreative):
@@ -156,7 +157,7 @@ class EntityRenderer:
 
                 hit = entity.boundingBox.expand(0.1, 0.1, 0.1).calculateIntercept(vec, vec2)
                 if hit:
-                    di = vec.distanceTo(hit.hitVec)
+                    di = vec.distance(hit.hitVec)
                     if di < d or d == 0.0:
                         self.__pointedEntity = entity
                         d = di
@@ -222,8 +223,8 @@ class EntityRenderer:
                 z = self.__mc.thePlayer.prevPosZ + (self.__mc.thePlayer.posZ - self.__mc.thePlayer.prevPosZ) * alpha
                 gl.glTranslatef(-x, -y, -z)
 
-                self.__clippingHelper.init()
-                self.__mc.renderGlobal.clipRenderersByFrustrum(self.__clippingHelper)
+                self.__frustum.init()
+                self.__mc.renderGlobal.clipRenderersByFrustum(self.__frustum)
                 self.__mc.renderGlobal.updateRenderers(self.__mc.thePlayer)
 
                 self.__setupFog()
@@ -248,13 +249,13 @@ class EntityRenderer:
 
                 RenderHelper.enableStandardItemLighting()
                 self.__mc.renderGlobal.renderEntities(self.__orientCamera(alpha),
-                                                      self.__clippingHelper, alpha)
+                                                      self.__frustum, alpha)
                 RenderHelper.disableStandardItemLighting()
                 self.__setupFog()
                 self.__mc.effectRenderer.renderParticles(self.__mc.thePlayer, alpha)
                 self.__mc.renderGlobal.oobGroundRenderer()
                 self.__setupFog()
-                self.__mc.renderGlobal.renderClouds(alpha)
+                self.__mc.renderGlobal.renderSky(alpha)
                 self.__setupFog()
 
                 if self.__mc.objectMouseOver:
@@ -287,7 +288,7 @@ class EntityRenderer:
                 gl.glEnable(gl.GL_CULL_FACE)
                 gl.glDisable(gl.GL_BLEND)
                 gl.glDisable(gl.GL_FOG)
-                if self.__mc.thirdPersonView:
+                if self.__mc.renderRain:
                     x = int(self.__mc.thePlayer.posX)
                     y = int(self.__mc.thePlayer.posY)
                     z = int(self.__mc.thePlayer.posZ)
@@ -366,83 +367,101 @@ class EntityRenderer:
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
             self.__mc.currentScreen.drawScreen(xMouse, yMouse)
 
-    def renderLargeScreenshot(self):
+    def grabLargeScreenshot(self):
         self.__mc.loadingScreen.displayProgressMessage('Grabbing large screenshot')
         home = os.path.expanduser('~') or '.'
-        file = os.path.join(home, 'minecraft_map.png')
-        self.__mc.loadingScreen.displayLoadingString('Rendering')
+        i = 0
+        while True:
+            file = os.path.join(home, 'mc_map_' + self.__entityDecimalFormat.format(i) + '.png')
+            if not os.path.exists(file):
+                self.__mc.loadingScreen.displayLoadingString('Rendering')
 
-        try:
-            size = max(self.__mc.theWorld.width, self.__mc.theWorld.length)
-            w = size << 1 << 4
-            h = self.__mc.theWorld.height + size << 4
-            img = Image.new('RGB', (w, h))
+                try:
+                    w = (self.__mc.theWorld.width << 4) + (self.__mc.theWorld.length << 4)
+                    h = (self.__mc.theWorld.height << 4) + w // 2
+                    img = Image.new('RGB', (w, h))
 
-            for x in range(0, w, self.__mc.width):
-                for y in range(0, h, self.__mc.height):
-                    if not self.__entityByteBuffer:
-                        self.__entityByteBuffer = BufferUtils.createByteBuffer(self.__mc.width * self.__mc.height << 2)
+                    for x in range(0, w, self.__mc.width):
+                        for y in range(0, h, self.__mc.height):
+                            if not self.__entityByteBuffer:
+                                self.__entityByteBuffer = BufferUtils.createByteBuffer(self.__mc.width * self.__mc.height << 2)
 
-                    #gl.glViewport(0, 0, self.__mc.width, self.__mc.height)
-                    self.__updateFogColor(0.0)
-                    gl.glClear(gl.GL_DEPTH_BUFFER_BIT | gl.GL_COLOR_BUFFER_BIT)
-                    self.__fogColorMultiplier = 1.0
-                    gl.glEnable(gl.GL_CULL_FACE)
-                    self.__farPlaneDistance = 512 >> (self.__mc.options.renderDistance << 1)
-                    gl.glMatrixMode(gl.GL_PROJECTION)
-                    gl.glLoadIdentity()
-                    gl.glOrtho(0.0, self.__mc.width, 0.0, self.__mc.height, 10.0, 10000.0)
-                    gl.glMatrixMode(gl.GL_MODELVIEW)
-                    gl.glLoadIdentity()
-                    gl.glTranslatef(-(x - w // 2), -(y - h // 2), -5000.0)
-                    gl.glScalef(16.0, -16.0, -16.0)
-                    self.__entityFloatBuffer.clear()
-                    self.__entityFloatBuffer.put(1.0).put(-0.5).put(0.0).put(0.0)
-                    self.__entityFloatBuffer.put(0.0).put(1.0).put(-1.0).put(0.0)
-                    self.__entityFloatBuffer.put(1.0).put(0.5).put(0.0).put(0.0)
-                    self.__entityFloatBuffer.put(0.0).put(0.0).put(0.0).put(1.0)
-                    self.__entityFloatBuffer.flip()
-                    self.__entityFloatBuffer.glMultMatrix()
-                    gl.glTranslatef(-self.__mc.theWorld.width / 2.0,
-                                    -self.__mc.theWorld.height / 2.0,
-                                    -self.__mc.theWorld.length / 2.0)
-                    clippingHelper = ClippingHelper().init()
-                    self.__mc.renderGlobal.clipRenderersByFrustrum(clippingHelper)
-                    self.__mc.renderGlobal.updateRenderers(self.__mc.thePlayer)
-                    self.__setupFog()
-                    gl.glDisable(gl.GL_FOG)
-                    RenderHelper.enableStandardItemLighting()
-                    self.__mc.renderGlobal.renderEntities(self.__orientCamera(0.0),
-                                                     clippingHelper, 0.0)
-                    RenderHelper.disableStandardItemLighting()
-                    self.__mc.renderGlobal.sortAndRender(self.__mc.thePlayer, 0)
-                    gl.glEnable(gl.GL_BLEND)
-                    gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
-                    gl.glColorMask(False, False, False, False)
-                    remaining = self.__mc.renderGlobal.sortAndRender(self.__mc.thePlayer, 1)
-                    gl.glColorMask(True, True, True, True)
-                    if remaining > 0:
-                        self.__mc.renderGlobal.renderAllRenderLists()
+                            #gl.glViewport(0, 0, self.__mc.width, self.__mc.height)
+                            self.__updateFogColor(0.0)
+                            gl.glClear(gl.GL_DEPTH_BUFFER_BIT | gl.GL_COLOR_BUFFER_BIT)
+                            self.__fogColorMultiplier = 1.0
+                            gl.glEnable(gl.GL_CULL_FACE)
+                            self.__farPlaneDistance = 512 >> (self.__mc.options.renderDistance << 1)
+                            gl.glMatrixMode(gl.GL_PROJECTION)
+                            gl.glLoadIdentity()
+                            gl.glOrtho(0.0, self.__mc.width, 0.0, self.__mc.height, 10.0, 10000.0)
+                            gl.glMatrixMode(gl.GL_MODELVIEW)
+                            gl.glLoadIdentity()
+                            gl.glTranslatef(-(x - w // 2), -(y - h // 2), -5000.0)
+                            gl.glScalef(16.0, -16.0, -16.0)
+                            self.__entityFloatBuffer.clear()
+                            self.__entityFloatBuffer.put(1.0).put(-0.5).put(0.0).put(0.0)
+                            self.__entityFloatBuffer.put(0.0).put(1.0).put(-1.0).put(0.0)
+                            self.__entityFloatBuffer.put(1.0).put(0.5).put(0.0).put(0.0)
+                            self.__entityFloatBuffer.put(0.0).put(0.0).put(0.0).put(1.0)
+                            self.__entityFloatBuffer.flip()
+                            self.__entityFloatBuffer.glMultMatrix()
+                            gl.glRotatef(0.0, 0.0, 1.0, 0.0)
+                            gl.glTranslatef(-self.__mc.theWorld.width / 2.0,
+                                            -self.__mc.theWorld.height / 2.0,
+                                            -self.__mc.theWorld.length / 2.0)
+                            frustum = Frustum().init()
+                            self.__mc.renderGlobal.clipRenderersByFrustum(frustum)
+                            self.__mc.renderGlobal.updateRenderers(self.__mc.thePlayer)
+                            self.__setupFog()
+                            gl.glEnable(gl.GL_FOG)
+                            gl.glFogi(gl.GL_FOG_MODE, gl.GL_LINEAR)
+                            fogH = self.__mc.theWorld.height * 8.0
+                            gl.glFogf(gl.GL_FOG_START, 5000.0 - fogH)
+                            gl.glFogf(gl.GL_FOG_END, 5000.0 + fogH * 8.0)
+                            RenderHelper.enableStandardItemLighting()
+                            self.__mc.renderGlobal.renderEntities(self.__orientCamera(0.0),
+                                                                  frustum, 0.0)
+                            RenderHelper.disableStandardItemLighting()
+                            self.__mc.renderGlobal.sortAndRender(self.__mc.thePlayer, 0)
+                            self.__mc.renderGlobal.oobGroundRenderer()
+                            if self.__mc.theWorld.cloudHeight < self.__mc.theWorld.height:
+                                self.__mc.renderGlobal.renderSky(0.0)
 
-                    gl.glDepthMask(True)
-                    gl.glDisable(gl.GL_BLEND)
-                    gl.glDisable(gl.GL_FOG)
-                    self.__entityByteBuffer.clear()
-                    gl.glPixelStorei(gl.GL_PACK_ALIGNMENT, 1)
-                    self.__entityByteBuffer.glReadPixels(
-                        0, 0, self.__mc.width, self.__mc.height,
-                        gl.GL_RGB, gl.GL_UNSIGNED_BYTE
-                    )
-                    im = EntityRenderer.__screenshotBuffer(
-                        self.__entityByteBuffer,
-                        self.__mc.width, self.__mc.height
-                    )
-                    img.paste(im, (x, y))
+                            gl.glEnable(gl.GL_BLEND)
+                            gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+                            gl.glColorMask(False, False, False, False)
+                            remaining = self.__mc.renderGlobal.sortAndRender(self.__mc.thePlayer, 1)
+                            gl.glColorMask(True, True, True, True)
+                            if remaining > 0:
+                                self.__mc.renderGlobal.renderAllRenderLists()
 
-            self.__mc.loadingScreen.displayLoadingString(f'Saving as {file}')
-            img.save(file)
-        except Exception as e:
-            print(traceback.format_exc())
+                            if self.__mc.theWorld.getGroundLevel() >= 0:
+                                self.__mc.renderGlobal.oobWaterRenderer()
+
+                            gl.glDepthMask(True)
+                            gl.glDisable(gl.GL_BLEND)
+                            gl.glDisable(gl.GL_FOG)
+                            self.__entityByteBuffer.clear()
+                            gl.glPixelStorei(gl.GL_PACK_ALIGNMENT, 1)
+                            self.__entityByteBuffer.glReadPixels(
+                                0, 0, self.__mc.width, self.__mc.height,
+                                gl.GL_RGB, gl.GL_UNSIGNED_BYTE
+                            )
+                            im = EntityRenderer.__screenshotBuffer(
+                                self.__entityByteBuffer,
+                                self.__mc.width, self.__mc.height
+                            )
+                            img.paste(im, (x, y))
+
+                    self.__mc.loadingScreen.displayLoadingString(f'Saving as {file}')
+                    img.save(file)
+                    return
+                except Exception as e:
+                    print(traceback.format_exc())
+                    return
+
+            i += 1
 
     @staticmethod
     def __screenshotBuffer(buffer, w, h):

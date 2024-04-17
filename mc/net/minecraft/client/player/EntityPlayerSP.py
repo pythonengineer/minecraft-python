@@ -5,9 +5,9 @@ class EntityPlayerSP(EntityPlayer):
 
     def __init__(self, world):
         super().__init__(world)
-        self.playerKeys = None
+        self.movementInput = None
         self._entityAI = EntityPlayerInput(self)
 
     def onLivingUpdate(self):
-        self.playerKeys.updatePlayerMoveState()
+        self.movementInput.updatePlayerMoveState()
         super().onLivingUpdate()

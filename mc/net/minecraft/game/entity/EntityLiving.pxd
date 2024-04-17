@@ -6,13 +6,13 @@ from mc.net.minecraft.game.entity.AILiving cimport AILiving
 cdef class EntityLiving(Entity):
 
     cdef:
-        int __heartsHalvesLife
+        public int heartsHalvesLife
         public float renderYawOffset
         public float prevRenderYawOffset
         float __prevRotationYawHead
         float __rotationYawHead
         int __maxAir
-        bint __splashed
+        bint __inWater
         public int health
         public int prevHealth
         public int heartsLife

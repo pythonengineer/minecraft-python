@@ -5,7 +5,7 @@ from mc.net.minecraft.client.model.md3.MD3Shader import MD3Shader
 from mc.net.minecraft.client.model.md3.MD3Data import MD3Data
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.InputStream import ByteArrayOutputStream, DataInputStream
-from mc.CompatibilityShims import BufferUtils, ByteOrder
+from mc.JavaUtils import BufferUtils, ByteOrder
 from pyglet import resource
 
 import math

@@ -18,7 +18,7 @@ class GuiScreen(Gui):
         if button == window.mouse.LEFT:
             for button in self._controlList:
                 if button.mousePressed(xm, ym):
-                    self._mc.sndManager.playSound('random.click', 1.0, 1.0)
+                    self._mc.sndManager.playSoundFX('random.click', 1.0, 1.0)
                     self._actionPerformed(button)
 
     def _actionPerformed(self, button):
@@ -26,7 +26,7 @@ class GuiScreen(Gui):
 
     def initGui(self, minecraft, width, height):
         self._mc = minecraft
-        self._font = minecraft.fontRenderer
+        self._fontRenderer = minecraft.fontRenderer
         self.width = width
         self.height = height
         self._controlList = []

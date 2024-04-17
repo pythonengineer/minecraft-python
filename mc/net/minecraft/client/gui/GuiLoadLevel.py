@@ -49,8 +49,8 @@ class GuiLoadLevel(GuiScreen):
 
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
-        self.drawCenteredString(self._font, self._title, self.width // 2, 20, 0xFFFFFF)
+        self.drawCenteredString(self._fontRenderer, self._title, self.width // 2, 20, 0xFFFFFF)
         if not self.__loaded:
-            self.drawCenteredString(self._font, self.__status, self.width // 2, self.height // 2 - 4, 0xFFFFFF)
+            self.drawCenteredString(self._fontRenderer, self.__status, self.width // 2, self.height // 2 - 4, 0xFFFFFF)
 
         super().drawScreen(xm, ym)

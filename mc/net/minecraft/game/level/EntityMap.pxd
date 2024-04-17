@@ -14,14 +14,14 @@ cdef class EntityMap:
         public int depth
         public int height
 
-        EntityMapSlot __slot0
-        EntityMapSlot __slot1
+        EntityMapSlot __slot
+        EntityMapSlot __slot2
 
         public list entityGrid
-        public list all
-        list __tmp
+        public list entities
+        list __entitiesExcludingEntity
 
-    cdef add(self, Entity entity)
+    cdef insert(self, Entity entity)
     cdef remove(self, Entity entity)
     cdef list getEntities(self, Entity oEntity, float x0, float y0, float z0,
                           float x1, float y1, float z1)

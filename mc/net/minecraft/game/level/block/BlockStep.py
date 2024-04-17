@@ -24,7 +24,7 @@ class BlockStep(Block):
 
         if world.getBlockId(x, y - 1, z) == self.blocks.stairSingle.blockID:
             world.setBlockWithNotify(x, y, z, 0)
-            world.setBlockWithNotify(x, y - 1, z, self.blocks.slabDouble.blockID)
+            world.setBlockWithNotify(x, y - 1, z, self.blocks.stairDouble.blockID)
 
     def isDropped(self):
         return self.blocks.stairSingle.blockID

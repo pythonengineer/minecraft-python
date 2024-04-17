@@ -2,7 +2,7 @@
 
 from libc.math cimport floor
 
-from mc.CompatibilityShims cimport Random
+from mc.JavaUtils cimport Random
 
 cdef class NoiseGeneratorPerlin:
 

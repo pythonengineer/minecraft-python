@@ -8,7 +8,7 @@ class SoundPool:
         self.__nameToSoundPoolEntriesMapping = {}
         self.numberOfSoundPoolEntries = 0
 
-    def getFolder(self, soundUrl, file):
+    def addSound(self, soundUrl, file):
         try:
             sound = soundUrl[0:-4].replace('/', '.')
             while sound[-1].isdigit():
@@ -17,8 +17,10 @@ class SoundPool:
             if sound not in self.__nameToSoundPoolEntriesMapping:
                 self.__nameToSoundPoolEntriesMapping[sound] = []
 
-            self.__nameToSoundPoolEntriesMapping[sound].append(SoundPoolEntry(soundUrl, file))
+            entry = SoundPoolEntry(soundUrl, file)
+            self.__nameToSoundPoolEntriesMapping[sound].append(entry)
             self.numberOfSoundPoolEntries += 1
+            return entry
         except Exception as e:
             raise RuntimeError(e)
 

@@ -1,4 +1,4 @@
-from mc.CompatibilityShims import BufferUtils
+from mc.JavaUtils import BufferUtils
 from mc import Resources
 from pyglet import gl
 
@@ -47,6 +47,12 @@ class RenderEngine:
         gl.glBindTexture(gl.GL_TEXTURE_2D, id_)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        if self.__clampTexture:
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP)
+        else:
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_REPEAT)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_REPEAT)
 
         if not isinstance(img, tuple):
             w = img.width
@@ -116,13 +122,6 @@ class RenderEngine:
             self.__imageData.putBytes(argb)
             self.__imageData.position(0).limit(len(argb))
 
-        if self.__clampTexture:
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP)
-        else:
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_REPEAT)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_REPEAT)
-
         self.__imageData.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, w, h,
                                       0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
 
@@ -142,6 +141,17 @@ class RenderEngine:
                                              texture.iconIndex // 16 << 4,
                                              16, 16, gl.GL_RGBA,
                                              gl.GL_UNSIGNED_BYTE)
+
+        for texture in self.__textureList:
+            if texture.textureId <= 0:
+                continue
+
+            self.__imageData.clear()
+            self.__imageData.putBytes(texture.imageData)
+            self.__imageData.position(0).limit(len(texture.imageData))
+            gl.glBindTexture(gl.GL_TEXTURE_2D, texture.textureId)
+            self.__imageData.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, 16, 16,
+                                             gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
 
     def refreshTextures(self):
         for id_, img in self.__textureContentsMap.items():

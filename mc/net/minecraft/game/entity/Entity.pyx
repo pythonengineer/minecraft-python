@@ -26,17 +26,17 @@ cdef class Entity:
         self.prevRotationPitch = 0.0
         self.boundingBox = None
         self.onGround = False
-        self.horizontalCollision = False
-        self.__collision = True
+        self.isCollidedHorizontally = False
+        self.__surfaceCollision = True
         self.isDead = False
         self.yOffset = 0.0
-        self.__bbWidth = 0.6
-        self.bbHeight = 1.8
+        self.width = 0.6
+        self.height = 1.8
         self.prevDistanceWalkedModified = 0.0
         self.distanceWalkedModified = 0.0
-        self._makeStepSound = True
+        self._canTriggerWalking = True
         self._fallDistance = 0.0
-        self.__nextStep = 1
+        self.__nextStepDistance = 1
         self.lastTickPosX = 0.0
         self.lastTickPosY = 0.0
         self.lastTickPosZ = 0.0
@@ -46,6 +46,8 @@ cdef class Entity:
         self.__entityCollisionReduction = 0.0
         self._rand = Random()
         self.ticksExisted = 0
+        self.fireResistance = 1
+        self.fire = 0
 
     def __init__(self, world):
         self._worldObj = world
@@ -73,15 +75,15 @@ cdef class Entity:
         self.isDead = True
 
     def setSize(self, w, h):
-        self.__bbWidth = w
-        self.bbHeight = h
+        self.width = w
+        self.height = h
 
     def setPosition(self, float x, float y, float z):
         self.posX = x
         self.posY = y
         self.posZ = z
-        w = self.__bbWidth / 2.0
-        h = self.bbHeight / 2.0
+        w = self.width / 2.0
+        h = self.height / 2.0
         self.boundingBox = AxisAlignedBB(x - w, y - h, z - w, x + w, y + h, z + w)
 
     def turn(self, float xo, float yo):
@@ -136,29 +138,29 @@ cdef class Entity:
         aabbOrg = self.boundingBox.copy()
         aABBs = self._worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(x, y, z))
         for aABB in aABBs:
-            y = aABB.clipYCollide(self.boundingBox, y)
+            y = aABB.calculateYOffset(self.boundingBox, y)
 
         self.boundingBox.offset(0.0, y, 0.0)
-        if not self.__collision and yaOrg != y:
+        if not self.__surfaceCollision and yaOrg != y:
             z = 0.0
             y = 0.0
             x = 0.0
 
         onGround = self.onGround or yaOrg != y and yaOrg < 0.0
         for aABB in aABBs:
-            x = aABB.clipXCollide(self.boundingBox, x)
+            x = aABB.calculateXOffset(self.boundingBox, x)
 
         self.boundingBox.offset(x, 0.0, 0.0)
-        if not self.__collision and xaOrg != x:
+        if not self.__surfaceCollision and xaOrg != x:
             z = 0.0
             y = 0.0
             x = 0.0
 
         for aABB in aABBs:
-            z = aABB.clipZCollide(self.boundingBox, z)
+            z = aABB.calculateZOffset(self.boundingBox, z)
 
         self.boundingBox.offset(0.0, 0.0, z)
-        if not self.__collision and zaOrg != z:
+        if not self.__surfaceCollision and zaOrg != z:
             z = 0.0
             y = 0.0
             x = 0.0
@@ -174,28 +176,28 @@ cdef class Entity:
             self.boundingBox = aabbOrg.copy()
             aABBs = self._worldObj.getCollidingBoundingBoxes(self.boundingBox.addCoord(xaOrg, y, zaOrg))
             for aABB in aABBs:
-                y = aABB.clipYCollide(self.boundingBox, y)
+                y = aABB.calculateYOffset(self.boundingBox, y)
 
             self.boundingBox.offset(0.0, y, 0.0)
-            if not self.__collision and yaOrg != y:
+            if not self.__surfaceCollision and yaOrg != y:
                 z = 0.0
                 y = 0.0
                 x = 0.0
 
             for aABB in aABBs:
-                x = aABB.clipXCollide(self.boundingBox, x)
+                x = aABB.calculateXOffset(self.boundingBox, x)
 
             self.boundingBox.offset(x, 0.0, 0.0)
-            if not self.__collision and xaOrg != x:
+            if not self.__surfaceCollision and xaOrg != x:
                 z = 0.0
                 y = 0.0
                 x = 0.0
 
             for aABB in aABBs:
-                z = aABB.clipZCollide(self.boundingBox, z)
+                z = aABB.calculateZOffset(self.boundingBox, z)
 
             self.boundingBox.offset(0.0, 0.0, z)
-            if not self.__collision and zaOrg != z:
+            if not self.__surfaceCollision and zaOrg != z:
                 z = 0.0
                 y = 0.0
                 x = 0.0
@@ -208,10 +210,10 @@ cdef class Entity:
             else:
                 self.__ySize += 0.5
 
-        self.posX = (self.boundingBox.x0 + self.boundingBox.x1) * (1 / 2)
-        self.posY = self.boundingBox.y0 + self.yOffset - self.__ySize
-        self.posZ = (self.boundingBox.z0 + self.boundingBox.z1) * (1 / 2)
-        self.horizontalCollision = xaOrg != x or zaOrg != z
+        self.posX = (self.boundingBox.minX + self.boundingBox.maxX) * (1 / 2)
+        self.posY = self.boundingBox.minY + self.yOffset - self.__ySize
+        self.posZ = (self.boundingBox.minZ + self.boundingBox.maxZ) * (1 / 2)
+        self.isCollidedHorizontally = xaOrg != x or zaOrg != z
         self.onGround = yaOrg != y and yaOrg < 0.0
         if self.onGround:
             if self._fallDistance > 0.0:
@@ -230,17 +232,33 @@ cdef class Entity:
         xd = self.posX - xOrg
         zd = self.posZ - zOrg
         self.distanceWalkedModified = <float>(self.distanceWalkedModified + sqrt(xd * xd + zd * zd) * 0.6)
-        if self._makeStepSound:
+        if self._canTriggerWalking:
             block = self._worldObj.getBlockId(<int>self.posX,
                                               <int>(self.posY - 0.2 - self.yOffset),
                                               <int>self.posZ)
-            if self.distanceWalkedModified > self.__nextStep and block > 0:
-                self.__nextStep += 1
+            if self.distanceWalkedModified > self.__nextStepDistance and block > 0:
+                self.__nextStepDistance += 1
                 sound = blocks.blocksList[block].stepSound
-                self._worldObj.playSoundEffect(self, 'step.' + sound.name,
-                                               sound.speed * 0.15, sound.pitch)
+                self._worldObj.playSoundAtEntity(self, 'step.' + sound.soundDir,
+                                                 sound.soundVolume * 0.15, sound.soundPitch)
 
         self.__ySize *= 0.4
+        inWater = self.handleWaterMovement()
+        if self._worldObj.isBoundingBoxBurning(self.boundingBox):
+            self.attackEntityFrom(None, 1)
+            if not inWater:
+                self.fire += 1
+                if self.fire == 0:
+                    self.fire = 300
+        elif self.fire <= 0:
+            self.fire = -self.fireResistance
+
+        if inWater and self.fire > 0:
+            self._worldObj.playSoundAtEntity(
+                self, 'random.fizz', 0.7,
+                1.6 + (self._rand.random() - self._rand.random()) * 0.4
+            )
+            self.fire = -self.fireResistance
 
     cdef _fall(self, float distance):
         pass
@@ -292,7 +310,7 @@ cdef class Entity:
     def setWorld(self, world):
         self._worldObj = world
 
-    def setLocationAndAngles(self, x, y, z, yaw, pitch):
+    def setPositionAndRotation(self, x, y, z, yaw, pitch):
         self.prevPosX = self.posX = x
         self.prevPosY = self.posY = y
         self.prevPosZ = self.posZ = z

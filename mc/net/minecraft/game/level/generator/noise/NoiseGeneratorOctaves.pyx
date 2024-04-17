@@ -1,7 +1,7 @@
 # cython: language_level=3
 
 from mc.net.minecraft.game.level.generator.noise.NoiseGeneratorPerlin cimport NoiseGeneratorPerlin
-from mc.CompatibilityShims cimport Random
+from mc.JavaUtils cimport Random
 
 cdef class NoiseGeneratorOctaves:
 

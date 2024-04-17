@@ -135,8 +135,8 @@ _GL_KEYS = {v: k for k, v in _KEYS.items()}
 
 class GameSettings:
     __RENDER_DISTANCES = ('FAR', 'NORMAL', 'SHORT', 'TINY')
-    __music = True
-    __sound = True
+    music = True
+    sound = True
     invertMouse = False
     showFPS = False
     renderDistance = 0
@@ -174,9 +174,11 @@ class GameSettings:
 
     def setOptionValue(self, option, arg):
         if option == 0:
-            self.__music = not self.__music
+            self.music = not self.music
+            self.__mc.sndManager.onSoundOptionsChanged()
         elif option == 1:
-            self.__sound = not self.__sound
+            self.sound = not self.sound
+            self.__mc.sndManager.onSoundOptionsChanged()
         elif option == 2:
             self.invertMouse = not self.invertMouse
         elif option == 3:
@@ -195,9 +197,9 @@ class GameSettings:
 
     def setOptionString(self, option):
         if option == 0:
-            return 'Music: ' + ('ON' if self.__music else 'OFF')
+            return 'Music: ' + ('ON' if self.music else 'OFF')
         elif option == 1:
-            return 'Sound: ' + ('ON' if self.__sound else 'OFF')
+            return 'Sound: ' + ('ON' if self.sound else 'OFF')
         elif option == 2:
             return 'Invert mouse: ' + ('ON' if self.invertMouse else 'OFF')
         elif option == 3:
@@ -221,9 +223,9 @@ class GameSettings:
                     for line in lines.split('\n'):
                         split = line.split(':')
                         if split[0] == 'music':
-                            self.__music = split[1] == 'true'
+                            self.music = split[1] == 'true'
                         elif split[0] == 'sound':
-                            self.__sound = split[1] == 'true'
+                            self.sound = split[1] == 'true'
                         elif split[0] == 'invertYMouse':
                             self.invertMouse = split[1] == 'true'
                         elif split[0] == 'showFrameRate':
@@ -246,8 +248,8 @@ class GameSettings:
     def __saveOptions(self):
         try:
             with open(self.__optionsFile, 'w+') as f:
-                f.write('music:' + ('true' if self.__music else 'false') + '\n')
-                f.write('sound:' + ('true' if self.__sound else 'false') + '\n')
+                f.write('music:' + ('true' if self.music else 'false') + '\n')
+                f.write('sound:' + ('true' if self.sound else 'false') + '\n')
                 f.write('invertYMouse:' + ('true' if self.invertMouse else 'false') + '\n')
                 f.write('showFrameRate:' + ('true' if self.showFPS else 'false') + '\n')
                 f.write('viewDistance:' + str(self.renderDistance) + '\n')

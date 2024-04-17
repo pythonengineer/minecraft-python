@@ -10,8 +10,8 @@ cdef class Block:
         public int blockID
         public object stepSound
         public float blockParticleGravity
-        public bint blockIsDropped
-        int __hardness
+        public float _hardness
+        public bint canExplode
 
         public float minX
         public float minY
@@ -26,14 +26,15 @@ cdef class Block:
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer)
     cpdef int getBlockTexture(self, int face)
     cpdef bint isOpaqueCube(self)
-    cpdef void updateTick(self, World world, int x, int y, int z, random) except *
+    cdef bint isCollidable(self)
+    cpdef void updateTick(self, World world, int x, int y, int z) except *
     cpdef int getBlockMaterial(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
-    cpdef int quantityDropped(self, random)
+    cpdef int quantityDropped(self)
     cpdef int idDropped(self)
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
-    cdef bint isExplosionResistant(self)
+    cdef bint getCanExplode(self)
     cdef collisionRayTrace(self, int x, int y, int z, v0, v1)
     cdef bint __isVecInsideYZBounds(self, vec)
     cdef bint __isVecInsideXZBounds(self, vec)

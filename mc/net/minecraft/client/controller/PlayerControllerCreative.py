@@ -1,19 +1,19 @@
 from mc.net.minecraft.client.Session import Session
 from mc.net.minecraft.client.controller.PlayerController import PlayerController
 from mc.net.minecraft.client.gui.GuiInventory import GuiInventory
-from mc.net.minecraft.game.entity.player.ItemStack import ItemStack
 from mc.net.minecraft.game.level.MobSpawner import MobSpawner
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.item.ItemStack import ItemStack
 
 class PlayerControllerCreative(PlayerController):
 
-    def displayInventoryGUI(self):
+    def openInventory(self):
         self._mc.displayGuiScreen(GuiInventory())
 
     def flipPlayer(self, player):
         for i in range(9):
             if player.inventory.mainInventory[i] is None:
-                player.inventory.mainInventory[i] = ItemStack(blocks.blocksList[Session.allowedBlocks[i].blockID])
+                player.inventory.mainInventory[i] = ItemStack(blocks.blocksList[Session.registeredBlocksList[i].blockID])
             else:
                 player.inventory.mainInventory[i].stackSize = 1
 

@@ -3,7 +3,7 @@
 from mc.net.minecraft.game.entity.Entity cimport Entity
 from mc.net.minecraft.game.entity.EntityLiving cimport EntityLiving
 from mc.net.minecraft.game.level.World cimport World
-from mc.CompatibilityShims cimport Random
+from mc.JavaUtils cimport Random
 
 cdef class AILiving:
 

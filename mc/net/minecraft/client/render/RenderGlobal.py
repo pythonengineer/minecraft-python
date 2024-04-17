@@ -3,10 +3,10 @@ from mc.net.minecraft.game.entity.player.EntityPlayer import EntityPlayer
 from mc.net.minecraft.client.render.EntitySorter import EntitySorter
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.WorldRenderer import WorldRenderer
-from mc.net.minecraft.client.render.RenderManager import RenderManager
+from mc.net.minecraft.client.render.RenderMD3 import RenderMD3
 from mc.net.minecraft.client.render.RenderSorter import RenderSorter
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
-from mc.CompatibilityShims import BufferUtils, getMillis
+from mc.JavaUtils import BufferUtils, getMillis
 from pyglet import gl
 from functools import cmp_to_key
 
@@ -25,7 +25,7 @@ class RenderGlobal:
         self.__sortedWorldRenderers = []
         self.__worldRenderers = []
         self.__globalRenderBlocks = None
-        self.renderManager = RenderManager()
+        self.renderManager = RenderMD3()
         self.__chunkBuffer = [0] * 50000
         self.__cloudOffsetX = 0
         self.__prevSortX = -9999.0
@@ -35,11 +35,11 @@ class RenderGlobal:
         self.__glGenList = gl.glGenLists(2)
         self.__glRenderListBase = gl.glGenLists(524288)
 
-    def setWorld(self, world):
+    def changeWorld(self, world):
         if self.__worldObj:
             self.__worldObj.removeWorldAccess(self)
 
-        self.renderManager.setWorld(world)
+        self.renderManager.changeWorld(world)
         self.__worldObj = world
         self.__globalRenderBlocks = RenderBlocks(tessellator, world)
         if world:
@@ -73,7 +73,6 @@ class RenderGlobal:
 
         self.__worldRenderersToUpdate.clear()
         gl.glNewList(self.__glGenList, gl.GL_COMPILE)
-        gl.glColor4f(0.5, 0.5, 0.5, 1.0)
         t = tessellator
         y = self.__worldObj.getGroundLevel()
         s = 128
@@ -85,42 +84,12 @@ class RenderGlobal:
         t.startDrawingQuads()
         for xx in range(-s * d, self.__worldObj.width + s * d, s):
             for zz in range(-s * d, self.__worldObj.length + s * d, s):
-                yy = y
-                if xx >= 0 and zz >= 0 and xx < self.__worldObj.width and zz < self.__worldObj.length:
-                    yy = 0.0
-
-                t.addVertexWithUV(xx + 0, yy, zz + s, 0.0, s)
-                t.addVertexWithUV(xx + s, yy, zz + s, s, s)
-                t.addVertexWithUV(xx + s, yy, zz + 0, s, 0.0)
-                t.addVertexWithUV(xx + 0, yy, zz + 0, 0.0, 0.0)
-
-        t.draw()
-        gl.glColor3f(0.8, 0.8, 0.8)
-        t.startDrawingQuads()
-
-        for xx in range(0, self.__worldObj.width, s):
-            t.addVertexWithUV(xx + 0, 0.0, 0.0, 0.0, 0.0)
-            t.addVertexWithUV(xx + s, 0.0, 0.0, s, 0.0)
-            t.addVertexWithUV(xx + s, y, 0.0, s, y)
-            t.addVertexWithUV(xx + 0, y, 0.0, 0.0, y)
-
-            t.addVertexWithUV(xx + 0, y, self.__worldObj.length, 0.0, y)
-            t.addVertexWithUV(xx + s, y, self.__worldObj.length, s, y)
-            t.addVertexWithUV(xx + s, 0.0, self.__worldObj.length, s, 0.0)
-            t.addVertexWithUV(xx + 0, 0.0, self.__worldObj.length, 0.0, 0.0)
-
-        gl.glColor3f(0.6, 0.6, 0.6)
-
-        for zz in range(0, self.__worldObj.length, s):
-            t.addVertexWithUV(0.0, y, zz + 0, 0.0, 0.0)
-            t.addVertexWithUV(0.0, y, zz + s, s, 0.0)
-            t.addVertexWithUV(0.0, 0.0, zz + s, s, y)
-            t.addVertexWithUV(0.0, 0.0, zz + 0, 0.0, y)
-
-            t.addVertexWithUV(self.__worldObj.width, 0.0, zz + 0, 0.0, y)
-            t.addVertexWithUV(self.__worldObj.width, 0.0, zz + s, s, y)
-            t.addVertexWithUV(self.__worldObj.width, y, zz + s, s, 0.0)
-            t.addVertexWithUV(self.__worldObj.width, y, zz + 0, 0.0, 0.0)
+                if y < 0.0 or xx < 0 or zz < 0 or xx >= self.__worldObj.width or \
+                   zz >= self.__worldObj.length:
+                    t.addVertexWithUV(xx, y, zz + s, 0.0, s)
+                    t.addVertexWithUV(xx + s, y, zz + s, s, s)
+                    t.addVertexWithUV(xx + s, y, zz, s, 0.0)
+                    t.addVertexWithUV(xx, y, zz, 0.0, 0.0)
 
         t.draw()
         gl.glEndList()
@@ -137,27 +106,30 @@ class RenderGlobal:
 
         d = 2048 // s
         t.startDrawingQuads()
+        minX = blocks.waterMoving.minX
+        minZ = blocks.waterMoving.minZ
 
         for xx in range(-s * d, self.__worldObj.width + s * d, s):
             for zz in range(-s * d, self.__worldObj.length + s * d, s):
-                yy = y - 0.1
-                if xx < 0 or zz < 0 or xx >= self.__worldObj.width or zz >= self.__worldObj.length:
-                    t.addVertexWithUV(xx + 0, yy, zz + s, 0.0, s)
-                    t.addVertexWithUV(xx + s, yy, zz + s, s, s)
-                    t.addVertexWithUV(xx + s, yy, zz + 0, s, 0.0)
-                    t.addVertexWithUV(xx + 0, yy, zz + 0, 0.0, 0.0)
+                yy = y + blocks.waterMoving.minY
+                if y < 0.0 or xx < 0 or zz < 0 or xx >= self.__worldObj.width or \
+                   zz >= self.__worldObj.length:
+                    t.addVertexWithUV(xx + minX, yy, (zz + s) + minZ, 0.0, s)
+                    t.addVertexWithUV((xx + s) + minX, yy, (zz + s) + minZ, s, s)
+                    t.addVertexWithUV((xx + s) + minX, yy, zz + minZ, s, 0.0)
+                    t.addVertexWithUV(xx + minX, yy, zz + minZ, 0.0, 0.0)
 
-                    t.addVertexWithUV(xx + 0, yy, zz + 0, 0.0, 0.0)
-                    t.addVertexWithUV(xx + s, yy, zz + 0, s, 0.0)
-                    t.addVertexWithUV(xx + s, yy, zz + s, s, s)
-                    t.addVertexWithUV(xx + 0, yy, zz + s, 0.0, s)
+                    t.addVertexWithUV(xx + minX, yy, zz + minZ, 0.0, 0.0)
+                    t.addVertexWithUV((xx + s) + minX, yy, zz + minZ, s, 0.0)
+                    t.addVertexWithUV((xx + s) + minX, yy, (zz + s) + minZ, s, s)
+                    t.addVertexWithUV(xx + minX, yy, (zz + s) + minZ, 0.0, s)
         t.draw()
         gl.glDisable(gl.GL_BLEND)
         gl.glEndList()
         self.__markBlocksForUpdate(0, 0, 0, self.__worldObj.width, self.__worldObj.height, self.__worldObj.length)
 
-    def renderEntities(self, vec, clippingHelper, a):
-        self.renderManager.cacheActiveRenderInfo(a)
+    def renderEntities(self, vec, frustum, a):
+        self.renderManager.setPlayerViewY(a)
         eMap = self.__worldObj.entityMap
         for x in range(eMap.width):
             x0 = (x << 4) - 2
@@ -172,13 +144,14 @@ class RenderGlobal:
 
                     z0 = (z << 4) - 2
                     z1 = (z + 1 << 4) + 2
-                    if clippingHelper.isBoundingBoxInFrustrum(x0, y0, z0, x1, y1, z1):
-                        exists = clippingHelper.isBoundingBoxFullyInFrustrum(x0, y0, z0,
-                                                                             x1, y1, z1)
+                    if frustum.isBoundingBoxInFrustum(x0, y0, z0, x1, y1, z1):
+                        exists = frustum.isBoundingBoxFullyInFrustum(x0, y0, z0,
+                                                                     x1, y1, z1)
                         for entity in entities:
-                            if entity.shouldRender(vec) and (exists or clippingHelper.isVisible(entity.boundingBox)):
+                            if entity.shouldRender(vec) and \
+                               (exists or frustum.isVisible(entity.boundingBox)):
                                 if not isinstance(entity, EntityPlayer):
-                                    self.renderManager.renderEntityWithPosYaw(
+                                    self.renderManager.renderShadow(
                                         entity, self.__renderEngine, a
                                     )
 
@@ -204,18 +177,18 @@ class RenderGlobal:
         self.__renderIntBuffer.flip()
         if self.__renderIntBuffer.remaining() > 0:
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('terrain.png'))
-            self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.capacity(), gl.GL_INT)
+            self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.remaining(), gl.GL_INT)
 
         return self.__renderIntBuffer.remaining()
 
     def renderAllRenderLists(self):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('terrain.png'))
-        self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.capacity(), gl.GL_INT)
+        self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.remaining(), gl.GL_INT)
 
     def updateClouds(self):
         self.__cloudOffsetX += 1
 
-    def renderClouds(self, partialTicks):
+    def renderSky(self, partialTicks):
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('clouds.png'))
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         r = (self.__worldObj.cloudColor >> 16 & 0xFF) / 255.0
@@ -229,7 +202,8 @@ class RenderGlobal:
 
         t = tessellator
         scale = 0.5 / 1024
-        y = self.__worldObj.height + 2.
+        gl.glAlphaFunc(gl.GL_GREATER, 0.5)
+        y = self.__worldObj.cloudHeight
         u = (self.__cloudOffsetX + partialTicks) * scale * 0.03
         t.startDrawingQuads()
         t.setColorOpaque_F(r, g, b)
@@ -247,6 +221,7 @@ class RenderGlobal:
 
         t.draw()
         gl.glDisable(gl.GL_TEXTURE_2D)
+        gl.glAlphaFunc(gl.GL_GREATER, 0.0)
         t.startDrawingQuads()
         r = (self.__worldObj.skyColor >> 16 & 0xFF) / 255.0
         g = (self.__worldObj.skyColor >> 8 & 0xFF) / 255.0
@@ -271,7 +246,13 @@ class RenderGlobal:
         gl.glEnable(gl.GL_TEXTURE_2D)
 
     def oobGroundRenderer(self):
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('rock.png'))
+        br = self.__worldObj.getBlockLightValue(0, self.__worldObj.getGroundLevel(), 0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('dirt.png'))
+        if self.__worldObj.getGroundLevel() > self.__worldObj.getWaterLevel() and \
+           self.__worldObj.defaultFluid == blocks.waterMoving.blockID:
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('grass.png'))
+
+        gl.glColor4f(br, br, br, 1.0)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glCallList(self.__glGenList)
 
@@ -310,7 +291,7 @@ class RenderGlobal:
             block = self.__worldObj.getBlockId(h.blockX, h.blockY, h.blockZ)
             block = blocks.blocksList[block] if block > 0 else None
             t.startDrawingQuads()
-            t.disableColor()
+            t.enableDrawMode()
             if not block:
                 block = blocks.stone
 
@@ -373,9 +354,9 @@ class RenderGlobal:
     def markBlockRangeNeedsUpdate(self, x0, y0, z0, x1, y1, z1):
         self.__markBlocksForUpdate(x0 - 1, y0 - 1, z0 - 1, x1 + 1, y1 + 1, z1 + 1)
 
-    def clipRenderersByFrustrum(self, clippingHelper):
+    def clipRenderersByFrustum(self, frustum):
         for chunk in self.__worldRenderers:
-            chunk.updateInFrustrum(clippingHelper)
+            chunk.updateInFrustum(frustum)
 
     def playSound(self, sound, x, y, z, volume, pitch):
-        self.__mc.sndManager.playSoundAtPos(sound, x, y, z, volume, pitch)
+        self.__mc.sndManager.playSound(sound, x, y, z, volume, pitch)

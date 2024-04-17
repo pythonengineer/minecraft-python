@@ -23,18 +23,18 @@ cdef class Entity:
         public World _worldObj
         public AxisAlignedBB boundingBox
         public bint onGround
-        public bint horizontalCollision
-        bint __collision
+        public bint isCollidedHorizontally
+        bint __surfaceCollision
         public bint isDead
 
         public float yOffset
-        float __bbWidth
-        public float bbHeight
+        public float width
+        public float height
         public float prevDistanceWalkedModified
         public float distanceWalkedModified
-        public bint _makeStepSound
+        public bint _canTriggerWalking
         public float _fallDistance
-        int __nextStep
+        int __nextStepDistance
         public float lastTickPosX
         public float lastTickPosY
         public float lastTickPosZ
@@ -44,6 +44,8 @@ cdef class Entity:
         float __entityCollisionReduction
         public object _rand
         public int ticksExisted
+        public int fireResistance
+        public int fire
 
     cpdef onEntityUpdate(self)
     cpdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za)

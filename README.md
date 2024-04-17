@@ -5,13 +5,13 @@
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
 The project is currently working on the Indev versions of Minecraft.
-The latest version is **Indev 0.31 20100104** as released on _**January 4, 2010**_.
+The latest version is **Indev 0.31 20100110** as released on _**January 10, 2010**_.
 
-This version is the first version of Minecraft released in 2010, and it reintroduces sound and music to the game.
+This version introduces fire, apples, functional tools, and the customizable Indev level generator to the game.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20100104`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20100110`.
 
-You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20100104)
+You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20100110)
 
 ### Organization
 
@@ -36,10 +36,15 @@ Run with the argument `-fullscreen` to open the window in fullscreen mode. The a
 
 ### Gameplay
 
-Press I to open your inventory. Early tools are in the inventory, but they serve no function yet.
-Press F7 to take a cool isometric screenshot and F5 to toggle rain. Other keys are listed in the regular options menu.
+Press I to open your inventory. All available tools (shovel, axe, pickaxe, flint and steel) are in the hotbar in addition to some building blocks and torches.
+Press F7 to take a cool isometric screenshot and F5 to toggle rain. Q will drop items. Other keys are listed in the regular options menu.
 
-The only mobs around are the Rana mobs, but they don't drop anything when killed. Arrows and mushrooms are unusable.
+The Indev level generator is customizable and you can choose between the *Inland*, *Island*, *Floating*, and *Flat* level types.
+You can specify the world theme as *Normal* or *Hell* (lava and dirt instead of water and grass), world size, and world shape (*Square*, *Long*, *Deep*).
+
+The only mobs around are the MD3 Ranas, but they don't drop anything when killed. Mushrooms are unusable, but apples will restore health.
+
+![Isometric screenshot](/map.png?raw=true)
 
 ### Additional Notes
 

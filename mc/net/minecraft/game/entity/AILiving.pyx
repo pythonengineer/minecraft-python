@@ -8,7 +8,7 @@ from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.entity.Entity cimport Entity
 from mc.net.minecraft.game.entity.EntityLiving cimport EntityLiving
 from mc.net.minecraft.game.level.World cimport World
-from mc.CompatibilityShims cimport Random
+from mc.JavaUtils cimport Random
 
 cdef class AILiving:
 
@@ -31,7 +31,7 @@ cdef class AILiving:
 
         self.__entityAge += 1
         if self.__entityAge > 600 and <int>self.__rand.randFloatM(800) == 0:
-            entity = world.getPlayer()
+            entity = world.getPlayerEntity()
             if entity:
                 xd = entity.posX - mob.posX
                 yd = entity.posY - mob.posY

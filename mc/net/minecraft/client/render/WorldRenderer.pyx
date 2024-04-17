@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-from mc.net.minecraft.client.render.ClippingHelper cimport ClippingHelper
+from mc.net.minecraft.client.render.Frustum cimport Frustum
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.RenderBlocks cimport RenderBlocks
@@ -27,7 +27,7 @@ cdef class WorldRenderer:
         int __sizeDepth
 
         bint[2] __skipRenderPass
-        public bint isInFrustrum
+        public bint isInFrustum
         public bint needsUpdate
 
     @property
@@ -42,7 +42,7 @@ cdef class WorldRenderer:
     def __cinit__(self):
         self.__t = tessellator
         self.__glRenderList = -1
-        self.isInFrustrum = False
+        self.isInFrustum = False
         self.needsUpdate = False
 
     def __init__(self, World world, int posX, int posY, int posZ,
@@ -120,7 +120,7 @@ cdef class WorldRenderer:
         self.__worldObj = None
 
     cpdef getGLCallListForPass(self, list chunkBuffer, int startingIndex, int renderPass):
-        if not self.isInFrustrum:
+        if not self.isInFrustum:
             return startingIndex
 
         if not self.__skipRenderPass[renderPass]:
@@ -129,8 +129,8 @@ cdef class WorldRenderer:
 
         return startingIndex
 
-    cpdef updateInFrustrum(self, ClippingHelper clippingHelper):
-        self.isInFrustrum = clippingHelper.isBoundingBoxInFrustrum(
+    cpdef updateInFrustum(self, Frustum frustum):
+        self.isInFrustum = frustum.isBoundingBoxInFrustum(
             self.__posX, self.__posY, self.__posZ, self.__posX + self.__sizeWidth,
             self.__posY + self.__sizeHeight, self.__posZ + self.__sizeDepth
         )

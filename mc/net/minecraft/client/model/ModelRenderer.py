@@ -10,7 +10,7 @@ class ModelRenderer:
         self.__textureOffsetY = yTexOffs
         self.mirror = False
 
-    def setBounds(self, x0, y0, z0, w, h, d, ofs):
+    def addBox(self, x0, y0, z0, w, h, d, ofs):
         self.__corners = [None] * 8
         self.__faces = [None] * 6
 

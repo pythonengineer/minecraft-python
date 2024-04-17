@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-from mc.CompatibilityShims import BufferUtils
+from mc.JavaUtils import BufferUtils
 from pyglet import gl
 
 cdef class Tessellator:
@@ -8,23 +8,23 @@ cdef class Tessellator:
 
     def __cinit__(self):
         self.max_floats = self.MAX_FLOATS
-        self.__byteBuffer = BufferUtils.createFloatBuffer(self.max_floats)
+        self.__floatBuffer = BufferUtils.createFloatBuffer(self.max_floats)
         self.__colors = 3
 
     cpdef void draw(self):
         if self.__vertexCount > 0:
-            self.__byteBuffer.clear()
-            self.__byteBuffer.putFloats(self.__rawBuffer, 0, self.__addedVertices)
-            self.__byteBuffer.flip()
+            self.__floatBuffer.clear()
+            self.__floatBuffer.putFloats(self.__rawBuffer, 0, self.__addedVertices)
+            self.__floatBuffer.flip()
 
             if self.__hasTexture and self.__hasColor:
-                self.__byteBuffer.glInterleavedArrays(gl.GL_T2F_C3F_V3F, 0)
+                self.__floatBuffer.glInterleavedArrays(gl.GL_T2F_C3F_V3F, 0)
             elif self.__hasTexture:
-                self.__byteBuffer.glInterleavedArrays(gl.GL_T2F_V3F, 0)
+                self.__floatBuffer.glInterleavedArrays(gl.GL_T2F_V3F, 0)
             elif self.__hasColor:
-                self.__byteBuffer.glInterleavedArrays(gl.GL_C3F_V3F, 0)
+                self.__floatBuffer.glInterleavedArrays(gl.GL_C3F_V3F, 0)
             else:
-                self.__byteBuffer.glInterleavedArrays(gl.GL_V3F, 0)
+                self.__floatBuffer.glInterleavedArrays(gl.GL_V3F, 0)
 
             gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
             if self.__hasTexture:
@@ -44,7 +44,7 @@ cdef class Tessellator:
 
     cdef void __reset(self):
         self.__vertexCount = 0
-        self.__byteBuffer.clear()
+        self.__floatBuffer.clear()
         self.__addedVertices = 0
 
     cpdef void startDrawingQuads(self):
@@ -64,9 +64,9 @@ cdef class Tessellator:
             self.__colors += 3
 
         self.__hasColor = True
-        self.__r = r
-        self.__g = g
-        self.__b = b
+        self.__red = r
+        self.__green = g
+        self.__blue = b
 
     cpdef void addVertexWithUV(self, float x, float y, float z, float u, float v):
         if not self.__hasTexture:
@@ -85,11 +85,11 @@ cdef class Tessellator:
             self.__addedVertices += 1
 
         if self.__hasColor:
-            self.__rawBuffer[self.__addedVertices] = self.__r
+            self.__rawBuffer[self.__addedVertices] = self.__red
             self.__addedVertices += 1
-            self.__rawBuffer[self.__addedVertices] = self.__g
+            self.__rawBuffer[self.__addedVertices] = self.__green
             self.__addedVertices += 1
-            self.__rawBuffer[self.__addedVertices] = self.__b
+            self.__rawBuffer[self.__addedVertices] = self.__blue
             self.__addedVertices += 1
 
         self.__rawBuffer[self.__addedVertices] = x
@@ -114,11 +114,11 @@ cdef class Tessellator:
             self.__colors += 3
 
         self.__hasColor = True
-        self.__r = <float>(r & 0xFF) / 255.0
-        self.__g = <float>(g & 0xFF) / 255.0
-        self.__b = <float>(b & 0xFF) / 255.0
+        self.__red = <float>(r & 0xFF) / 255.0
+        self.__green = <float>(g & 0xFF) / 255.0
+        self.__blue = <float>(b & 0xFF) / 255.0
 
-    cpdef inline void disableColor(self):
+    cpdef inline void enableDrawMode(self):
         self.__drawMode = True
 
     @staticmethod

@@ -13,14 +13,15 @@ cdef class RenderBlocks:
         Tessellator __tessellator
         World __blockAccess
         int __overrideBlockTexture
-        bint __renderSide
+        bint __flipTexture
 
-    cpdef bint renderBlockByRenderType(self, Block block, int x, int y, int z)
+    cdef bint renderBlockByRenderType(self, Block block, int x, int y, int z)
+    cdef __renderBlockFire(self, Block block, int x, int y, int z)
     cdef __renderBlockTorch(self, Block block, float x, float y, float z,
                             float xOffset, float zOffset)
     cdef __renderBlockPlant(self, Block block, float x, float y, float z)
-    cdef __renderBlockBottom(self, Block block, int x, int y, int z, int tex)
-    cdef __renderBlockTop(self, Block block, int x, int y, int z, int tex)
+    cdef __renderBlockBottom(self, Block block, float x, float y, float z, int tex)
+    cdef __renderBlockTop(self, Block block, float x, float y, float z, int tex)
     cdef __renderBlockNorth(self, Block block, int x, int y, int z, int tex)
     cdef __renderBlockSouth(self, Block block, int x, int y, int z, int tex)
     cdef __renderBlockWest(self, Block block, int x, int y, int z, int tex)

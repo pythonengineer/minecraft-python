@@ -17,7 +17,9 @@ class SoundManager:
     __soundPoolMusic = SoundPool()
     __latestSoundID = 0
 
-    def loadSoundSettings(self):
+    def loadSoundSettings(self, options):
+        self.__options = options
+
         try:
             import pyogg
         except:
@@ -59,6 +61,11 @@ class SoundManager:
                     self.addSound(os.path.join(folder, fileName).replace('\\', '/'),
                                   os.path.join(root, fileName))
 
+    def onSoundOptionsChanged(self):
+        if not self.__options.music and self.__musicStream and self.__musicStream._source:
+            self.__musicStream.pause()
+            self.__musicStream = None
+
     def closeMinecraft(self):
         if self.__musicStream and self.__musicStream._source:
             self.__musicStream.pause()
@@ -67,12 +74,12 @@ class SoundManager:
             player.delete()
 
     def addSound(self, sound, file):
-        self.__soundPoolSounds.getFolder(sound, file)
+        self.__soundPoolSounds.addSound(sound, file)
 
     def addMusic(self, music, file):
-        self.__soundPoolMusic.getFolder(music, file)
+        self.__soundPoolMusic.addSound(music, file)
         if self.__supported and (not self.__musicStream or not self.__musicStream._source) and \
-           self.__soundPoolMusic.numberOfSoundPoolEntries == 3:
+           self.__soundPoolMusic.numberOfSoundPoolEntries == 3 and self.__options.music:
             entry = self.__soundPoolMusic.getRandomSoundFromSoundPool('calm')
             self.__musicStream = pyglet.media.load(entry.soundUrl).play()
 
@@ -97,9 +104,9 @@ class SoundManager:
         self.listener.forward_orientation = (lookX, lookY, lookZ)
         self.listener.up_orientation = (upX, upY, upZ)
 
-    def playSoundAtPos(self, sound, x, y, z, volume, pitch):
+    def playSound(self, sound, x, y, z, volume, pitch):
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
-        if not entry or not self.__supported or not self.players:
+        if not entry or not self.__supported or not self.__options.sound or not self.players:
             return
 
         self.__latestSoundID = (self.__latestSoundID + 1) % 256
@@ -108,7 +115,7 @@ class SoundManager:
         yd = y - self.listener.position[1]
         zd = z - self.listener.position[2]
         distanceFromListener = math.sqrt(xd * xd + yd * yd + zd * zd)
-        distOrRoll = 16.0
+        distOrRoll = 16.0 * volume if volume > 1.0 else 16.0
         if distanceFromListener <= 0:
             gain = 1.0
         elif distanceFromListener >= distOrRoll:
@@ -121,6 +128,7 @@ class SoundManager:
         if gain < 0.0:
             gain = 0.0
 
+        volume = min(gain * volume, 1.0)
         player = self.players[0]
         player.min_distance = 0.0
         player.max_distance = distOrRoll
@@ -128,7 +136,7 @@ class SoundManager:
         player.cone_orientation = (0, 0, 0)
         player.cone_outer_gain = 0.0
         player.pitch = pitch
-        player.volume = gain * volume
+        player.volume = volume
         player.seek(0.0)
         player.queue(entry.stream)
         if player.playing:
@@ -139,9 +147,9 @@ class SoundManager:
             except: pass
         self.players.rotate()
 
-    def playSound(self, sound, volume, pitch):
+    def playSoundFX(self, sound, volume, pitch):
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
-        if not entry or not self.__supported or not self.players:
+        if not entry or not self.__supported or not self.__options.sound or not self.players:
             return
 
         self.__latestSoundID = (self.__latestSoundID + 1) % 256

@@ -5,8 +5,8 @@ from pyglet import gl
 class FontRenderer:
 
     def __init__(self, settings, name, textures):
-        self.__settings = settings
-        self.__charList = [0] * 256
+        self.__options = settings
+        self.__charWidth = [0] * 256
         texture = Resources.textures[name + '1']
         w = texture[0]
         h = texture[1]
@@ -35,9 +35,9 @@ class FontRenderer:
             if i == 32:
                 x = 4
 
-            self.__charList[i] = x
+            self.__charWidth[i] = x
 
-        self.__character = textures.getTexture(name + '2')
+        self.__fontTextureName = textures.getTexture(name + '2')
 
     def drawStringWithShadow(self, string, x, y, color):
         self.__renderString(string, x + 1, y + 1, color, True)
@@ -51,7 +51,7 @@ class FontRenderer:
             if darken:
                 color = (color & 0xFCFCFC) >> 2
 
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__character)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__fontTextureName)
             t = tessellator
             t.startDrawingQuads()
             t.setColorOpaque_I(color)
@@ -68,7 +68,7 @@ class FontRenderer:
                     g = ((cc & 2) >> 1) * 191 + br
                     r = ((cc & 4) >> 2) * 191 + br
                     color = r
-                    if self.__settings.anaglyph:
+                    if self.__options.anaglyph:
                         br = (color * 30 + g * 59 + b * 11) // 100
                         g = (color * 30 + g * 70) // 100
                         b = (color * 30 + b * 70) // 100
@@ -95,7 +95,7 @@ class FontRenderer:
                 t.addVertexWithUV(x + xo, y, 0.0,
                                   ix / 128.0, iy / 128.0)
 
-                xo += self.__charList[ord(string[i])]
+                xo += self.__charWidth[ord(string[i])]
                 i += 1
 
             t.draw()
@@ -107,6 +107,6 @@ class FontRenderer:
             length = 0
             for i, char in enumerate(string):
                 if char != '&':
-                    length += self.__charList[ord(char)]
+                    length += self.__charWidth[ord(char)]
 
             return length

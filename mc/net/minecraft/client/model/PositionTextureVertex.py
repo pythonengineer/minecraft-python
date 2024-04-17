@@ -8,11 +8,11 @@ class PositionTextureVertex:
 
     def __init__(self, obj, x, y, z=0.0, u=0.0, v=0.0):
         if isinstance(obj, Vec3D):
-            self.vec3D = obj
+            self.vector3D = obj
         elif isinstance(obj, PositionTextureVertex):
-            self.vec3D = obj.vec3D
+            self.vector3D = obj.vector3D
         else:
-            self.vec3D = Vec3D(x, y, z)
+            self.vector3D = Vec3D(x, y, z)
 
     def setTexturePosition(self, u, v):
         return PositionTextureVertex(self, u, v)

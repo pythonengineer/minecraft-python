@@ -1,4 +1,4 @@
-from mc.CompatibilityShims import getMillis
+from mc.JavaUtils import getMillis
 
 import time
 
@@ -8,7 +8,7 @@ class Timer:
     __lastHRTime = 0.0
     elapsedTicks = 0
     renderPartialTicks = 0.0
-    __delta = 1.0
+    __timerSpeed = 1.0
     __elapsedPartialTicks = 0.0
     __timeSyncAdjustment = 1.0
 
@@ -39,7 +39,7 @@ class Timer:
         elif adjust > 1.0:
             adjust = 1.0
 
-        self.__elapsedPartialTicks += adjust * self.__delta * self.ticksPerSecond
+        self.__elapsedPartialTicks += adjust * self.__timerSpeed * self.ticksPerSecond
         self.elapsedTicks = int(self.__elapsedPartialTicks)
         if self.elapsedTicks > Timer.MAX_TICKS_PER_UPDATE:
             self.elapsedTicks = Timer.MAX_TICKS_PER_UPDATE

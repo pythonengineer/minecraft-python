@@ -30,8 +30,6 @@ from mc.net.minecraft.client.Timer import Timer
 from mc.net.minecraft.client.GameSettings import GameSettings
 from mc.net.minecraft.client.RenderHelper import RenderHelper
 from mc.net.minecraft.client.LoadingScreenRenderer import LoadingScreenRenderer
-from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
-from mc.net.minecraft.game.physics.AxisAlignedBB import AxisAlignedBB
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.level.World import World
 from mc.net.minecraft.game.level.block.Block import Block
@@ -41,13 +39,14 @@ from mc.net.minecraft.game.level.generator.LevelGenerator import LevelGenerator
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.client.model.ModelBiped import ModelBiped
 from mc.net.minecraft.client.player.EntityPlayerSP import EntityPlayerSP
-from mc.net.minecraft.client.player.MovementInputFromKeys import MovementInputFromKeys
+from mc.net.minecraft.client.player.MovementInputFromOptions import MovementInputFromOptions
 from mc.net.minecraft.client.gui.FontRenderer import FontRenderer
 from mc.net.minecraft.client.gui.GuiErrorScreen import GuiErrorScreen
-from mc.net.minecraft.client.gui.GuiPauseMenu import GuiPauseMenu
+from mc.net.minecraft.client.gui.GuiIngameMenu import GuiIngameMenu
 from mc.net.minecraft.client.gui.GuiGameOver import GuiGameOver
 from mc.net.minecraft.client.gui.GuiIngame import GuiIngame
-from mc.net.minecraft.client.particle.EffectRenderer import EffectRenderer
+from mc.net.minecraft.client.effect.EffectRenderer import EffectRenderer
+from mc.net.minecraft.client.render.texture.TextureFlamesFX import TextureFlamesFX
 from mc.net.minecraft.client.render.texture.TextureWaterFlowFX import TextureWaterFlowFX
 from mc.net.minecraft.client.render.texture.TextureWaterFX import TextureWaterFX
 from mc.net.minecraft.client.render.texture.TextureLavaFX import TextureLavaFX
@@ -62,7 +61,7 @@ from mc.net.minecraft.client.controller.PlayerControllerSP import PlayerControll
 from mc.net.minecraft.client.sound.SoundManager import SoundManager
 from mc.net.minecraft.client.ThreadDownloadSkin import ThreadDownloadSkin
 from mc.net.minecraft.client.Session import Session
-from mc.CompatibilityShims import BufferUtils, getMillis
+from mc.JavaUtils import BufferUtils, getMillis
 from pyglet import window, app, canvas, clock
 from pyglet import resource, gl, compat_platform
 
@@ -94,7 +93,7 @@ class Minecraft(window.Window):
 
     ksh = window.key.KeyStateHandler()
     msh = window.mouse.MouseStateHandler()
-    inventoryScreen = False
+    ingameFocus = False
     mouseX = 0
     mouseY = 0
 
@@ -116,7 +115,7 @@ class Minecraft(window.Window):
         self.__timer = Timer(20.0)
         self.session = None
         self.currentScreen = None
-        self.thirdPersonView = False
+        self.renderRain = False
         self.loadingScreen = LoadingScreenRenderer(self)
         self.entityRenderer = EntityRenderer(self)
         self.__ticksRan = 0
@@ -125,6 +124,9 @@ class Minecraft(window.Window):
         self.__leftClickCounter = 0
 
         self.__serverIp = ''
+
+        self.__textureWaterFX = TextureWaterFX()
+        self.__textureLavaFX = TextureLavaFX()
 
         self.running = False
         self.debug = ''
@@ -181,7 +183,7 @@ class Minecraft(window.Window):
         self.__active = True
 
         # Remove this hack when the window boundary issue is fixed upstream:
-        if self.inventoryScreen and compat_platform == 'win32':
+        if self.ingameFocus and compat_platform == 'win32':
             self._update_clipped_cursor()
 
     def on_deactivate(self):
@@ -199,7 +201,7 @@ class Minecraft(window.Window):
                     return
 
             if not self.currentScreen:
-                if not self.inventoryScreen:
+                if not self.ingameFocus:
                     self.setIngameFocus()
                 elif button == window.mouse.LEFT:
                     self.__clickMouse(0)
@@ -213,7 +215,7 @@ class Minecraft(window.Window):
                                                      self.objectMouseOver.blockZ)
                     if block == blocks.grass.blockID:
                         block = blocks.dirt.blockID
-                    elif block == blocks.slabDouble.blockID:
+                    elif block == blocks.stairDouble.blockID:
                         block = blocks.stairSingle.blockID
                     elif block == blocks.bedrock.blockID:
                         block = blocks.stone.blockID
@@ -235,7 +237,7 @@ class Minecraft(window.Window):
         try:
             self.mouseX = x
             self.mouseY = y
-            if not self.inventoryScreen:
+            if not self.ingameFocus:
                 return
 
             xo = dx
@@ -261,18 +263,18 @@ class Minecraft(window.Window):
 
             if not self.currentScreen or self.currentScreen.allowUserInput:
                 if symbol != self.options.keyBindToggleFog.keyCode:
-                    self.thePlayer.playerKeys.checkKeyForMovementInput(symbol, True)
+                    self.thePlayer.movementInput.checkKeyForMovementInput(symbol, True)
 
                     if symbol == window.key.ESCAPE:
-                        self.displayIngameMenu()
+                        self.displayInGameMenu()
                     elif symbol == window.key.F7:
-                        self.entityRenderer.renderLargeScreenshot()
+                        self.entityRenderer.grabLargeScreenshot()
                     elif symbol == window.key.F5:
-                        self.thirdPersonView = not self.thirdPersonView
+                        self.renderRain = not self.renderRain
                     elif symbol == self.options.keyBindInventory.keyCode:
-                        self.playerController.displayInventoryGUI()
+                        self.playerController.openInventory()
                     elif symbol == self.options.keyBindDrop.keyCode:
-                        self.thePlayer.dropPlayerItemWithRandomChoice(self.thePlayer.inventory.currentSlot)
+                        self.thePlayer.dropPlayerItemWithRandomChoice(self.thePlayer.inventory.currentItem)
 
                     if isinstance(self.playerController, PlayerControllerCreative):
                         if symbol == self.options.keyBindLoad.keyCode:
@@ -286,7 +288,7 @@ class Minecraft(window.Window):
 
                     for i in range(9):
                         if symbol == getattr(window.key, '_' + str(i + 1)):
-                            self.thePlayer.inventory.currentSlot = i
+                            self.thePlayer.inventory.currentItem = i
                 else:
                     shift = modifiers & window.key.MOD_SHIFT
                     self.options.setOptionValue(4, -1 if shift else 1)
@@ -297,7 +299,7 @@ class Minecraft(window.Window):
     def on_key_release(self, symbol, modifiers):
         try:
             if not self.currentScreen or self.currentScreen.allowUserInput:
-                self.thePlayer.playerKeys.checkKeyForMovementInput(symbol, False)
+                self.thePlayer.movementInput.checkKeyForMovementInput(symbol, False)
         except Exception as e:
             print(traceback.format_exc())
             self.displayGuiScreen(GuiErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -399,9 +401,11 @@ class Minecraft(window.Window):
 
         self.options = GameSettings(self, file)
         self.renderEngine = RenderEngine(self.options)
-        self.renderEngine.registerTextureFX(TextureLavaFX())
-        self.renderEngine.registerTextureFX(TextureWaterFX())
+        self.renderEngine.registerTextureFX(self.__textureLavaFX)
+        self.renderEngine.registerTextureFX(self.__textureWaterFX)
         self.renderEngine.registerTextureFX(TextureWaterFlowFX())
+        self.renderEngine.registerTextureFX(TextureFlamesFX(0))
+        self.renderEngine.registerTextureFX(TextureFlamesFX(1))
         self.fontRenderer = FontRenderer(self.options, 'default.png', self.renderEngine)
 
         imgData = BufferUtils.createIntBuffer(256)
@@ -416,10 +420,10 @@ class Minecraft(window.Window):
             world.setLevel(8, 8, 8, bytearray(512))
             self.__setLevel(level)
         elif not self.theWorld:
-            self.generateNewLevel(0)
+            self.generateNewLevel(1, 0, 1, 0)
 
         self.effectRenderer = EffectRenderer(self.theWorld, self.renderEngine)
-        self.sndManager.loadSoundSettings()
+        self.sndManager.loadSoundSettings(self.options)
 
         self.__checkGLError('Post startup')
         self.ingameGUI = GuiIngame(self, self.width, self.height)
@@ -448,35 +452,38 @@ class Minecraft(window.Window):
             self.destroy()
 
     def setIngameFocus(self):
-        if self.inventoryScreen:
+        if self.ingameFocus:
             return
 
-        self.inventoryScreen = True
+        self.ingameFocus = True
         self.set_exclusive_mouse(True)
         self.displayGuiScreen(None)
         self.__prevFrameTime = self.__ticksRan + 10000
 
     def __releaseMouse(self):
-        if not self.inventoryScreen:
+        if not self.ingameFocus:
             return
 
-        self.thePlayer.playerKeys.resetKeyState()
-        self.inventoryScreen = False
+        self.thePlayer.movementInput.resetKeyState()
+        self.ingameFocus = False
         self.set_exclusive_mouse(False)
         self.set_mouse_position(self.width // 2, self.height // 2)
 
-    def displayIngameMenu(self):
-        if not isinstance(self.currentScreen, GuiPauseMenu):
-            self.displayGuiScreen(GuiPauseMenu())
+    def displayInGameMenu(self):
+        if not isinstance(self.currentScreen, GuiIngameMenu):
+            self.displayGuiScreen(GuiIngameMenu())
 
     def __clickMouse(self, editMode):
         item = self.thePlayer.inventory.getCurrentItem()
-        if editMode == 0:
-            if self.__leftClickCounter > 0:
-                return
-
-            self.entityRenderer.itemRenderer.equippedItemRender()
+        if editMode == 0 and self.__leftClickCounter <= 0:
+            self.entityRenderer.itemRenderer.swingItem()
             self.entityRenderer.updateRenderer()
+        elif editMode == 1 and item:
+            if item.getItem().onPlaced(item, self.thePlayer):
+                if item.stackSize == 0:
+                    self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = None
+
+                self.entityRenderer.itemRenderer.resetEquippedProgress2()
 
         if not self.objectMouseOver:
             if editMode == 0 and not isinstance(self.playerController, PlayerControllerCreative):
@@ -494,42 +501,29 @@ class Minecraft(window.Window):
         x = self.objectMouseOver.blockX
         y = self.objectMouseOver.blockY
         z = self.objectMouseOver.blockZ
-        if editMode != 0:
-            if self.objectMouseOver.sideHit == 0: y -= 1
-            if self.objectMouseOver.sideHit == 1: y += 1
-            if self.objectMouseOver.sideHit == 2: z -= 1
-            if self.objectMouseOver.sideHit == 3: z += 1
-            if self.objectMouseOver.sideHit == 4: x -= 1
-            if self.objectMouseOver.sideHit == 5: x += 1
-
-        oldBlock = blocks.blocksList[self.theWorld.getBlockId(x, y, z)]
+        sideHit = self.objectMouseOver.sideHit
+        block = blocks.blocksList[self.theWorld.getBlockId(x, y, z)]
         if editMode == 0:
-            if oldBlock != blocks.bedrock:
+            self.theWorld.extinguishFire(x, y, z, sideHit)
+            if block != blocks.bedrock:
                 self.playerController.clickBlock(x, y, z)
-                return
         else:
-            texture = self.thePlayer.inventory.getCurrentItem()
-            if texture is None:
+            item = self.thePlayer.inventory.getCurrentItem()
+            if item is None:
                 return
 
-            block = blocks.blocksList[self.theWorld.getBlockId(x, y, z)]
-            if texture.itemID <= 0 or block and block != blocks.waterMoving and block != blocks.waterStill and \
-               block != blocks.lavaMoving and block != blocks.lavaStill:
+            prevSize = item.stackSize
+            item.getItem().onItemUse(item, self.theWorld, x, y, z, sideHit)
+            if item.stackSize == 0:
+                self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = None
                 return
 
-            aabb = blocks.blocksList[texture.itemID].getCollisionBoundingBoxFromPool(x, y, z)
-            if aabb and (self.thePlayer.boundingBox.intersectsBB(aabb) or not self.theWorld.checkIfAABBIsClear(aabb)):
-                return
-            elif not self.playerController.canPlace(x, y, z, texture.itemID):
-                return
-
-            self.theWorld.setBlockWithNotify(x, y, z, texture.itemID)
-            self.entityRenderer.itemRenderer.equipAnimationSpeed()
-            blocks.blocksList[texture.itemID].onBlockPlaced(self.theWorld, x, y, z)
+            if item.stackSize != prevSize:
+                self.entityRenderer.itemRenderer.resetEquippedProgress2()
 
     def __runTick(self):
         self.playerController.onUpdate()
-        self.ingameGUI.updateChatMessages()
+        self.ingameGUI.addChatMessage()
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderEngine.getTexture('terrain.png'))
         self.renderEngine.updateDynamicTextures()
@@ -541,20 +535,20 @@ class Minecraft(window.Window):
                 self.__leftClickCounter -= 1
 
             if not self.currentScreen:
-                if self.msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.inventoryScreen:
+                if self.msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
                     self.__clickMouse(0)
                     self.__prevFrameTime = self.__ticksRan
-                elif self.msh[window.mouse.RIGHT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.inventoryScreen:
+                elif self.msh[window.mouse.RIGHT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
                     self.__clickMouse(1)
                     self.__prevFrameTime = self.__ticksRan
 
-            leftHeld = not self.currentScreen and self.msh[window.mouse.LEFT] and self.inventoryScreen
+            leftHeld = not self.currentScreen and self.msh[window.mouse.LEFT] and self.ingameFocus
             if not self.playerController.isInTestMode and self.__leftClickCounter <= 0:
                 if leftHeld and self.objectMouseOver and self.objectMouseOver.typeOfHit == 0:
                     x = self.objectMouseOver.blockX
                     y = self.objectMouseOver.blockY
                     z = self.objectMouseOver.blockZ
-                    self.playerController.hitBlock(x, y, z, self.objectMouseOver.sideHit)
+                    self.playerController.sendBlockRemoving(x, y, z, self.objectMouseOver.sideHit)
                     self.effectRenderer.addBlockHitEffects(x, y, z, self.objectMouseOver.sideHit)
                 else:
                     self.playerController.resetBlockRemoving()
@@ -571,11 +565,25 @@ class Minecraft(window.Window):
         self.theWorld.tick()
         self.effectRenderer.updateEffects()
 
-    def generateNewLevel(self, size):
+    def generateNewLevel(self, size, shape, levelType, theme):
         name = self.session.username if self.session else 'anonymous'
-        level = LevelGenerator(self.loadingScreen).generate(name, 128 << size,
-                                                            128 << size, 64)
-        self.__setLevel(level)
+        levelGen = LevelGenerator(self.loadingScreen)
+        levelGen.islandGen = levelType == 1
+        levelGen.floatingGen = levelType == 2
+        levelGen.flatGen = levelType == 3
+        levelGen.levelType = theme
+        width = 128 << size
+        height = width
+        length = 64
+        if shape == 1:
+            width //= 2
+            height <<= 1
+        elif shape == 2:
+            width //= 2
+            height = width
+            length = 256
+
+        self.__setLevel(levelGen.generate(name, width, height, length))
 
     def __setLevel(self, world):
         self.theWorld = world
@@ -587,18 +595,26 @@ class Minecraft(window.Window):
         if not self.thePlayer:
             self.thePlayer = EntityPlayerSP(world)
             self.thePlayer.preparePlayerToSpawn()
-            self.playerController.onRespawn(self.thePlayer)
+            self.playerController.flipPlayer(self.thePlayer)
             if world:
                 world.playerEntity = self.thePlayer
 
-        self.thePlayer.playerKeys = MovementInputFromKeys(self.options)
+        self.thePlayer.movementInput = MovementInputFromOptions(self.options)
         self.playerController.flipPlayer(self.thePlayer)
 
         if self.renderGlobal:
-            self.renderGlobal.setWorld(world)
+            self.renderGlobal.changeWorld(world)
 
         if self.effectRenderer:
             self.effectRenderer.clearEffects(world)
+
+        self.__textureWaterFX.textureId = 0
+        self.__textureLavaFX.textureId = 0
+        tex = self.renderEngine.getTexture('water.png')
+        if world.defaultFluid == blocks.waterMoving.blockID:
+            self.__textureWaterFX.textureId = tex
+        else:
+            self.__textureLavaFX.textureId = tex
 
         gc.collect()
 

@@ -80,10 +80,10 @@ class GuiInventory(GuiScreen):
         RenderHelper.disableStandardItemLighting()
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_DEPTH_TEST)
-        self._font.drawString('PLAYER NAME', 84, 8, 4210752)
-        self._font.drawString('ATK: 100', 84, 24, 4210752)
-        self._font.drawString('DEF: 100', 84, 32, 4210752)
-        self._font.drawString('SPD: 100', 84, 40, 4210752)
+        self._fontRenderer.drawString('PLAYER NAME', 84, 8, 4210752)
+        self._fontRenderer.drawString('ATK: 100', 84, 24, 4210752)
+        self._fontRenderer.drawString('DEF: 100', 84, 32, 4210752)
+        self._fontRenderer.drawString('SPD: 100', 84, 40, 4210752)
         gl.glEnable(gl.GL_LIGHTING)
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glPopMatrix()
@@ -92,7 +92,7 @@ class GuiInventory(GuiScreen):
         item = self._mc.thePlayer.inventory.mainInventory[slotIndex]
         if item and self.__selectedItem != slotIndex:
             slotIndex = item.itemID
-            if slotIndex > 0:
+            if slotIndex < 256:
                 tex = self._mc.renderEngine.getTexture('terrain.png')
                 gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
                 block = blocks.blocksList[slotIndex]
@@ -105,20 +105,22 @@ class GuiInventory(GuiScreen):
                 gl.glColor4f(1.0, 1.0, 1.0, 1.0)
                 self.__blockRenderer.renderBlockOnInventory(block)
                 gl.glPopMatrix()
-            elif item.iconIndex >= 0:
+            elif item.getItem().getIconIndex() >= 0:
                 gl.glDisable(gl.GL_LIGHTING)
                 tex = self._mc.renderEngine.getTexture('gui/items.png')
                 gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-                self.drawTexturedModalRect(xPos, yPos, item.iconIndex % 16 << 4,
-                                       item.iconIndex // 16 << 4, 16, 16)
+                self.drawTexturedModalRect(
+                    xPos, yPos, item.getItem().getIconIndex() % 16 << 4,
+                    item.getItem().getIconIndex() // 16 << 4, 16, 16
+                )
                 gl.glEnable(gl.GL_LIGHTING)
 
             if item.stackSize > 1:
                 size = '' + str(item.stackSize)
                 gl.glDisable(gl.GL_LIGHTING)
                 gl.glDisable(gl.GL_DEPTH_TEST)
-                self._font.drawStringWithShadow(
-                    size, xPos + 19 - 2 - self._font.getStringWidth(size),
+                self._fontRenderer.drawStringWithShadow(
+                    size, xPos + 19 - 2 - self._fontRenderer.getStringWidth(size),
                     yPos + 6 + 3, 16777215
                 )
                 gl.glEnable(gl.GL_LIGHTING)
@@ -156,11 +158,11 @@ class GuiInventory(GuiScreen):
                         self.__selectedItem = slot.slotIndex
                         return
 
-                    self._mc.thePlayer.inventory.setInventorySlotContents(self.__selectedItem, slot.slotIndex)
+                    self._mc.thePlayer.inventory.swapSlots(self.__selectedItem, slot.slotIndex)
                     return
 
                 if self.__selectedItem >= 0:
-                    self._mc.thePlayer.inventory.setInventorySlotContents(self.__selectedItem, slot.slotIndex)
+                    self._mc.thePlayer.inventory.swapSlots(self.__selectedItem, slot.slotIndex)
                     self.__selectedItem = -1
             elif self.__selectedItem > 0:
                 w = (self.width - 176) // 2

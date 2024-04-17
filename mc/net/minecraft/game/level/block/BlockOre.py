@@ -11,11 +11,11 @@ class BlockOre(Block):
         if self == self.blocks.oreCoal:
             return self.blocks.stairSingle.blockID
         elif self == self.blocks.oreGold:
-            return self.blocks.goldBlock.blockID
+            return self.blocks.blockGold.blockID
         elif self == self.blocks.oreIron:
-            return self.blocks.ironBlock.blockID
+            return self.blocks.blockSteel.blockID
         else:
             return self.blockID
 
-    def quantityDropped(self, random):
+    def quantityDropped(self):
         return int(random.random() * 3) + 1

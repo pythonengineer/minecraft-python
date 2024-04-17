@@ -6,5 +6,6 @@ cdef class TextureFX:
         public int iconIndex
         public list imageData
         public bint anaglyphEnabled
+        public int textureId
 
     cpdef onTick(self)

@@ -8,9 +8,9 @@ from mc.net.minecraft.game.level.EntityMap cimport EntityMap
 cdef class EntityMapSlot:
 
     cdef:
-        public int xSlot
-        public int ySlot
-        public int zSlot
+        public int posX
+        public int posY
+        public int posZ
         EntityMap __entityMap
 
     cdef EntityMapSlot init(self, float x, float y, float z)

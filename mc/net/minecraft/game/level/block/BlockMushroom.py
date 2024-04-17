@@ -1,14 +1,12 @@
-from mc.net.minecraft.game.level.block.BlockPlants import BlockPlants
+from mc.net.minecraft.game.level.block.BlockFlower import BlockFlower
 
-class BlockMushroom(BlockPlants):
+class BlockMushroom(BlockFlower):
 
     def __init__(self, blocks, blockId, tex):
         super().__init__(blocks, blockId, tex)
         self._setBlockBounds(0.3, 0.0, 0.3, 0.7, 0.4, 0.7)
 
-    def updateTick(self, world, x, y, z, random):
+    def updateTick(self, world, x, y, z):
         below = world.getBlockId(x, y - 1, z)
-        if world.isHalfLit(x, y, z) or below != self.blocks.stone.blockID and \
-           below != self.blocks.gravel.blockID and \
-           below != self.blocks.cobblestone.blockID:
+        if not world.isFullyLit(x, y, z) or not self.blocks.opaqueCubeLookup[below]:
             world.setBlockWithNotify(x, y, z, 0)

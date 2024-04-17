@@ -2,7 +2,7 @@
 
 cimport cython
 
-from mc.CompatibilityShims cimport FloatBuffer
+from mc.JavaUtils cimport FloatBuffer
 
 @cython.final
 cdef class Tessellator:
@@ -10,16 +10,16 @@ cdef class Tessellator:
     cdef:
         int max_floats
 
-        FloatBuffer __byteBuffer
+        FloatBuffer __floatBuffer
         float[524288] __rawBuffer
 
         int __vertexCount
 
         float __textureU
         float __textureV
-        float __r
-        float __g
-        float __b
+        float __red
+        float __green
+        float __blue
 
         bint __hasColor
         bint __hasTexture
@@ -36,4 +36,4 @@ cdef class Tessellator:
     cpdef void addVertexWithUV(self, float x, float y, float z, float u, float v)
     cpdef void addVertex(self, float x, float y, float z)
     cpdef inline void setColorOpaque_I(self, int c)
-    cpdef inline void disableColor(self)
+    cpdef inline void enableDrawMode(self)

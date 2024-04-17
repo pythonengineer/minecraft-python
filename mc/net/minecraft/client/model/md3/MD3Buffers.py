@@ -1,4 +1,4 @@
-from mc.CompatibilityShims import BufferUtils
+from mc.JavaUtils import BufferUtils
 
 class MD3Buffers:
 

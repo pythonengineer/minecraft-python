@@ -4,7 +4,6 @@ from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosit
 from mc.net.minecraft.game.level.material.Material cimport Material
 from mc.net.minecraft.game.level.World cimport World
 from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
-from mc.net.minecraft.game.entity.player.ItemStack import ItemStack
 from mc.net.minecraft.game.physics.AxisAlignedBB import AxisAlignedBB
 
 import random
@@ -16,21 +15,21 @@ cdef class Block:
         self.blockID = blockId
         if tex:
             self.blockIndexInTexture = tex
-        self.blockIsDropped = True
+        self.canExplode = True
         self.stepSound = blocks.soundPowderFootstep
         self.blockParticleGravity = 1.0
         self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 1.0, 1.0)
         self.blocks.opaqueCubeLookup[blockId] = self.isOpaqueCube()
         self.blocks.lightOpacity[blockId] = 255 if self.isOpaqueCube() else 0
         self.blocks.canBlockGrass[blockId] = self.renderAsNormalBlock()
-        self.blocks.isBlockFluid[blockId] = False
+        self.blocks.isBlockFlowing[blockId] = False
 
     def setLightOpacity(self, int opacity):
         self.blocks.lightOpacity[self.blockID] = opacity
         return self
 
     def setLightValue(self, float value):
-        self.blocks.lightValue[self.blockID] = <int>(8.0 * value)
+        self.blocks.lightValue[self.blockID] = <int>(15.0 * value)
         return self
 
     cpdef bint renderAsNormalBlock(self):
@@ -39,8 +38,8 @@ cdef class Block:
     cpdef int getRenderType(self):
         return 0
 
-    def setHardness(self, float pitch):
-        self.__hardness = <int>(pitch * 20.0)
+    def setHardness(self, float hardness):
+        self._hardness = hardness
         return self
 
     def _setTickOnLoad(self, bint tick):
@@ -75,7 +74,10 @@ cdef class Block:
     cpdef bint isOpaqueCube(self):
         return True
 
-    cpdef void updateTick(self, World world, int x, int y, int z, random) except *:
+    cdef bint isCollidable(self):
+        return True
+
+    cpdef void updateTick(self, World world, int x, int y, int z) except *:
         pass
 
     def onBlockDestroyedByPlayer(self, World world, int x, int y, int z):
@@ -87,9 +89,6 @@ cdef class Block:
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
         pass
 
-    def onBlockPlaced(self, World world, int x, int y, int z):
-        pass
-
     cdef int tickRate(self):
         return 5
 
@@ -99,38 +98,39 @@ cdef class Block:
     def onBlockRemoval(self, World world, int x, int y, int z):
         pass
 
-    cpdef int quantityDropped(self, random):
+    cpdef int quantityDropped(self):
         return 1
 
     cpdef int idDropped(self):
         return self.blockID
 
-    def blockStrength(self):
-        return self.__hardness
+    def blockStrength(self, player):
+        return <int>(self._hardness / player.canHarvestBlock(self) * 30.0)
 
     def dropBlockAsItem(self, World world, int x, int y, int z):
         self.dropBlockAsItemWithChance(world, x, y, z, 1.0)
 
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
+        from mc.net.minecraft.game.item.ItemStack import ItemStack
         cdef int i
         cdef float xx, yy, zz
 
-        for i in range(self.quantityDropped(world.rand)):
-            if world.rand.random() > chance:
+        for i in range(self.quantityDropped()):
+            if random.random() > chance:
                 continue
 
-            xx = world.rand.random() * 0.7 + 0.15
-            yy = world.rand.random() * 0.7 + 0.15
-            zz = world.rand.random() * 0.7 + 0.15
+            xx = random.random() * 0.7 + 0.15
+            yy = random.random() * 0.7 + 0.15
+            zz = random.random() * 0.7 + 0.15
             item = EntityItem(
                 world, x + xx, y + yy, z + zz,
-                ItemStack(self.blocks.blocksList[self.idDropped()], 1)
+                ItemStack(self.idDropped())
             )
             item.delayBeforeCanPickup = 20
-            world.spawnEntityInWorld(item)
+            world.releaseEntitySkin(item)
 
-    cdef bint isExplosionResistant(self):
-        return self.blockIsDropped
+    cdef bint getCanExplode(self):
+        return self.canExplode
 
     cdef collisionRayTrace(self, int x, int y, int z, v0, v1):
         v0 = v0.addVector(-x, -y, -z)
@@ -158,16 +158,16 @@ cdef class Block:
         if vec36:
             vec311 = vec36
 
-        if vec37 and (not vec311 or v0.distanceTo(vec37) < v0.distanceTo(vec311)):
+        if vec37 and (not vec311 or v0.distance(vec37) < v0.distance(vec311)):
             vec311 = vec37
-        if vec38 and (not vec311 or v0.distanceTo(vec38) < v0.distanceTo(vec311)):
+        if vec38 and (not vec311 or v0.distance(vec38) < v0.distance(vec311)):
             vec311 = vec38
-        if vec39 and (not vec311 or v0.distanceTo(vec39) < v0.distanceTo(vec311)):
+        if vec39 and (not vec311 or v0.distance(vec39) < v0.distance(vec311)):
             vec311 = vec39
-        if vec310 and (not vec311 or v0.distanceTo(vec310) < v0.distanceTo(vec311)):
+        if vec310 and (not vec311 or v0.distance(vec310) < v0.distance(vec311)):
             vec311 = vec310
 
-        if v1 and (not vec311 or v0.distanceTo(v1) < v0.distanceTo(vec311)):
+        if v1 and (not vec311 or v0.distance(v1) < v0.distance(vec311)):
             vec311 = v1
 
         if not vec311:
