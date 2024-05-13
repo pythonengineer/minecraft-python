@@ -5,18 +5,16 @@ from libc.string cimport memcpy
 
 from mc.net.minecraft.client.render.texture.TextureFX cimport TextureFX
 from mc.net.minecraft.game.level.block.Blocks import blocks
-from mc.JavaUtils cimport Random
+from mc.JavaUtils cimport random
 
 cdef class TextureFlamesFX(TextureFX):
 
     cdef:
-        Random __random
         float __currentFireFrame[320]
         float __lastFireFrame[320]
 
     def __init__(self, idx):
         TextureFX.__init__(self, blocks.fire.blockIndexInTexture + (idx << 4))
-        self.__random = Random()
         for i in range(256):
             self.__currentFireFrame[i] = 0.0
             self.__lastFireFrame[i] = 0.0
@@ -40,11 +38,9 @@ cdef class TextureFlamesFX(TextureFX):
 
                 self.__lastFireFrame[x + (z << 4)] = value / (i * 1.06)
                 if z >= 19:
-                    self.__lastFireFrame[x + (z << 4)] = self.__random.randFloat() * \
-                                                         self.__random.randFloat() * \
-                                                         self.__random.randFloat() * \
-                                                         4.0 + self.__random.randFloat() * \
-                                                         0.1 + 0.2
+                    self.__lastFireFrame[x + (z << 4)] = random() * random() * \
+                                                         random() * 4.0 + \
+                                                         random() * 0.1 + 0.2
 
         memcpy(frame, self.__lastFireFrame, sizeof(self.__lastFireFrame))
         self.__lastFireFrame = self.__currentFireFrame

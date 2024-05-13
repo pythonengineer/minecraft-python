@@ -1,6 +1,7 @@
 # cython: language_level=3
 
 from mc.net.minecraft.game.level.World cimport World
+from mc.JavaUtils cimport Random
 
 cdef class Block:
 
@@ -11,7 +12,7 @@ cdef class Block:
         public object stepSound
         public float blockParticleGravity
         public float _hardness
-        public bint canExplode
+        public float _resistance
 
         public float minX
         public float minY
@@ -24,18 +25,19 @@ cdef class Block:
     cpdef int getRenderType(self)
     cdef float getBlockBrightness(self, World world, int x, int y, int z)
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer)
+    cpdef int getBlockTextureFromSideAndMetadata(self, World world, int x, int y, int z, int layer)
     cpdef int getBlockTexture(self, int face)
     cpdef bint isOpaqueCube(self)
     cdef bint isCollidable(self)
-    cpdef void updateTick(self, World world, int x, int y, int z) except *
+    cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *
     cpdef int getBlockMaterial(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
-    cpdef int quantityDropped(self)
+    cpdef int quantityDropped(self, Random random)
     cpdef int idDropped(self)
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
-    cdef bint getCanExplode(self)
-    cdef collisionRayTrace(self, int x, int y, int z, v0, v1)
+    cdef float getExplosionResistance(self)
+    cdef collisionRayTrace(self, World world, int x, int y, int z, v0, v1)
     cdef bint __isVecInsideYZBounds(self, vec)
     cdef bint __isVecInsideXZBounds(self, vec)
     cdef bint __isVecInsideXYBounds(self, vec)

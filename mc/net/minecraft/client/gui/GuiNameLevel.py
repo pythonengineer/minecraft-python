@@ -13,8 +13,8 @@ class GuiNameLevel(GuiScreen):
         self.__title = 'Enter level name:'
         self.__counter = 0
 
-    def initGui(self, minecraft, width, height):
-        super().initGui(minecraft, width, height)
+    def setWorldAndResolution(self, minecraft, width, height):
+        super().setWorldAndResolution(minecraft, width, height)
         self._controlList.clear()
         self._controlList.append(GuiButton(0, self.width // 2 - 100, self.height // 4 + 120, 'Save'))
         self._controlList.append(GuiButton(1, self.width // 2 - 100, self.height // 4 + 144, 'Cancel'))
@@ -28,7 +28,7 @@ class GuiNameLevel(GuiScreen):
             if button.id == 0 and len(self.__name.strip()) > 1:
                 self.__name.strip()
                 self._mc.displayGuiScreen(None)
-                self._mc.setIngameFocus()
+                self._mc.grabMouse()
             elif button.id == 1:
                 self._mc.displayGuiScreen(self.__parent)
 

@@ -1,13 +1,11 @@
 # cython: language_level=3
 
-from mc.JavaUtils cimport Random
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
 from mc.net.minecraft.game.entity.Entity cimport Entity
 
 cdef class EntityFX(Entity):
 
     cdef:
-        Random _random
         public int _particleTextureIndex
         public float _particleGravity
         public float _particleRed
@@ -20,6 +18,4 @@ cdef class EntityFX(Entity):
         public float _particleTextureJitterY
         public float _particleScale
         public int _particleMaxAge
-        int __particleAge
-
-    cpdef onEntityUpdate(self)
+        public int _particleAge

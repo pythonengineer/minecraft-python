@@ -7,9 +7,18 @@ cdef double signum(double val)
 
 cdef class Random:
 
-    cdef float randFloatM(self, float multiply)
-    cdef float randFloat(self)
-    cdef int nextInt(self, int limit)
+    cdef:
+        long long __seed
+        double __nextNextGaussian
+        bint __haveNextNextGaussian
+
+    cdef int _next(self, int bits)
+    cpdef int nextInt(self, int limit=?)
+    cpdef float nextFloat(self)
+    cdef double nextDouble(self)
+    cpdef double nextGaussian(self)
+
+cpdef double random()
 
 cdef class Bits:
 
@@ -73,6 +82,7 @@ cdef class IntBuffer(Buffer):
         object __dataPtr
 
     cpdef inline put(self, int value)
+    cdef putInts(self, int* src, int offset, int length)
     cpdef inline int get(self)
     cpdef inline int getAt(self, int idx)
     cdef inline __getDataPtr(self)

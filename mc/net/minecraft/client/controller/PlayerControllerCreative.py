@@ -8,9 +8,9 @@ from mc.net.minecraft.game.item.ItemStack import ItemStack
 class PlayerControllerCreative(PlayerController):
 
     def openInventory(self):
-        self._mc.displayGuiScreen(GuiInventory())
+        self._mc.displayGuiScreen(GuiInventory(self._mc.thePlayer.inventory))
 
-    def flipPlayer(self, player):
+    def onRespawn(self, player):
         for i in range(9):
             if player.inventory.mainInventory[i] is None:
                 player.inventory.mainInventory[i] = ItemStack(blocks.blocksList[Session.registeredBlocksList[i].blockID])
@@ -27,7 +27,7 @@ class PlayerControllerCreative(PlayerController):
         self.__mobSpawner = MobSpawner(world)
         size = world.width * world.length * world.height // 64 // 64 // 64
         for i in range(size):
-            self.__mobSpawner.performSpawning(size, world.playerEntity, None)
+            self.__mobSpawner.spawnMob(size, world.playerEntity, None)
 
     def onUpdate(self):
-        self.__mobSpawner.spawn()
+        self.__mobSpawner.spawnMobs()

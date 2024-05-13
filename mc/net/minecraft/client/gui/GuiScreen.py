@@ -12,7 +12,7 @@ class GuiScreen(Gui):
     def _keyTyped(self, key, char, motion):
         if key == window.key.ESCAPE:
             self._mc.displayGuiScreen(None)
-            self._mc.setIngameFocus()
+            self._mc.grabMouse()
 
     def _mouseClicked(self, xm, ym, button):
         if button == window.mouse.LEFT:
@@ -24,7 +24,7 @@ class GuiScreen(Gui):
     def _actionPerformed(self, button):
         pass
 
-    def initGui(self, minecraft, width, height):
+    def setWorldAndResolution(self, minecraft, width, height):
         self._mc = minecraft
         self._fontRenderer = minecraft.fontRenderer
         self.width = width
@@ -37,6 +37,10 @@ class GuiScreen(Gui):
         self._mouseClicked(xm, ym, button)
 
     def handleKeyboardEvent(self, key=None, char=None, motion=None):
+        if key == window.key.F11:
+            self._mc.toggleFullScreen()
+            return
+
         self._keyTyped(key, char, motion)
 
     def updateScreen(self):

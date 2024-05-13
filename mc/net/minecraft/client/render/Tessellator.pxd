@@ -17,9 +17,9 @@ cdef class Tessellator:
 
         float __textureU
         float __textureV
-        float __red
-        float __green
-        float __blue
+        float __r
+        float __g
+        float __b
 
         bint __hasColor
         bint __hasTexture
@@ -36,4 +36,4 @@ cdef class Tessellator:
     cpdef void addVertexWithUV(self, float x, float y, float z, float u, float v)
     cpdef void addVertex(self, float x, float y, float z)
     cpdef inline void setColorOpaque_I(self, int c)
-    cpdef inline void enableDrawMode(self)
+    cpdef inline void disableColor(self)

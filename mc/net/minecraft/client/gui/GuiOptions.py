@@ -10,12 +10,12 @@ class GuiOptions(GuiScreen):
         self.__parentScreen = screen
         self.__options = options
 
-    def initGui(self, minecraft, width, height):
-        super().initGui(minecraft, width, height)
+    def setWorldAndResolution(self, minecraft, width, height):
+        super().setWorldAndResolution(minecraft, width, height)
         for i in range(self.__options.numberOfOptions):
             self._controlList.append(GuiSmallButton(i, self.width // 2 - 155 + i % 2 * 160,
                                                     self.height // 6 + 24 * (i >> 1),
-                                                    self.__options.setOptionString(i)))
+                                                    self.__options.getOptionDisplayString(i)))
 
         self._controlList.append(GuiButton(100, self.width // 2 - 100,
                                            self.height // 6 + 120 + 12, 'Controls...'))
@@ -26,7 +26,7 @@ class GuiOptions(GuiScreen):
         if button.enabled:
             if button.id < 100:
                 self.__options.setOptionValue(button.id, 1)
-                button.displayString = self.__options.setOptionString(button.id)
+                button.displayString = self.__options.getOptionDisplayString(button.id)
             elif button.id == 100:
                 self._mc.displayGuiScreen(GuiControls(self, self.__options))
             elif button.id == 200:

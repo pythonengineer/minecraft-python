@@ -145,8 +145,8 @@ cdef class Frustum:
         self.__frustum[side][self._c] /= magnitude
         self.__frustum[side][self._d] /= magnitude
 
-    cpdef bint isBoundingBoxFullyInFrustum(self, float x0, float y0, float z0,
-                                           float x1, float y1, float z1):
+    cdef bint isBoundingBoxFullyInFrustum(self, float x0, float y0, float z0,
+                                          float x1, float y1, float z1):
         for i in range(6):
             if not self.__frustum[i][self._a] * x0 + self.__frustum[i][self._b] * y0 + self.__frustum[i][self._c] * z0 + self.__frustum[i][self._d] > 0.0:
                 return False
@@ -167,8 +167,8 @@ cdef class Frustum:
 
         return True
 
-    cpdef bint isBoundingBoxInFrustum(self, float x0, float y0, float z0,
-                                      float x1, float y1, float z1):
+    cdef bint isBoundingBoxInFrustum(self, float x0, float y0, float z0,
+                                     float x1, float y1, float z1):
         for i in range(6):
             if self.__frustum[i][self._a] * x0 + self.__frustum[i][self._b] * y0 + self.__frustum[i][self._c] * z0 + self.__frustum[i][self._d] <= 0.0 and \
                self.__frustum[i][self._a] * x1 + self.__frustum[i][self._b] * y0 + self.__frustum[i][self._c] * z0 + self.__frustum[i][self._d] <= 0.0 and \
@@ -182,6 +182,6 @@ cdef class Frustum:
 
         return True
 
-    cpdef bint isVisible(self, aabb):
+    cdef bint isVisible(self, aabb):
         return self.isBoundingBoxInFrustum(aabb.minX, aabb.minY, aabb.minZ,
                                            aabb.maxX, aabb.maxY, aabb.maxZ)

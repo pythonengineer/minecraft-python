@@ -27,8 +27,8 @@ cdef class Frustum:
         float[6][4] __frustum
 
     cdef __normalize(self, int side)
-    cpdef bint isBoundingBoxFullyInFrustum(self, float x0, float y0, float z0,
-                                           float x1, float y1, float z1)
-    cpdef bint isBoundingBoxInFrustum(self, float x0, float y0, float z0,
-                                      float x1, float y1, float z1)
-    cpdef bint isVisible(self, aabb)
+    cdef bint isBoundingBoxFullyInFrustum(self, float x0, float y0, float z0,
+                                          float x1, float y1, float z1)
+    cdef bint isBoundingBoxInFrustum(self, float x0, float y0, float z0,
+                                     float x1, float y1, float z1)
+    cdef bint isVisible(self, aabb)

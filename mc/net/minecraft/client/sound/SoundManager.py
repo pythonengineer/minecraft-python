@@ -1,21 +1,23 @@
 from mc.net.minecraft.client.sound.SoundPool import SoundPool
+from pyglet import clock
 
-import collections
 import traceback
 import pyglet
 import math
 import os
 
 class SoundManager:
-    CHANNELS = 28
-    players = collections.deque([pyglet.media.Player() for _ in range(CHANNELS)],
-                                maxlen=CHANNELS)
+    NORMAL_CHANNELS = 28
     listener = pyglet.media.get_audio_driver().get_listener()
+    __channels = [pyglet.media.Player() for _ in range(NORMAL_CHANNELS)]
     __musicStream = None
     __supported = True
     __soundPoolSounds = SoundPool()
     __soundPoolMusic = SoundPool()
     __latestSoundID = 0
+    __nextChannel = 0
+    __sourceNames = [''] * NORMAL_CHANNELS
+    __soundSources = {}
 
     def loadSoundSettings(self, options):
         self.__options = options
@@ -61,6 +63,8 @@ class SoundManager:
                     self.addSound(os.path.join(folder, fileName).replace('\\', '/'),
                                   os.path.join(root, fileName))
 
+        clock.schedule_once(self.removeTempSources, 10)
+
     def onSoundOptionsChanged(self):
         if not self.__options.music and self.__musicStream and self.__musicStream._source:
             self.__musicStream.pause()
@@ -70,7 +74,7 @@ class SoundManager:
         if self.__musicStream and self.__musicStream._source:
             self.__musicStream.pause()
             self.__musicStream = None
-        for player in self.players:
+        for player in self.__channels:
             player.delete()
 
     def addSound(self, sound, file):
@@ -106,7 +110,7 @@ class SoundManager:
 
     def playSound(self, sound, x, y, z, volume, pitch):
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
-        if not entry or not self.__supported or not self.__options.sound or not self.players:
+        if not entry or not self.__supported or not self.__options.sound:
             return
 
         self.__latestSoundID = (self.__latestSoundID + 1) % 256
@@ -128,40 +132,43 @@ class SoundManager:
         if gain < 0.0:
             gain = 0.0
 
+        priority = True if volume > 1.0 else False
         volume = min(gain * volume, 1.0)
-        player = self.players[0]
-        player.min_distance = 0.0
+
+        player = self.__getNextChannel(entry.soundName)
+        if not player:
+            return
+
         player.max_distance = distOrRoll
         player.position = (x, y, z)
-        player.cone_orientation = (0, 0, 0)
-        player.cone_outer_gain = 0.0
         player.pitch = pitch
         player.volume = volume
-        player.seek(0.0)
-        player.queue(entry.stream)
-        if player.playing:
-            player.next_source()
-        else:
-            player.play()
-            try: player._audio_player.alsource.rolloff_factor = 0.0
-            except: pass
-        self.players.rotate()
+        player.priority = priority
+        self.__playSound(player, entry)
 
     def playSoundFX(self, sound, volume, pitch):
         entry = self.__soundPoolSounds.getRandomSoundFromSoundPool(sound)
-        if not entry or not self.__supported or not self.__options.sound or not self.players:
+        if not entry or not self.__supported or not self.__options.sound:
             return
 
         self.__latestSoundID = (self.__latestSoundID + 1) % 256
 
-        player = self.players[0]
+        player = self.__getNextChannel(entry.soundName)
+        if not player:
+            return
+
         player.min_distance = 0.0
         player.max_distance = 100000000.
         player.position = (0.0, 0.0, 0.0)
-        player.cone_orientation = (0, 0, 0)
-        player.cone_outer_gain = 0.0
         player.pitch = 1.0
         player.volume = 1.0
+        player.priority = False
+        self.__playSound(player, entry)
+
+    def __playSound(self, player, entry):
+        player.min_distance = 0.0
+        player.cone_orientation = (0, 0, 0)
+        player.cone_outer_gain = 0.0
         player.seek(0.0)
         player.queue(entry.stream)
         if player.playing:
@@ -170,4 +177,34 @@ class SoundManager:
             player.play()
             try: player._audio_player.alsource.rolloff_factor = 0.0
             except: pass
-        self.players.rotate()
+
+        self.__soundSources[entry.soundName] = player
+
+    def __getNextChannel(self, sound):
+        if not sound:
+            return
+
+        channels = len(self.__channels)
+        for i in range(channels):
+            if sound == self.__sourceNames[i]:
+                return self.__channels[i]
+
+        n = self.__nextChannel
+        for i in range(channels * 2):
+            name = self.__sourceNames[n]
+            src = self.__soundSources.get(name) if name else None
+            if not src or not src.playing or (i >= channels and not src.priority):
+                self.__nextChannel = (n + 1) % channels
+                self.__sourceNames[n] = sound
+                return self.__channels[n]
+
+            n = self.__nextChannel if i == channels // 2 else (n + 1) % channels
+
+        return None
+
+    def removeTempSources(self, dt):
+        for name, src in dict(self.__soundSources).items():
+            if not src.playing:
+                del self.__soundSources[name]
+
+        clock.schedule_once(self.removeTempSources, 10)

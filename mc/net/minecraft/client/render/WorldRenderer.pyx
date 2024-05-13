@@ -1,5 +1,7 @@
 # cython: language_level=3
 
+cimport cython
+
 from mc.net.minecraft.client.render.Frustum cimport Frustum
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
 from mc.net.minecraft.client.render.Tessellator import tessellator
@@ -11,24 +13,8 @@ from pyglet import gl
 
 cdef int WorldRenderer_chunksUpdates = 0
 
+@cython.final
 cdef class WorldRenderer:
-
-    cdef:
-        World __worldObj
-        Tessellator __t
-        RenderBlocks __renderBlocks
-
-        int __glRenderList
-        int __posX
-        int __posY
-        int __posZ
-        int __sizeWidth
-        int __sizeHeight
-        int __sizeDepth
-
-        bint[2] __skipRenderPass
-        public bint isInFrustum
-        public bint needsUpdate
 
     @property
     def chunksUpdates(self):
@@ -61,7 +47,7 @@ cdef class WorldRenderer:
         self.__glRenderList = lists
         self.__setDontDraw()
 
-    cpdef updateRenderer(self):
+    cdef updateRenderer(self):
         cdef int layer, x0, y0, z0, xx, yy, zz, x, y, z, blockId
         cdef bint nextLayer, renderPass
         cdef Block block
@@ -104,7 +90,7 @@ cdef class WorldRenderer:
             if not nextLayer:
                 break
 
-    cpdef float compare(self, player):
+    cpdef float distanceToEntitySquared(self, player):
         cdef float xd = player.posX - self.__posX
         cdef float yd = player.posY - self.__posY
         cdef float zd = player.posZ - self.__posZ
@@ -119,7 +105,7 @@ cdef class WorldRenderer:
         self.__setDontDraw()
         self.__worldObj = None
 
-    cpdef getGLCallListForPass(self, list chunkBuffer, int startingIndex, int renderPass):
+    cdef getGLCallListForPass(self, int* chunkBuffer, int startingIndex, int renderPass):
         if not self.isInFrustum:
             return startingIndex
 
@@ -129,7 +115,7 @@ cdef class WorldRenderer:
 
         return startingIndex
 
-    cpdef updateInFrustum(self, Frustum frustum):
+    cdef updateInFrustum(self, Frustum frustum):
         self.isInFrustum = frustum.isBoundingBoxInFrustum(
             self.__posX, self.__posY, self.__posZ, self.__posX + self.__sizeWidth,
             self.__posY + self.__sizeHeight, self.__posZ + self.__sizeDepth

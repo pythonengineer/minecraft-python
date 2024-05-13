@@ -48,11 +48,8 @@ class PlayerController:
     def onUpdate(self):
         pass
 
-    def createPlayer(self, level):
-        pass
-
     def shouldDrawHUD(self):
         return True
 
-    def flipPlayer(self, player):
+    def onRespawn(self, player):
         pass

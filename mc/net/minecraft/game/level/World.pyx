@@ -2,9 +2,13 @@
 
 cimport cython
 
+import numpy as np
+cimport numpy as np
+
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, floor, isnan
 
+from mc.net.minecraft.client.render.RenderGlobal cimport RenderGlobal
 from mc.net.minecraft.game.physics.MovingObjectPosition import MovingObjectPosition
 from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.physics.AxisAlignedBB cimport AxisAlignedBB
@@ -14,8 +18,6 @@ from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.JavaUtils cimport Random
 
-import random
-import time
 import gc
 
 cdef class NextTickListEntry:
@@ -33,8 +35,10 @@ cdef class NextTickListEntry:
         self.zCoord = z
         self.blockID = blockID
 
+cdef short floodFillCounter = 0
+
 cdef class World:
-    MAX_TICKS = 100
+    MAX_TICKS = 200
 
     def __cinit__(self):
         cdef int i
@@ -49,6 +53,7 @@ cdef class World:
 
         for i, block in enumerate(blocks.blocksList):
             self.__isBlockNormal[i] = False if block is None else block.isOpaqueCube()
+            self.__isTickOnLoad[i] = blocks.tickOnLoad[i]
 
         self.rotSpawn = 0.0
 
@@ -57,15 +62,16 @@ cdef class World:
         self.__worldAccesses = set()
         self.__tickList = set()
 
-        self.__rand = Random()
-        self.__randId = random.getrandbits(31)
+        self.map = {}
+
+        self.rand = Random()
+        self.__randId = self.rand.nextInt()
 
         self.skyColor = 0x99CCFF
         self.fogColor = 0xFFFFFF
         self.cloudColor = 0xFFFFFF
 
         self.__updateLCG = 0
-        self.__playTime = 0
 
         self.multiplier = 3
         self.addend = 1013904223
@@ -89,7 +95,7 @@ cdef class World:
             self.__heightMap[i] = self.height
 
         self.__updateSkylight(0, 0, self.width, self.length)
-        self.__randId = random.getrandbits(31)
+        self.__randId = self.rand.nextInt()
         self.__tickList = set()
 
         if not self.entityMap:
@@ -104,6 +110,7 @@ cdef class World:
         self.length = d
         self.__blocks = <char*>malloc(sizeof(char) * len(b))
         self.__data = <char*>malloc(sizeof(char) * len(b))
+        self.__size = len(b)
 
         for i in range(256):
             self.__lightOpacity[i] = blocks.lightOpacity[i]
@@ -154,7 +161,8 @@ cdef class World:
                     if br < self.__lightValue[blockId]:
                         br = self.__lightValue[blockId]
 
-                    self.__data[(y * self.length + z) * self.width + x] = <char>br
+                    i = (y * self.length + z) * self.width + x
+                    self.__data[i] = <char>((self.__data[i] & 240) + br)
 
         for x in range(self.width):
             for z in range(self.length):
@@ -169,18 +177,18 @@ cdef class World:
         gc.collect()
 
     cdef findSpawn(self):
-        cdef int i, x, z, y
+        cdef int i, x, y, z
+        cdef Random random = Random()
 
-        rand = random.Random()
         x = 0
         y = 0
         z = 0
+        i = 0
         while True:
-            i = 0
             while True:
                 i += 1
-                x = <int>floor(rand.random() * (self.width // 2)) + self.width // 4
-                z = <int>floor(rand.random() * (self.length // 2)) + self.length // 4
+                x = random.nextInt(self.width // 2) + self.width // 4
+                z = random.nextInt(self.length // 2) + self.length // 4
                 y = self.__getFirstUncoveredBlock(x, z) + 1
                 if y >= 4:
                     break
@@ -220,33 +228,37 @@ cdef class World:
     @cython.wraparound(False)
     cdef void __updateLight(self, int x0, int y0, int z0, int x1, int y1, int z1):
         cdef int i, x, y, z, count, br, counter, depth, opacity, newDepth
-        cdef int* floodFillCounters
+        cdef int[:] lightCounter = np.zeros(1024, dtype=np.int32)
+        cdef list lightArrays = []
         cdef char block
-
-        floodFillCounters = <int*>malloc(sizeof(int) * 8192)
-        for i in range(8192):
-            floodFillCounters[i] = 0
+        cdef RenderGlobal worldAccess
 
         count = 0
         for x in range(x0, x1):
             for z in range(z0, z1):
                 for y in range(y0, y1):
-                    floodFillCounters[count] = x << 20 | y << 10 | z
+                    lightCounter[count] = x << 20 | y << 10 | z
                     count += 1
 
         br = <int>(15.0 * self.skyBrightness)
 
-        while count > 0:
-            while count > 8176:
+        while count > 0 or len(lightArrays) > 0:
+            if count == 0:
+                lightCounter = lightArrays.pop()
+                count = lightCounter[len(lightCounter) - 1]
+
+            if count > len(lightCounter) - 32:
                 count -= 1
-                counter = floodFillCounters[count]
-                x = counter >> 20 & 1023
-                y = counter >> 10 & 1023
-                z = counter & 1023
-                self.__updateLight(x, y, z, x + 1, y + 1, z + 1)
+                counter = lightCounter[count]
+                lightCounter[len(lightCounter) - 1] = count
+                lightArrays.append(lightCounter)
+                lightCounter = np.zeros(1024, dtype=np.int32)
+                count = 1
+                lightCounter[0] = counter
+                continue
 
             count -= 1
-            counter = floodFillCounters[count]
+            counter = lightCounter[count]
             x = counter >> 20 & 1023
             y = counter >> 10 & 1023
             z = counter & 1023
@@ -262,27 +274,27 @@ cdef class World:
 
                 newDepth = 0
                 if x > 0:
-                    newDepth = (self.__data[(y * self.length + z) * self.width + (x - 1)] & 255) - opacity
+                    newDepth = (self.__data[(y * self.length + z) * self.width + (x - 1)] & 15) - opacity
                     if newDepth > depth:
                         depth = newDepth
                 if x < self.width - 1:
-                    newDepth = (self.__data[(y * self.length + z) * self.width + x + 1] & 255) - opacity
+                    newDepth = (self.__data[(y * self.length + z) * self.width + x + 1] & 15) - opacity
                     if newDepth > depth:
                         depth = newDepth
                 if y > 0:
-                    newDepth = (self.__data[((y - 1) * self.length + z) * self.width + x] & 255) - opacity
+                    newDepth = (self.__data[((y - 1) * self.length + z) * self.width + x] & 15) - opacity
                     if newDepth > depth:
                         depth = newDepth
                 if y < self.height - 1:
-                    newDepth = (self.__data[((y + 1) * self.length + z) * self.width + x] & 255) - opacity
+                    newDepth = (self.__data[((y + 1) * self.length + z) * self.width + x] & 15) - opacity
                     if newDepth > depth:
                         depth = newDepth
                 if z > 0:
-                    newDepth = (self.__data[(y * self.length + (z - 1)) * self.width + x] & 255) - opacity
+                    newDepth = (self.__data[(y * self.length + (z - 1)) * self.width + x] & 15) - opacity
                     if newDepth > depth:
                         depth = newDepth
                 if z < self.length - 1:
-                    newDepth = (self.__data[(y * self.length + z + 1) * self.width + x] & 255) - opacity
+                    newDepth = (self.__data[(y * self.length + z + 1) * self.width + x] & 15) - opacity
                     if newDepth > depth:
                         depth = newDepth
 
@@ -301,31 +313,30 @@ cdef class World:
             elif z > z1:
                 z1 = z
 
-            if (self.__data[(y * self.length + z) * self.width + x] & 255) != depth:
-                self.__data[(y * self.length + z) * self.width + x] = <char>depth
-                if x > 0 and (self.__data[(y * self.length + z) * self.width + (x - 1)] & 255) != depth - 1:
-                    floodFillCounters[count] = x - 1 << 20 | y << 10 | z
+            i = (y * self.length + z) * self.width + x
+            if (self.__data[i] & 15) != depth:
+                self.__data[i] = <char>((self.__data[i] & 240) + depth)
+                if x > 0 and (self.__data[(y * self.length + z) * self.width + (x - 1)] & 15) != depth - 1:
+                    lightCounter[count] = x - 1 << 20 | y << 10 | z
                     count += 1
-                if x < self.width - 1 and (self.__data[(y * self.length + z) * self.width + x + 1] & 255) != depth - 1:
-                    floodFillCounters[count] = x + 1 << 20 | y << 10 | z
+                if x < self.width - 1 and (self.__data[(y * self.length + z) * self.width + x + 1] & 15) != depth - 1:
+                    lightCounter[count] = x + 1 << 20 | y << 10 | z
                     count += 1
-                if y > 0 and (self.__data[((y - 1) * self.length + z) * self.width + x] & 255) != depth - 1:
-                    floodFillCounters[count] = x << 20 | y - 1 << 10 | z
+                if y > 0 and (self.__data[((y - 1) * self.length + z) * self.width + x] & 15) != depth - 1:
+                    lightCounter[count] = x << 20 | y - 1 << 10 | z
                     count += 1
-                if y < self.height - 1 and (self.__data[((y + 1) * self.length + z) * self.width + x] & 255) != depth - 1:
-                    floodFillCounters[count] = x << 20 | y + 1 << 10 | z
+                if y < self.height - 1 and (self.__data[((y + 1) * self.length + z) * self.width + x] & 15) != depth - 1:
+                    lightCounter[count] = x << 20 | y + 1 << 10 | z
                     count += 1
-                if z > 0 and (self.__data[(y * self.length + (z - 1)) * self.width + x] & 255) != depth - 1:
-                    floodFillCounters[count] = x << 20 | y << 10 | z - 1
+                if z > 0 and (self.__data[(y * self.length + (z - 1)) * self.width + x] & 15) != depth - 1:
+                    lightCounter[count] = x << 20 | y << 10 | z - 1
                     count += 1
-                if z < self.length - 1 and (self.__data[(y * self.length + z + 1) * self.width + x] & 255) != depth - 1:
-                    floodFillCounters[count] = x << 20 | y << 10 | z + 1
+                if z < self.length - 1 and (self.__data[(y * self.length + z + 1) * self.width + x] & 15) != depth - 1:
+                    lightCounter[count] = x << 20 | y << 10 | z + 1
                     count += 1
 
         for worldAccess in self.__worldAccesses:
             worldAccess.markBlockRangeNeedsUpdate(x0, y0, z0, x1, y1, z1)
-
-        free(floodFillCounters)
 
     def addWorldAccess(self, worldAccess):
         self.__worldAccesses.add(worldAccess)
@@ -370,7 +381,7 @@ cdef class World:
 
         return boxes
 
-    cdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1):
+    cpdef swap(self, int x0, int y0, int z0, int x1, int y1, int z1):
         cdef int block1 = self.getBlockId(x0, y0, z0)
         cdef int block2 = self.getBlockId(x1, y1, z1)
         self.setBlock(x0, y0, z0, block2)
@@ -379,10 +390,14 @@ cdef class World:
         self.notifyBlocksOfNeighborChange(x1, y1, z1, block1)
 
     cpdef bint setBlock(self, int x, int y, int z, int blockType):
+        cdef int lightAdjust, lightX, lightY, lightZ, lightIdx
+        cdef char oldBlock
+        cdef RenderGlobal worldAccess
+
         if x <= 0 or y <= 0 or z <= 0 or x >= self.width - 1 or y >= self.height - 1 or z >= self.length - 1:
             return False
 
-        cdef char oldBlock = self.__blocks[(y * self.length + z) * self.width + x]
+        oldBlock = self.__blocks[(y * self.length + z) * self.width + x]
         if blockType == oldBlock:
             return False
 
@@ -396,6 +411,23 @@ cdef class World:
 
         if blockType != 0:
             blocks.blocksList[blockType].onBlockAdded(self, x, y, z)
+
+        lightAdjust = self.rand.nextInt(8)
+        if x < 0:
+            lightX = 0
+        elif x >= self.width:
+            lightX = self.width - 1
+        if y < 0:
+            lightY = 0
+        elif y >= self.height:
+            lightY = self.height - 1
+        if z < 0:
+            lightZ = 0
+        elif z >= self.length:
+            lightZ = self.length - 1
+
+        lightIdx = (lightY * self.length + lightZ) * self.width + lightX
+        self.__data[lightIdx] = <char>((self.__data[lightIdx] & 15) + (lightAdjust << 4))
 
         self.__updateSkylight(x, z, 1, 1)
         self.__updateLight(x, y, z, x + 1, y + 1, z + 1)
@@ -489,18 +521,18 @@ cdef class World:
     cpdef inline bint isBlockNormalCube(self, int x, int y, int z):
         return self.__isBlockNormal[self.getBlockId(x, y, z)]
 
-    cpdef void updateEntities(self):
+    def updateEntities(self):
         self.entityMap.updateEntities()
 
     @cython.cdivision(True)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cpdef tick(self):
-        cdef int wShift, lShift, h, w, d, ticks, i, randValue, x, z, y, blockId
+    def tick(self):
+        cdef int wShift, lShift, h, w, d, ticks, i, randValue, x, y, z, blockId
         cdef char b
         cdef NextTickListEntry posType
 
-        self.__playTime += 1
+        self.__updateLCG += 1
 
         wShift = 1
         lShift = 1
@@ -524,25 +556,27 @@ cdef class World:
                 b = self.__blocks[(posType.yCoord * self.length + posType.zCoord) * self.width + posType.xCoord]
                 if self.__isInLevelBounds(posType.xCoord, posType.yCoord, posType.zCoord) and \
                    b == posType.blockID and b > 0:
-                    blocks.blocksList[b].updateTick(self, posType.xCoord,
-                                                    posType.yCoord, posType.zCoord)
+                    blocks.blocksList[b].updateTick(
+                        self, posType.xCoord, posType.yCoord,
+                        posType.zCoord, self.rand
+                    )
 
-        self.__updateLCG += self.width * self.length * self.height
-        ticks = self.__updateLCG // 200
-        self.__updateLCG -= ticks * 200
+        self.__randInt += self.width * self.length * self.height
+        ticks = self.__randInt // self.__maxTicks
+        self.__randInt -= ticks * self.__maxTicks
         for i in range(ticks):
             self.__randId = self.__randId * self.multiplier + self.addend
             randValue = self.__randId >> 2
             x = randValue & w
-            z = randValue >> wShift & l
             y = randValue >> wShift + lShift & h
+            z = randValue >> wShift & l
             blockId = self.__blocks[(y * self.length + z) * self.width + x]
-            if blocks.tickOnLoad[blockId]:
-                blocks.blocksList[blockId].updateTick(self, x, y, z)
+            if self.__isTickOnLoad[blockId]:
+                blocks.blocksList[blockId].updateTick(self, x, y, z, self.rand)
 
     def entitiesInLevelList(self, cls):
         count = 0
-        for obj in self.entityMap.entities:
+        for obj in self.entityMap.all:
             if isinstance(obj, cls):
                 count += 1
 
@@ -554,7 +588,7 @@ cdef class World:
     cpdef inline int getGroundLevel(self):
         return self.groundLevel
 
-    cpdef inline int getWaterLevel(self):
+    cdef inline int getWaterLevel(self):
         return self.waterLevel
 
     cdef bint getIsAnyLiquid(self, AxisAlignedBB box):
@@ -641,6 +675,14 @@ cdef class World:
     cpdef bint checkIfAABBIsClear(self, AxisAlignedBB aabb):
         return len(self.entityMap.getEntitiesWithinAABBExcludingEntity(None, aabb)) == 0
 
+    cpdef bint checkIfAABBIsClearSpawn(self, AxisAlignedBB aabb):
+        entities = self.entityMap.getEntitiesWithinAABBExcludingEntity(None, aabb)
+        for entity in entities:
+            if entity.preventEntitySpawning:
+                return False
+
+        return True
+
     def getEntitiesWithinAABBExcludingEntity(self, entity, AxisAlignedBB aabb):
         return self.entityMap.getEntitiesWithinAABBExcludingEntity(entity, aabb)
 
@@ -697,7 +739,7 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return self.__lightBrightnessTable[self.__data[(y * self.length + z) * self.width + x]]
+        return self.__lightBrightnessTable[self.__data[(y * self.length + z) * self.width + x] & 15]
 
     cdef inline char __getBlockMetadata(self, int x, int y, int z):
         if x < 0:
@@ -713,7 +755,23 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return self.__data[(y * self.length + z) * self.width + x]
+        return <char>(self.__data[(y * self.length + z) * self.width + x] & 15)
+
+    cdef inline char getBlockBrightness(self, int x, int y, int z):
+        if x < 0:
+            x = 0
+        elif x >= self.width:
+            x = self.width - 1
+        if y < 0:
+            y = 0
+        elif y >= self.height:
+            y = self.height - 1
+        if z < 0:
+            z = 0
+        elif z >= self.length:
+            z = self.length - 1
+
+        return <char>((self.__data[(y * self.length + z) * self.width + x] % 0x100000000) >> 4 & 15)
 
     cpdef inline int getBlockMaterial(self, int x, int y, int z):
         cdef int block = self.getBlockId(x, y, z)
@@ -840,21 +898,16 @@ cdef class World:
             if blockId > 0:
                 block = blocks.blocksList[blockId]
                 if block.getBlockMaterial() == Material.air and block.isCollidable():
-                    if block.renderAsNormalBlock():
-                        hitResult = block.collisionRayTrace(x1, y1, z1, vec1, vec2)
-                        if hitResult:
-                            return hitResult
-                    else:
-                        hitResult = block.collisionRayTrace(x1, y1, z1, vec1, vec2)
-                        if hitResult:
-                            return hitResult
+                    hitResult = block.collisionRayTrace(self, x1, y1, z1, vec1, vec2)
+                    if hitResult:
+                        return hitResult
 
     cpdef bint growTrees(self, int x, int y, int z):
         cdef int xx, yy, zz, i, leafExt, leafExtLeft, offset, logs, zd
         cdef bint willGrow
         cdef char block
 
-        logs = self.__rand.nextInt(3) + 4
+        logs = self.rand.nextInt(3) + 4
         willGrow = True
 
         if y <= 0 or y + logs + 1 > self.height:
@@ -899,7 +952,7 @@ cdef class World:
                 for zz in range(z - leafExt, z + leafExt + 1):
                     zd = zz - z
                     if abs(willGrow) == leafExt and abs(zd) == leafExt and \
-                       (self.__rand.nextInt(2) == 0 or leafExtLeft == 0):
+                       (self.rand.nextInt(2) == 0 or leafExtLeft == 0):
                         continue
 
                     self.setBlockWithNotify(xx, yy, zz, blocks.leaves.blockID)
@@ -912,61 +965,336 @@ cdef class World:
     def getPlayerEntity(self):
         return self.playerEntity
 
-    def releaseEntitySkin(self, entity):
+    def spawnEntityInWorld(self, entity):
         self.entityMap.insert(entity)
         entity.setWorld(self)
 
-    def onPickup(self, entity):
+    def releaseEntitySkin(self, entity):
         self.entityMap.remove(entity)
 
     def createExplosion(self, entity, float x, float y, float z, float radius):
-        cdef int minX, maxX, minY, maxY, minZ, maxZ, xx, yy, zz, blockId
-        cdef float xd, yd, zd, d
+        cdef int minX, maxX, minY, maxY, minZ, maxZ, xx, yy, zz, posX, posY, posZ, \
+                 blockId, pos, i
+        cdef float xd, yd, zd, d, radX, radY, radZ, fallout, nextX, nextY, nextZ, \
+                   pX, pY, pZ, xr, yr, zr
+        cdef list explodePositions, entities
         cdef Block block
+        explodePositions = []
 
-        minX = <int>(x - 4.0 - 1.0)
-        maxX = <int>(x + 4.0 + 1.0)
-        minY = <int>(y - 4.0 - 1.0)
-        maxY = <int>(y + 4.0 + 1.0)
-        minZ = <int>(z - 4.0 - 1.0)
-        maxZ = <int>(z + 4.0 + 1.0)
-
-        for xx in range(minX, maxX):
-            for yy in range(maxY - 1, minY - 1, -1):
-                for zz in range(minZ, maxZ):
-                    xd = xx + 0.5 - x
-                    yd = yy + 0.5 - y
-                    zd = zz + 0.5 - z
-                    if xx >= 0 and yy >= 0 and zz >= 0 and xx < self.width and yy < self.height and \
-                       zz < self.length and xd * xd + yd * yd + zd * zd < 16.0:
-                        blockId = self.getBlockId(xx, yy, zz)
-                        if blockId > 0:
-                            block = <Block>blocks.blocksList[blockId]
-                            if not block.getCanExplode():
-                                continue
-
-                            block.dropBlockAsItemWithChance(self, xx, yy, zz, 0.3)
-                            self.setBlockWithNotify(xx, yy, zz, 0)
-                            block.onBlockDestroyedByExplosion(self, xx, yy, zz)
-
+        minX = <int>(x - 6.0 - 1.0)
+        maxX = <int>(x + 6.0 + 1.0)
+        minY = <int>(y - 6.0 - 1.0)
+        maxY = <int>(y + 6.0 + 1.0)
+        minZ = <int>(z - 6.0 - 1.0)
+        maxZ = <int>(z + 6.0 + 1.0)
         entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ)
         for e in entities:
             xd = e.posX - x
             yd = e.posY - y
             zd = e.posZ - z
-            d = sqrt(xd * xd + yd * yd + zd * zd) / 4.0
+            d = sqrt(xd * xd + yd * yd + zd * zd) / 6.0
             if d <= 1.0:
-                e.attackEntityFrom(None, <int>((1.0 - d) * 15.0 + 1.0))
+                d = 1.0 - d
+                e.attackEntityFrom(None, <int>((d * d + d) / 2.0 * 64.0 + 1.0))
+
+        for xx in range(16):
+            for yy in range(16):
+                for zz in range(16):
+                    if xx == 0 or xx == 15 or yy == 0 or \
+                       yy == 15 or zz == 0 or zz == 15:
+                        radX = xx / 15.0 * 2.0 - 1.0
+                        radY = yy / 15.0 * 2.0 - 1.0
+                        radZ = zz / 15.0 * 2.0 - 1.0
+                        d = sqrt(radX * radX + radY * radY + radZ * radZ)
+                        radX /= d
+                        radY /= d
+                        radZ /= d
+                        fallout = 4.0 * (0.7 + self.rand.nextFloat() * 0.6)
+                        nextX = x
+                        nextY = y
+                        nextZ = z
+                        while fallout > 0.0:
+                            posX = <int>nextX
+                            posY = <int>nextY
+                            posZ = <int>nextZ
+                            blockId = self.getBlockId(posX, posY, posZ)
+                            if blockId > 0:
+                                fallout -= ((<Block>blocks.blocksList[blockId]).getExplosionResistance() + 0.3) * 0.3
+
+                            if fallout > 0.0:
+                                pos = posX + (posY << 10) + (posZ << 10 << 10)
+                                if pos not in explodePositions:
+                                    explodePositions.append(pos)
+
+                            nextX += radX * 0.3
+                            nextY += radY * 0.3
+                            nextZ += radZ * 0.3
+                            fallout -= 0.3
+
+        explodePositions.sort()
+        for i in range(len(explodePositions) - 1, -1, -1):
+            pos = explodePositions[i]
+            posX = pos & 1023
+            posY = pos >> 10 & 1023
+            posZ = pos >> 20 & 1023
+            if posX >= 0 and posY >= 0 and posZ >= 0 and posX < self.width and \
+               posY < self.height and posZ < self.length:
+                blockId = self.getBlockId(posX, posY, posZ)
+                pX = posX + self.rand.nextFloat()
+                pY = posY + self.rand.nextFloat()
+                pZ = posZ + self.rand.nextFloat()
+                xr = pX - x
+                yr = pY - y
+                zr = pZ - z
+                d = sqrt(xr * xr + yr * yr + zr * zr)
+                xr /= d
+                yr /= d
+                zr /= d
+                d = 0.5 / (d / 4.0 + 0.1)
+                d *= self.rand.nextFloat() * self.rand.nextFloat() + 0.3
+                xr *= d
+                yr *= d
+                zr *= d
+                self.spawnParticle(
+                    'explode', (pX + x) / 2.0, (pY + y) / 2.0, (pZ + z) / 2.0,
+                    xr, yr, zr
+                )
+                self.spawnParticle('smoke', pX, pY, pZ, xr, yr, zr)
+
+                if blockId > 0:
+                    block = <Block>blocks.blocksList[blockId]
+                    block.dropBlockAsItemWithChance(self, posX, posY, posZ, 0.3)
+                    self.setBlockWithNotify(posX, posY, posZ, 0)
+                    block.onBlockDestroyedByExplosion(self, posX, posY, posZ)
 
     def findSubclassOf(self, cls):
-        for entity in self.entityMap.entities:
-            if isinstance(entity, cls):
+        for entity in self.entityMap.all:
+            if issubclass(entity.__class__, cls):
                 return entity
 
     def getMapHeight(self, int x, int z):
         return self.__heightMap[x + z * self.width]
 
-    def playSoundAtEntity(self, entity, name, float volume, float pitch):
+    cdef int fluidFlowCheck(self, int x, int y, int z, int source, int tt):
+        cdef int orgX, orgZ, pos, flooded, sourceBlock, floodedBlocks, lastDistance, i, \
+                 lastVal, coord, zd, xd
+        cdef bint sourceFlow, negative, lastNorth, lastSouth, lastBelow, \
+                  north, south, below
+        cdef char blockId
+
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.height or z >= self.length:
+            return -1
+
+        orgX = x
+        orgZ = z
+        pos = ((y << 10) + z << 10) + x
+        flooded = 1
+        self.__coords[0] = x + (z << 10)
+        sourceBlock = -9999
+        if source == blocks.waterStill.blockID or source == blocks.waterMoving.blockID:
+            sourceBlock = blocks.waterSource.blockID
+        if source == blocks.lavaStill.blockID or source == blocks.lavaMoving.blockID:
+            sourceBlock = blocks.lavaSource.blockID
+
+        global floodFillCounter
+        floodedBlocks = 0
+        while True:
+            sourceFlow = False
+            lastDistance = -1
+            floodedBlocks = 0
+            floodFillCounter += 1
+            if floodFillCounter == 30000:
+                for i in range(1048576):
+                    self.__floodFillCounters[i] = 0
+
+                floodFillCounter = 1
+
+            while True:
+                negative = False
+                while True:
+                    if flooded <= 0:
+                        y += 1
+                        for i in range(1048576):
+                            lastVal = self.__floodedBlocks[i]
+                            self.__floodedBlocks[i] = self.__coords[i]
+                            self.__coords[i] = lastVal
+
+                        flooded = floodedBlocks
+                        negative = True
+                        break
+
+                    flooded -= 1
+                    coord = self.__coords[flooded]
+                    if self.__floodFillCounters[coord] != floodFillCounter:
+                        break
+
+                if negative:
+                    break
+
+                x = coord % 1024
+                z = coord // 1024
+                zd = z - orgZ
+                zd *= zd
+
+                while x > 0 and self.__floodFillCounters[coord - 1] != floodFillCounter and \
+                     (self.__blocks[(y * self.length + z) * self.width + x - 1] == source or \
+                      self.__blocks[(y * self.length + z) * self.width + x - 1] == tt):
+                    coord -= 1
+                    x -= 1
+
+                if x > 0 and self.__blocks[(y * self.length + z) * self.width + x - 1] == sourceBlock:
+                    sourceFlow = True
+
+                lastNorth = False
+                lastSouth = False
+                lastBelow = False
+                while x < self.width and self.__floodFillCounters[coord] != floodFillCounter and \
+                     (self.__blocks[(y * self.length + z) * self.width + x] == source or \
+                      self.__blocks[(y * self.length + z) * self.width + x] == tt):
+                    if z > 0:
+                        blockId = self.__blocks[(y * self.length + z - 1) * self.width + x]
+                        if blockId == sourceBlock:
+                            sourceFlow = True
+
+                        north = self.__floodFillCounters[coord - 1024] != floodFillCounter and \
+                                (blockId == source or blockId == tt)
+                        if north and not lastNorth:
+                            self.__coords[flooded] = coord - 1024
+                            flooded += 1
+
+                        lastNorth = north
+
+                    if z < self.length - 1:
+                        blockId = self.__blocks[(y * self.length + z + 1) * self.width + x]
+                        if blockId == sourceBlock:
+                            sourceFlow = True
+
+                        south = self.__floodFillCounters[coord + 1024] != floodFillCounter and \
+                                (blockId == source or blockId == tt)
+                        if south and not lastSouth:
+                            self.__coords[flooded] = coord + 1024
+                            flooded += 1
+
+                        lastSouth = south
+
+                    if y < self.height - 1:
+                        blockId = self.__blocks[((y + 1) * self.length + z) * self.width + x]
+                        below = blockId == source or blockId == tt
+                        if below and not lastBelow:
+                            self.__floodedBlocks[floodedBlocks] = coord
+                            floodedBlocks += 1
+
+                        lastBelow = below
+
+                    xd = x - orgX
+                    xd *= xd
+                    xd += zd
+                    if xd > lastDistance:
+                        lastDistance = xd
+                        pos = ((y << 10) + z << 10) + x
+
+                    self.__floodFillCounters[coord] = floodFillCounter
+                    coord += 1
+                    x += 1
+
+                if x < self.width and self.__blocks[(y * self.length + z) * self.width + x] == sourceBlock:
+                    sourceFlow = True
+
+            if floodedBlocks <= 0:
+                break
+
+        if sourceFlow:
+            return -9999
+        else:
+            return pos
+
+    cdef bint floodFill(self, int x, int y, int z, int source, int tt):
+        cdef int i, flooded, coord
+        cdef bint lastNorth, lastSouth, north, south
+        cdef char blockId
+
+        if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.height or z >= self.length:
+            return False
+
+        global floodFillCounter
+        floodFillCounter += 1
+        if floodFillCounter == 30000:
+            for i in range(1048576):
+                self.__floodFillCounters[i] = 0
+
+            floodFillCounter = 1
+
+        flooded = 1
+        self.__coords[0] = x + (z << 10)
+        while True:
+            while True:
+                if flooded <= 0:
+                    return True
+
+                flooded -= 1
+                coord = self.__coords[flooded]
+                if self.__floodFillCounters[coord] != floodFillCounter:
+                    break
+
+            x = coord % 1024
+            z = coord // 1024
+            if x == 0 or x == self.width - 1 or y == 0 or y == self.height - 1 or \
+               z == 0 or z == self.length - 1:
+                return False
+
+            while x > 0 and self.__floodFillCounters[coord - 1] != floodFillCounter and \
+                  (self.__blocks[(y * self.length + z) * self.width + x - 1] == source or \
+                   self.__blocks[(y * self.length + z) * self.width + x - 1] == tt):
+                x -= 1
+                coord -= 1
+
+            if x > 0 and self.__blocks[(y * self.length + z) * self.width + x - 1] == 0:
+                return False
+
+            lastNorth = False
+            lastSouth = False
+            while x < self.width and self.__floodFillCounters[coord] != floodFillCounter and \
+                 (self.__blocks[(y * self.length + z) * self.width + x] == source or \
+                  self.__blocks[(y * self.length + z) * self.width + x] == tt):
+                if x == 0 or x == self.width - 1:
+                    return False
+
+                if z > 0:
+                    blockId = self.__blocks[(y * self.length + z - 1) * self.width + x]
+                    if blockId == 0:
+                        return False
+
+                    north = self.__floodFillCounters[coord - 1024] != floodFillCounter and \
+                            (blockId == source or blockId == tt)
+                    if north and not lastNorth:
+                        self.__coords[flooded] = coord - 1024
+                        flooded += 1
+
+                    lastNorth = north
+
+                if z < self.length - 1:
+                    blockId = self.__blocks[(y * self.length + z + 1) * self.width + x]
+                    if blockId == 0:
+                        return False
+
+                    south = self.__floodFillCounters[coord + 1024] != floodFillCounter and \
+                            (blockId == source or blockId == tt)
+                    if south and not lastSouth:
+                        self.__coords[flooded] = coord + 1024
+                        flooded += 1
+
+                    lastSouth = south
+
+                self.__floodFillCounters[coord] = floodFillCounter
+                coord += 1
+                x += 1
+
+            if x < self.width and self.__blocks[(y * self.length + z) * self.width + x] == 0:
+                break
+
+        return False
+
+    def playSoundAtEntity(self, entity, str name, float volume, float pitch):
         cdef float d, xd, yd, zd
         for worldAccess in self.__worldAccesses:
             d = 16.0
@@ -1013,6 +1341,37 @@ cdef class World:
         if self.getBlockId(x, y, z) == blocks.fire.blockID:
             self.playSoundEffect(
                 x + 0.5, y + 0.5, z + 0.5, 'random.fizz', 0.5,
-                2.6 + (self.__rand.randFloat() - self.__rand.randFloat()) * 0.8
+                2.6 + (self.rand.nextFloat() - self.rand.nextFloat()) * 0.8
             )
             self.setBlockWithNotify(x, y, z, 0)
+
+    def setBlockTileEntity(self, int x, int y, int z, entity):
+        self.map[x + (y << 10) + (z << 10 << 10)] = entity
+
+    def removeBlockTileEntity(self, int x, int y, int z):
+        if x + (y << 10) + (z << 10 << 10) in self.map:
+            del self.map[x + (y << 10) + (z << 10 << 10)]
+
+    def getBlockTileEntity(self, int x, int y, int z):
+        return self.map.get(x + (y << 10) + (z << 10 << 10))
+
+    def spawnParticle(self, str particle, float x, float y, float z,
+                      float xr, float yr, float zr):
+        for worldAccess in self.__worldAccesses:
+            worldAccess.spawnParticle(particle, x, y, z, xr, yr, zr)
+
+    def getBlocks(self):
+        cdef int i
+        blocks = bytearray(self.__size)
+        for i in range(self.__size):
+            blocks[i] = self.__blocks[i]
+
+        return blocks
+
+    def getData(self):
+        cdef int i
+        data = bytearray(self.__size)
+        for i in range(self.__size):
+            data[i] = self.__data[i]
+
+        return data

@@ -18,3 +18,4 @@ class Session:
 
     def __init__(self, username, sessionId):
         self.username = username
+        self.sessionId = sessionId

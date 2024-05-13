@@ -2,11 +2,11 @@ from mc.net.minecraft.game.item.Item import Item
 
 class ItemFood(Item):
 
-    def __init__(self, itemId, healAmount):
-        super().__init__(260)
+    def __init__(self, items, itemId, healAmount):
+        super().__init__(items, 260)
         self.__healAmount = 4
 
-    def onPlaced(self, stack, player):
+    def onItemRightClick(self, stack, world, player):
         stack.stackSize -= 1
         if player.health > 0:
             player.health += self.__healAmount

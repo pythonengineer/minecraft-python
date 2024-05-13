@@ -2,6 +2,7 @@
 # cython: cdivision=True
 
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
+from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.World cimport World
@@ -28,42 +29,119 @@ cdef class RenderBlocks:
     cdef bint renderBlockByRenderType(self, Block block, int x, int y, int z):
         cdef int renderType
         cdef bint layerOk
-        cdef float b
+        cdef float b, minY, maxY
 
+        layerOk = False
         renderType = block.getRenderType()
         if renderType == 0:
-            layerOk = False
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y - 1, z, 0):
                 b = block.getBlockBrightness(self.__blockAccess, x, y - 1, z)
                 self.__tessellator.setColorOpaque_F(0.5 * b, 0.5 * b, 0.5 * b)
-                self.__renderBlockBottom(block, x, y, z, block.getBlockTexture(0))
+                self.__renderBlockBottom(
+                    block, x, y, z,
+                    block.getBlockTextureFromSideAndMetadata(
+                        self.__blockAccess, x, y, z, 0
+                    )
+                )
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y + 1, z, 1):
                 b = block.getBlockBrightness(self.__blockAccess, x, y + 1, z)
                 self.__tessellator.setColorOpaque_F(b, b, b)
-                self.__renderBlockTop(block, x, y, z, block.getBlockTexture(1))
+                self.__renderBlockTop(
+                    block, x, y, z,
+                    block.getBlockTextureFromSideAndMetadata(
+                        self.__blockAccess, x, y, z, 1
+                    )
+                )
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z - 1, 2):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z - 1)
                 self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
-                self.__renderBlockNorth(block, x, y, z, block.getBlockTexture(2))
+                self.__renderBlockNorth(
+                    block, x, y, z,
+                    block.getBlockTextureFromSideAndMetadata(
+                        self.__blockAccess, x, y, z, 2
+                    )
+                )
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y, z + 1, 3):
                 b = block.getBlockBrightness(self.__blockAccess, x, y, z + 1)
                 self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
-                self.__renderBlockSouth(block, x, y, z, block.getBlockTexture(3))
+                self.__renderBlockSouth(
+                    block, x, y, z,
+                    block.getBlockTextureFromSideAndMetadata(
+                        self.__blockAccess, x, y, z, 3
+                    )
+                )
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x - 1, y, z, 4):
                 b = block.getBlockBrightness(self.__blockAccess, x - 1, y, z)
                 self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
-                self.__renderBlockWest(block, x, y, z, block.getBlockTexture(4))
+                self.__renderBlockWest(
+                    block, x, y, z,
+                    block.getBlockTextureFromSideAndMetadata(
+                        self.__blockAccess, x, y, z, 4
+                    )
+                )
                 layerOk = True
             if self.__flipTexture or block.shouldSideBeRendered(self.__blockAccess, x + 1, y, z, 5):
+                b = block.getBlockBrightness(self.__blockAccess, x + 1, y, z)
+                self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
+                self.__renderBlockEast(
+                    block, x, y, z,
+                    block.getBlockTextureFromSideAndMetadata(
+                        self.__blockAccess, x, y, z, 5
+                    )
+                )
+                layerOk = True
+
+            return layerOk
+        elif renderType == 4:
+            layerOk = False
+            minY = block.minY
+            maxY = block.maxY
+            block.maxY = maxY - self.__shouldSideBeRendered(x, y, z)
+            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y - 1, z, 0):
+                b = block.getBlockBrightness(self.__blockAccess, x, y - 1, z)
+                self.__tessellator.setColorOpaque_F(0.5 * b, 0.5 * b, 0.5 * b)
+                self.__renderBlockBottom(block, x, y, z, block.getBlockTexture(0))
+                layerOk = True
+            if self.flipTexture or block.shouldSideBeRendered(self.__blockAccess, x, y + 1, z, 1):
+                b = block.getBlockBrightness(self.__blockAccess, x, y + 1, z)
+                self.__tessellator.setColorOpaque_F(b * 1.0, b * 1.0, b * 1.0)
+                self.__renderBlockTop(block, x, y, z, block.getBlockTexture(1))
+                layerOk = True
+            block.minY = maxY - self.__shouldSideBeRendered(x, y, z - 1)
+            if self.flipTexture or block.maxY > block.minY or \
+               block.shouldSideBeRendered(self.__blockAccess, x, y, z - 1, 2):
+                b = block.getBlockBrightness(self.__blockAccess, x, y, z - 1)
+                self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
+                self.__renderBlockNorth(block, x, y, z, block.getBlockTexture(2))
+                layerOk = True
+            block.minY = maxY - self.__shouldSideBeRendered(x, y, z + 1)
+            if self.flipTexture or block.maxY > block.minY or \
+               block.shouldSideBeRendered(self.__blockAccess, x, y, z + 1, 3):
+                b = block.getBlockBrightness(self.__blockAccess, x, y, z + 1)
+                self.__tessellator.setColorOpaque_F(0.8 * b, 0.8 * b, 0.8 * b)
+                self.__renderBlockSouth(block, x, y, z, block.getBlockTexture(3))
+                layerOk = True
+            block.minY = maxY - self.__shouldSideBeRendered(x - 1, y, z)
+            if self.flipTexture or block.maxY > block.minY or \
+               block.shouldSideBeRendered(self.__blockAccess, x - 1, y, z, 4):
+                b = block.getBlockBrightness(self.__blockAccess, x - 1, y, z)
+                self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
+                self.__renderBlockWest(block, x, y, z, block.getBlockTexture(4))
+                layerOk = True
+            block.minY = maxY - self.__shouldSideBeRendered(x + 1, y, z)
+            if self.flipTexture or block.maxY > block.minY or \
+               block.shouldSideBeRendered(self.__blockAccess, x + 1, y, z, 5):
                 b = block.getBlockBrightness(self.__blockAccess, x + 1, y, z)
                 self.__tessellator.setColorOpaque_F(0.6 * b, 0.6 * b, 0.6 * b)
                 self.__renderBlockEast(block, x, y, z, block.getBlockTexture(5))
                 layerOk = True
 
+            block.minY = minY
+            block.maxY = maxY
             return layerOk
         elif renderType == 1:
             b = block.getBlockBrightness(self.__blockAccess, x, y, z)
@@ -72,15 +150,18 @@ cdef class RenderBlocks:
             return True
         elif renderType == 2:
             b = block.getBlockBrightness(self.__blockAccess, x, y, z)
+            if blocks.lightValue[block.blockID] > 0:
+                b = 1.0
+
             self.__tessellator.setColorOpaque_F(b, b, b)
             if self.__blockAccess.isBlockNormalCube(x - 1, y, z):
-                self.__renderBlockTorch(block, x, y + 0.2, z, -0.5, 0.0)
+                self.__renderBlockTorch(block, x - 10.0 * 0.01, y + 0.2, z, -0.4, 0.0)
             elif self.__blockAccess.isBlockNormalCube(x + 1, y, z):
-                self.__renderBlockTorch(block, x, y + 0.2, z, 0.5, 0.0)
+                self.__renderBlockTorch(block, x + 10.0 * 0.01, y + 0.2, z, 0.4, 0.0)
             elif self.__blockAccess.isBlockNormalCube(x, y, z - 1):
-                self.__renderBlockTorch(block, x, y + 0.2, z, 0.0, -0.5)
+                self.__renderBlockTorch(block, x, y + 0.2, z - 10.0 * 0.01, 0.0, -0.4)
             elif self.__blockAccess.isBlockNormalCube(x, y, z + 1):
-                self.__renderBlockTorch(block, x, y + 0.2, z, 0.0, 0.5)
+                self.__renderBlockTorch(block, x, y + 0.2, z + 10.0 * 0.01, 0.0, 0.4)
             else:
                 self.__renderBlockTorch(block, x, y, z, 0.0, 0.0)
 
@@ -270,7 +351,7 @@ cdef class RenderBlocks:
     cdef __renderBlockTorch(self, Block block, float x, float y, float z,
                             float xOffset, float zOffset):
         cdef int tex, xt
-        cdef float u0, u1, v0, v1, x0, x1, z0, z1, rot
+        cdef float u0, u1, v0, v1, u2, u3, v2, v3, x0, x1, z0, z1, rot
 
         tex = block.getBlockTexture(0)
         if self.__overrideBlockTexture >= 0:
@@ -282,6 +363,10 @@ cdef class RenderBlocks:
         u1 = (xt + 15.99) / 256.0
         v0 = tex / 256.0
         v1 = (tex + 15.99) / 256.0
+        u2 = u0 + 0.02734375
+        v2 = v0 + 0.0234375
+        u3 = u0 + 0.03515625
+        v3 = v0 + 0.03125
         x += 0.5
         z += 0.5
         x0 = x - 0.5
@@ -289,6 +374,22 @@ cdef class RenderBlocks:
         z0 = z - 0.5
         z1 = z + 0.5
         rot = 1.0 / 16.0
+        self.__tessellator.addVertexWithUV(
+            x + xOffset * (6.0 / 16.0) - rot, y + 10.0 / 16.0,
+            z + zOffset * (6.0 / 16.0) - rot, u2, v2
+        )
+        self.__tessellator.addVertexWithUV(
+            x + xOffset * (6.0 / 16.0) - rot, y + 10.0 / 16.0,
+            z + zOffset * (6.0 / 16.0) + rot, u2, v3
+        )
+        self.__tessellator.addVertexWithUV(
+            x + xOffset * (6.0 / 16.0) + rot, y + 10.0 / 16.0,
+            z + zOffset * (6.0 / 16.0) + rot, u3, v3
+        )
+        self.__tessellator.addVertexWithUV(
+            x + xOffset * (6.0 / 16.0) + rot, y + 10.0 / 16.0,
+            z + zOffset * (6.0 / 16.0) - rot, u3, v2
+        )
         self.__tessellator.addVertexWithUV(x - rot, y + 1.0, z0, u0, v0)
         self.__tessellator.addVertexWithUV(x - rot + xOffset, y, z0 + zOffset, u0, v1)
         self.__tessellator.addVertexWithUV(x - rot + xOffset, y, z1 + zOffset, u1, v1)
@@ -340,6 +441,12 @@ cdef class RenderBlocks:
         self.__tessellator.addVertexWithUV(x, y, z1, u0, v1)
         self.__tessellator.addVertexWithUV(x1, y, z, u1, v1)
         self.__tessellator.addVertexWithUV(x1, y + 1.0, z, u1, v0)
+
+    cdef float __shouldSideBeRendered(self, int x, int y, int z):
+        if self.__blockAccess.getBlockMaterial(x, y, z) != Material.water:
+            return 1.0
+        else:
+            return self.__blockAccess.getBlockBrightness(x, y, z) / 9.0
 
     cdef __renderBlockBottom(self, Block block, float x, float y, float z, int tex):
         cdef int xt

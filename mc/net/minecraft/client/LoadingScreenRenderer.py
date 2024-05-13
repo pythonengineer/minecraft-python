@@ -2,6 +2,8 @@ from mc.net.minecraft.client import MinecraftError
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from pyglet import clock, gl
 
+import nbtlib
+
 class LoadingScreenRenderer:
 
     def __init__(self, minecraft):
@@ -73,3 +75,7 @@ class LoadingScreenRenderer:
 
             clock.tick()
             self.__mc.flip()
+
+    @staticmethod
+    def writeLevelTags(file):
+        return nbtlib.load(file, gzipped=True)

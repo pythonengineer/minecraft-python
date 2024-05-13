@@ -195,7 +195,7 @@ class GameSettings:
 
         self.__saveOptions()
 
-    def setOptionString(self, option):
+    def getOptionDisplayString(self, option):
         if option == 0:
             return 'Music: ' + ('ON' if self.music else 'OFF')
         elif option == 1:

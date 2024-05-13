@@ -6,12 +6,11 @@ from libc.math cimport sin, pi
 
 from mc.net.minecraft.client.render.texture.TextureFX cimport TextureFX
 from mc.net.minecraft.game.level.block.Blocks import blocks
-from mc.JavaUtils cimport Random
+from mc.JavaUtils cimport random
 
 cdef class TextureLavaFX(TextureFX):
 
     cdef:
-        Random __random
         float __red[256]
         float __green[256]
         float __blue[256]
@@ -19,7 +18,6 @@ cdef class TextureLavaFX(TextureFX):
 
     def __init__(self):
         TextureFX.__init__(self, blocks.lavaMoving.blockIndexInTexture)
-        self.__random = Random()
         for i in range(256):
             self.__red[i] = 0.0
             self.__green[i] = 0.0
@@ -51,7 +49,7 @@ cdef class TextureLavaFX(TextureFX):
                     self.__blue[x + (z << 4)] = 0.0
 
                 self.__alpha[x + (z << 4)] -= 0.06
-                if self.__random.randFloat() < 0.005:
+                if random() < 0.005:
                     self.__alpha[x + (z << 4)] = 1.5
 
         memcpy(red, self.__green, sizeof(self.__green))

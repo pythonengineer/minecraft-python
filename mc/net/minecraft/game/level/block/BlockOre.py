@@ -1,7 +1,5 @@
 from mc.net.minecraft.game.level.block.Block import Block
 
-import random
-
 class BlockOre(Block):
 
     def __init__(self, blocks, blockId, tex):
@@ -17,5 +15,5 @@ class BlockOre(Block):
         else:
             return self.blockID
 
-    def quantityDropped(self):
-        return int(random.random() * 3) + 1
+    def quantityDropped(self, random):
+        return random.nextInt(3) + 1

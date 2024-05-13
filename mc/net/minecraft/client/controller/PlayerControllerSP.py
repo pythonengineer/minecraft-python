@@ -17,27 +17,74 @@ class PlayerControllerSP(PlayerController):
         self.__prevBlockDamage = 0
         self.__blockHitWait = 0
         self.__mobSpawner = None
+        self.__mainChestArray = (
+            blocks.stone, blocks.grass, blocks.cobblestone, blocks.planks, blocks.sapling,
+            blocks.bedrock, blocks.sand, blocks.gravel, blocks.oreGold, blocks.oreIron,
+            blocks.oreCoal, blocks.wood, blocks.leaves, blocks.sponge, blocks.glass,
+            blocks.clothRed, blocks.clothOrange, blocks.clothYellow, blocks.clothChartreuse,
+            blocks.clothGreen, blocks.clothSpringGreen, blocks.clothCyan, blocks.clothCapri,
+            blocks.clothUltramarine, blocks.clothViolet, blocks.clothPurple, blocks.clothMagenta,
+            blocks.clothRose, blocks.clothDarkGray, blocks.clothGray, blocks.clothWhite,
+            blocks.plantYellow, blocks.plantRed, blocks.mushroomBrown, blocks.mushroomRed,
+            blocks.blockGold, blocks.blockSteel, blocks.stairSingle, blocks.brick, blocks.tnt,
+            blocks.bookShelf, blocks.cobblestoneMossy, blocks.obsidian, blocks.torch,
+            blocks.waterSource, blocks.lavaSource, blocks.chest
+        )
 
     def openInventory(self):
-        self._mc.displayGuiScreen(GuiInventory())
+        self._mc.displayGuiScreen(GuiInventory(self._mc.thePlayer.inventory))
 
     def flipPlayer(self, player):
-        player.inventory.mainInventory[4] = ItemStack(blocks.clothWhite, 99)
-        player.inventory.mainInventory[5] = ItemStack(blocks.glass, 99)
-        player.inventory.mainInventory[6] = ItemStack(blocks.torch, 99)
-        player.inventory.mainInventory[7] = ItemStack(blocks.tnt, 99)
-        player.inventory.mainInventory[8] = ItemStack(blocks.bookShelf, 99)
+        x = int(player.posX)
+        y = int(player.posY)
+        z = int(player.posZ)
+        for xx in range(x - 3, x + 4):
+            for yy in range(y - 2, y + 3):
+                for zz in range(z - 3, z + 4):
+                    blockId = blocks.obsidian.blockID if yy < y - 1 else 0
+                    if xx == x - 3 or zz == z - 3 or xx == x + 3 or zz == z + 3 or yy == y - 2 or yy == y + 2:
+                        blockId = blocks.cobblestoneMossy.blockID
 
+                    if yy == y and zz == z and (xx == x - 3 + 1 or xx == x + 3 - 1):
+                        blockId = blocks.torch.blockID
+
+                    if zz == z - 3 and xx == x and yy >= y - 1 and yy <= y:
+                        blockId = 0
+
+                    self._mc.theWorld.setBlockWithNotify(xx, yy, zz, blockId)
+
+        self._mc.theWorld.setBlockWithNotify(x - 2, y - 1, z - 2, blocks.chest.blockID)
+        itemsChest = self._mc.theWorld.getBlockTileEntity(x - 2, y - 1, z - 2)
+        self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z - 2, blocks.chest.blockID)
+        blocksChest1 = self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 2)
+        self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z - 1, blocks.chest.blockID)
+        blocksChest2 = self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 1)
+        self._mc.theWorld.setBlockWithNotify(x - 1, y - 1, z + 2, blocks.chest.blockID)
+        tntChest1 = self._mc.theWorld.getBlockTileEntity(x - 1, y - 1, z + 2)
+        self._mc.theWorld.setBlockWithNotify(x, y - 1, z + 2, blocks.chest.blockID)
+        tntChest2 = self._mc.theWorld.getBlockTileEntity(x, y - 1, z + 2)
         slot = 0
         for i in range(256, 1024):
             if items.itemsList[i]:
-                player.inventory.mainInventory[slot] = ItemStack(i)
+                limit = items.itemsList[i].getItemStackLimit()
+                itemsChest.setInventorySlotContents(slot, ItemStack(i, limit))
                 slot += 1
+                if slot >= 27:
+                    break
 
-            if slot >= 4:
-                break
+        for slot in range(27):
+            blockId = blocks.tnt.blockID
+            stack = ItemStack(blockId, items.itemsList[blockId].getItemStackLimit())
+            tntChest1.setInventorySlotContents(slot, stack)
+            tntChest2.setInventorySlotContents(slot, stack)
 
-        player.inventory.mainInventory[9] = ItemStack(items.apple.shiftedIndex, 99)
+        for slot in range(min(len(self.__mainChestArray), 54)):
+            blockId = self.__mainChestArray[slot]
+            stack = ItemStack(blockId, items.itemsList[blockId.blockID].getItemStackLimit())
+            if slot >= 27:
+                blocksChest2.setInventorySlotContents(slot - 27, stack)
+            else:
+                blocksChest1.setInventorySlotContents(slot, stack)
 
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
@@ -49,7 +96,7 @@ class PlayerControllerSP(PlayerController):
 
     def clickBlock(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
-        if block > 0 and blocks.blocksList[block].blockStrength(self._mc.thePlayer) == 0:
+        if block > 0 and blocks.blocksList[block].blockStrength(self._mc.thePlayer) <= 0:
             self.sendBlockRemoved(x, y, z)
 
     def resetBlockRemoving(self):
@@ -102,7 +149,7 @@ class PlayerControllerSP(PlayerController):
         self.__mobSpawner = MobSpawner(world)
         size = world.width * world.length * world.height // 64 // 64 // 64
         for i in range(size):
-            self.__mobSpawner.performSpawning(size, world.playerEntity, None)
+            self.__mobSpawner.spawnMob(size, world.playerEntity, None)
 
     def onUpdate(self):
-        self.__mobSpawner.spawn()
+        self.__mobSpawner.spawnMobs()

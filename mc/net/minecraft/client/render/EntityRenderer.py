@@ -9,13 +9,12 @@ from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.effect.EntityRainFX import EntityRainFX
 from mc.net.minecraft.client.RenderHelper import RenderHelper
 from mc.net.minecraft.client.controller.PlayerControllerCreative import PlayerControllerCreative
-from mc.JavaUtils import BufferUtils
+from mc.JavaUtils import BufferUtils, Random
 
 from pyglet import gl
 from PIL import Image
 
 import traceback
-import random
 import math
 import os
 
@@ -32,7 +31,7 @@ class EntityRenderer:
     __entityByteBuffer = None
     __entityFloatBuffer = BufferUtils.createFloatBuffer(16)
 
-    __rand = random.Random()
+    __random = Random()
 
     __unusedInt1 = 0
     __unusedInt2 = 0
@@ -68,15 +67,15 @@ class EntityRenderer:
             y = self.__mc.thePlayer.posY
             z = self.__mc.thePlayer.posZ
             for i in range(50):
-                xr = x + int(random.random() * 9) - 4
-                zr = z + int(random.random() * 9) - 4
+                xr = x + self.__random.nextInt(9) - 4
+                zr = z + self.__random.nextInt(9) - 4
                 highest = self.__mc.theWorld.getMapHeight(xr, zr)
                 blockId = self.__mc.theWorld.getBlockId(xr, highest - 1, zr)
                 if highest <= y + 4 and highest >= y - 4 and blockId > 0:
                     self.__mc.effectRenderer.addEffect(EntityRainFX(
-                            self.__mc.theWorld, xr + random.random(),
+                            self.__mc.theWorld, xr + self.__random.nextFloat(),
                             highest + 0.1 - blocks.blocksList[blockId].minY,
-                            zr + random.random()
+                            zr + self.__random.nextFloat()
                         ))
 
     def __orientCamera(self, rot):
@@ -107,9 +106,12 @@ class EntityRenderer:
     def __setupViewBobbing(self, a):
         d = self.__mc.thePlayer.distanceWalkedModified - self.__mc.thePlayer.prevDistanceWalkedModified
         d = self.__mc.thePlayer.distanceWalkedModified + d * a
-        bob = self.__mc.thePlayer.prevCameraYaw + (self.__mc.thePlayer.cameraYaw - self.__mc.thePlayer.prevCameraYaw) * a
-        cameraPitch = self.__mc.thePlayer.prevCameraPitch + (self.__mc.thePlayer.cameraPitch - self.__mc.thePlayer.prevCameraPitch) * a
-        gl.glTranslatef(math.sin(d * math.pi) * bob * 0.5, -(abs(math.cos(d * math.pi) * bob)), 0.0)
+        bob = self.__mc.thePlayer.prevCameraYaw + \
+              (self.__mc.thePlayer.cameraYaw - self.__mc.thePlayer.prevCameraYaw) * a
+        cameraPitch = self.__mc.thePlayer.prevCameraPitch + \
+                      (self.__mc.thePlayer.cameraPitch - self.__mc.thePlayer.prevCameraPitch) * a
+        gl.glTranslatef(math.sin(d * math.pi) * bob * 0.5,
+                        -(abs(math.cos(d * math.pi) * bob)), 0.0)
         gl.glRotatef(math.sin(d * math.pi) * bob * 3.0, 0.0, 0.0, 1.0)
         gl.glRotatef(abs(math.cos(d * math.pi + 0.2) * bob) * 5.0, 1.0, 0.0, 0.0)
         gl.glRotatef(cameraPitch, 1.0, 0.0, 0.0)
@@ -125,8 +127,10 @@ class EntityRenderer:
         xMouse = self.__mc.mouseX * screenWidth // self.__mc.width
         yMouse = screenHeight - self.__mc.mouseY * screenHeight // self.__mc.height - 1
         if self.__mc.theWorld:
-            rotationPitch = self.__mc.thePlayer.prevRotationPitch + (self.__mc.thePlayer.rotationPitch - self.__mc.thePlayer.prevRotationPitch) * alpha
-            rotationYaw = self.__mc.thePlayer.prevRotationYaw + (self.__mc.thePlayer.rotationYaw - self.__mc.thePlayer.prevRotationYaw) * alpha
+            rotationPitch = self.__mc.thePlayer.prevRotationPitch + \
+                            (self.__mc.thePlayer.rotationPitch - self.__mc.thePlayer.prevRotationPitch) * alpha
+            rotationYaw = self.__mc.thePlayer.prevRotationYaw + \
+                          (self.__mc.thePlayer.rotationYaw - self.__mc.thePlayer.prevRotationYaw) * alpha
 
             rotVec = self.__orientCamera(alpha)
             y1 = math.cos(-rotationYaw * (math.pi / 180.0) - math.pi)
@@ -139,16 +143,15 @@ class EntityRenderer:
             vec2 = rotVec.addVector(xy * d, x2 * d, y1 * d)
             self.__mc.objectMouseOver = self.__mc.theWorld.rayTraceBlocks(rotVec, vec2)
             if self.__mc.objectMouseOver:
-                d = self.__mc.objectMouseOver.hitVec.distance(rotVec)
+                self.__mc.objectMouseOver.hitVec.distanceTo(rotVec)
 
             vec = self.__orientCamera(alpha)
-            if isinstance(self.__mc.playerController, PlayerControllerCreative):
-                d = 32.0
-
-            vec2 = vec.addVector(xy * d, x2 * d, y1 * d)
+            vec2 = vec.addVector(xy * 32.0, x2 * 32.0, y1 * 32.0)
             self.__pointedEntity = None
             entities = self.__mc.theWorld.entityMap.getEntitiesWithinAABBExcludingEntity(
-                self.__mc.thePlayer, self.__mc.thePlayer.boundingBox.addCoord(xy * d, x2 * d, y1 * d)
+                self.__mc.thePlayer, self.__mc.thePlayer.boundingBox.addCoord(
+                    xy * 32.0, x2 * 32.0, y1 * 32.0
+                )
             )
             d = 0.0
             for entity in entities:
@@ -157,12 +160,13 @@ class EntityRenderer:
 
                 hit = entity.boundingBox.expand(0.1, 0.1, 0.1).calculateIntercept(vec, vec2)
                 if hit:
-                    di = vec.distance(hit.hitVec)
+                    di = vec.distanceTo(hit.hitVec)
                     if di < d or d == 0.0:
                         self.__pointedEntity = entity
                         d = di
 
-            if self.__pointedEntity and not isinstance(self.__mc.playerController, PlayerControllerCreative):
+            if self.__pointedEntity and not \
+               isinstance(self.__mc.playerController, PlayerControllerCreative):
                 self.__mc.objectMouseOver = MovingObjectPosition(self.__pointedEntity)
 
             for i in range(2):
@@ -210,17 +214,22 @@ class EntityRenderer:
 
                 gl.glTranslatef(0.0, 0.0, -0.1)
                 gl.glRotatef(
-                    self.__mc.thePlayer.prevRotationPitch + (self.__mc.thePlayer.rotationPitch - self.__mc.thePlayer.prevRotationPitch) * alpha,
+                    self.__mc.thePlayer.prevRotationPitch + \
+                    (self.__mc.thePlayer.rotationPitch - self.__mc.thePlayer.prevRotationPitch) * alpha,
                     1.0, 0.0, 0.0
                 )
                 gl.glRotatef(
-                    self.__mc.thePlayer.prevRotationYaw + (self.__mc.thePlayer.rotationYaw - self.__mc.thePlayer.prevRotationYaw) * alpha,
+                    self.__mc.thePlayer.prevRotationYaw + \
+                    (self.__mc.thePlayer.rotationYaw - self.__mc.thePlayer.prevRotationYaw) * alpha,
                     0.0, 1.0, 0.0
                 )
 
-                x = self.__mc.thePlayer.prevPosX + (self.__mc.thePlayer.posX - self.__mc.thePlayer.prevPosX) * alpha
-                y = self.__mc.thePlayer.prevPosY + (self.__mc.thePlayer.posY - self.__mc.thePlayer.prevPosY) * alpha
-                z = self.__mc.thePlayer.prevPosZ + (self.__mc.thePlayer.posZ - self.__mc.thePlayer.prevPosZ) * alpha
+                x = self.__mc.thePlayer.prevPosX + \
+                    (self.__mc.thePlayer.posX - self.__mc.thePlayer.prevPosX) * alpha
+                y = self.__mc.thePlayer.prevPosY + \
+                    (self.__mc.thePlayer.posY - self.__mc.thePlayer.prevPosY) * alpha
+                z = self.__mc.thePlayer.prevPosZ + \
+                    (self.__mc.thePlayer.posZ - self.__mc.thePlayer.prevPosZ) * alpha
                 gl.glTranslatef(-x, -y, -z)
 
                 self.__frustum.init()
@@ -352,7 +361,7 @@ class EntityRenderer:
                     break
 
             gl.glColorMask(True, True, True, False)
-            self.__mc.ingameGUI.renderGameOverlay()
+            self.__mc.ingameGUI.renderGameOverlay(alpha)
         else:
             #gl.glViewport(0, 0, self.__mc.width, self.__mc.height)
             gl.glClearColor(0.0, 0.0, 0.0, 0.0)

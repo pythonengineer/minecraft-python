@@ -18,6 +18,3 @@ cdef class AILiving:
         float __moveSpeed
         int __entityAge
         Entity __playerToAttack
-
-    cpdef onLivingUpdate(self, World world, EntityLiving mob)
-    cpdef updatePlayerActionState(self)

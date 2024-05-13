@@ -138,6 +138,3 @@ class ItemRenderer:
     def swingItem(self):
         self.__swingProgress = -1
         self.__itemSwingState = True
-
-    def resetEquippedProgress2(self):
-        self.__equippedProgress = 0.0

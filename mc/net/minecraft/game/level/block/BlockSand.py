@@ -1,15 +1,9 @@
-# cython: language_level=3
+from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.level.material.Material import Material
 
-from mc.net.minecraft.game.level.block.Block cimport Block
-from mc.net.minecraft.game.level.material.Material cimport Material
-from mc.net.minecraft.game.level.World cimport World
+class BlockSand(Block):
 
-cdef class BlockSand(Block):
-
-    cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
-        cdef int newY, blockId, material
-        cdef bint stop
-
+    def onNeighborBlockChange(self, world, x, y, z, blockType):
         newY = y
         while True:
             blockId = world.getBlockId(x, newY - 1, z)

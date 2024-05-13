@@ -66,7 +66,6 @@ from pyglet import window, app, canvas, clock
 from pyglet import resource, gl, compat_platform
 
 import traceback
-import random
 import math
 import time
 import gzip
@@ -154,21 +153,12 @@ class Minecraft(window.Window):
                 self.__releaseMouse()
                 screenWidth = self.width * 240 // self.height
                 screenHeight = self.height * 240 // self.height
-                screen.initGui(self, screenWidth, screenHeight)
+                screen.setWorldAndResolution(self, screenWidth, screenHeight)
                 self.skipRenderWorld = False
             else:
-                self.setIngameFocus()
+                self.grabMouse()
         else:
             self.__releaseMouse()
-
-    def __checkGLError(self, string):
-        if GL_DEBUG:
-            errorCode = gl.glGetError()
-            if errorCode != 0:
-                print('########## GL ERROR ##########')
-                print('@ ' + string)
-                print(errorCode)
-                sys.exit(0)
 
     def destroy(self):
         self.sndManager.closeMinecraft()
@@ -202,7 +192,7 @@ class Minecraft(window.Window):
 
             if not self.currentScreen:
                 if not self.ingameFocus:
-                    self.setIngameFocus()
+                    self.grabMouse()
                 elif button == window.mouse.LEFT:
                     self.__clickMouse(0)
                     self.__prevFrameTime = self.__ticksRan
@@ -253,6 +243,10 @@ class Minecraft(window.Window):
 
     def on_key_press(self, symbol, modifiers):
         try:
+            if symbol == window.key.F11:
+                self.toggleFullScreen()
+                return
+
             if self.currentScreen:
                 self.currentScreen.handleKeyboardEvent(key=symbol)
 
@@ -262,34 +256,38 @@ class Minecraft(window.Window):
                     return
 
             if not self.currentScreen or self.currentScreen.allowUserInput:
-                if symbol != self.options.keyBindToggleFog.keyCode:
-                    self.thePlayer.movementInput.checkKeyForMovementInput(symbol, True)
+                self.thePlayer.movementInput.checkKeyForMovementInput(symbol, True)
 
-                    if symbol == window.key.ESCAPE:
-                        self.displayInGameMenu()
-                    elif symbol == window.key.F7:
-                        self.entityRenderer.grabLargeScreenshot()
-                    elif symbol == window.key.F5:
-                        self.renderRain = not self.renderRain
-                    elif symbol == self.options.keyBindInventory.keyCode:
-                        self.playerController.openInventory()
-                    elif symbol == self.options.keyBindDrop.keyCode:
-                        self.thePlayer.dropPlayerItemWithRandomChoice(self.thePlayer.inventory.currentItem)
+                if symbol == window.key.ESCAPE:
+                    self.displayInGameMenu()
+                elif symbol == window.key.F7:
+                    self.entityRenderer.grabLargeScreenshot()
+                elif symbol == window.key.F5:
+                    self.renderRain = not self.renderRain
+                elif symbol == self.options.keyBindInventory.keyCode:
+                    self.playerController.openInventory()
+                elif symbol == self.options.keyBindDrop.keyCode:
+                    self.thePlayer.dropPlayerItemWithRandomChoice(
+                        self.thePlayer.inventory.decrStackSize(
+                            self.thePlayer.inventory.currentItem, 1
+                        )
+                    )
 
-                    if isinstance(self.playerController, PlayerControllerCreative):
-                        if symbol == self.options.keyBindLoad.keyCode:
-                            self.thePlayer.preparePlayerToSpawn()
-                        elif symbol == self.options.keyBindSave.keyCode:
-                            self.theWorld.setSpawnLocation(int(self.thePlayer.posX),
-                                                           int(self.thePlayer.posY),
-                                                           int(self.thePlayer.posZ),
-                                                           self.thePlayer.rotationYaw)
-                            self.thePlayer.preparePlayerToSpawn()
+                if isinstance(self.playerController, PlayerControllerCreative):
+                    if symbol == self.options.keyBindLoad.keyCode:
+                        self.thePlayer.preparePlayerToSpawn()
+                    elif symbol == self.options.keyBindSave.keyCode:
+                        self.theWorld.setSpawnLocation(int(self.thePlayer.posX),
+                                                       int(self.thePlayer.posY),
+                                                       int(self.thePlayer.posZ),
+                                                       self.thePlayer.rotationYaw)
+                        self.thePlayer.preparePlayerToSpawn()
 
-                    for i in range(9):
-                        if symbol == getattr(window.key, '_' + str(i + 1)):
-                            self.thePlayer.inventory.currentItem = i
-                else:
+                for i in range(9):
+                    if symbol == getattr(window.key, '_' + str(i + 1)):
+                        self.thePlayer.inventory.currentItem = i
+
+                if symbol == self.options.keyBindToggleFog.keyCode:
                     shift = modifiers & window.key.MOD_SHIFT
                     self.options.setOptionValue(4, -1 if shift else 1)
         except Exception as e:
@@ -332,7 +330,6 @@ class Minecraft(window.Window):
                 self.__ticksRan += 1
                 self.__runTick()
 
-            self.__checkGLError('Pre render')
             self.sndManager.setListener(self.thePlayer, self.__timer.renderPartialTicks)
             gl.glEnable(gl.GL_TEXTURE_2D)
 
@@ -340,8 +337,6 @@ class Minecraft(window.Window):
             self.entityRenderer.updateCameraAndRender(self.__timer.renderPartialTicks)
             if self.options.limitFramerate:
                 time.sleep(0.005)
-
-            self.__checkGLError('Post render')
         except Exception as e:
             print(traceback.format_exc())
             self.displayGuiScreen(GuiErrorScreen('Client error', 'The game broke! [' + str(e) + ']'))
@@ -362,8 +357,6 @@ class Minecraft(window.Window):
 
         self.set_icon(resource.image('icon/minecraft.png'))
 
-        self.__checkGLError('Pre startup')
-
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glShadeModel(gl.GL_SMOOTH)
         gl.glClearDepth(1.0)
@@ -376,7 +369,6 @@ class Minecraft(window.Window):
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()
         gl.glMatrixMode(gl.GL_MODELVIEW)
-        self.__checkGLError('Startup')
 
         name = 'minecraft'
         home = os.path.expanduser('~') or '.'
@@ -400,6 +392,8 @@ class Minecraft(window.Window):
             raise RuntimeError(f'The working directory could not be created: {file}')
 
         self.options = GameSettings(self, file)
+        self.sndManager.loadSoundSettings(self.options)
+
         self.renderEngine = RenderEngine(self.options)
         self.renderEngine.registerTextureFX(self.__textureLavaFX)
         self.renderEngine.registerTextureFX(self.__textureWaterFX)
@@ -418,15 +412,13 @@ class Minecraft(window.Window):
         if self.__serverIp and self.session:
             level = World()
             world.setLevel(8, 8, 8, bytearray(512))
-            self.__setLevel(level)
+            self.setLevel(level)
         elif not self.theWorld:
-            self.generateNewLevel(1, 0, 1, 0)
+            self.generateLevel(1, 0, 1, 0)
 
         self.effectRenderer = EffectRenderer(self.theWorld, self.renderEngine)
-        self.sndManager.loadSoundSettings(self.options)
 
-        self.__checkGLError('Post startup')
-        self.ingameGUI = GuiIngame(self, self.width, self.height)
+        self.ingameGUI = GuiIngame(self)
         ThreadDownloadSkin(self).start()
 
         lastTime = getMillis()
@@ -451,7 +443,7 @@ class Minecraft(window.Window):
         finally:
             self.destroy()
 
-    def setIngameFocus(self):
+    def grabMouse(self):
         if self.ingameFocus:
             return
 
@@ -479,11 +471,11 @@ class Minecraft(window.Window):
             self.entityRenderer.itemRenderer.swingItem()
             self.entityRenderer.updateRenderer()
         elif editMode == 1 and item:
-            if item.getItem().onPlaced(item, self.thePlayer):
+            if item.getItem().onItemRightClick(item, self.theWorld, self.thePlayer):
                 if item.stackSize == 0:
                     self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = None
 
-                self.entityRenderer.itemRenderer.resetEquippedProgress2()
+                self.entityRenderer.itemRenderer.resetEquippedProgress()
 
         if not self.objectMouseOver:
             if editMode == 0 and not isinstance(self.playerController, PlayerControllerCreative):
@@ -509,6 +501,12 @@ class Minecraft(window.Window):
                 self.playerController.clickBlock(x, y, z)
         else:
             item = self.thePlayer.inventory.getCurrentItem()
+            blockId = self.theWorld.getBlockId(x, y, z)
+            if blockId > 0 and \
+               blocks.blocksList[blockId].blockActivated(self.theWorld, x, y, z,
+                                                         self.thePlayer):
+                return
+
             if item is None:
                 return
 
@@ -519,7 +517,31 @@ class Minecraft(window.Window):
                 return
 
             if item.stackSize != prevSize:
-                self.entityRenderer.itemRenderer.resetEquippedProgress2()
+                self.entityRenderer.itemRenderer.resetEquippedProgress()
+
+    def toggleFullScreen(self):
+        try:
+            self.__fullScreen = not self.__fullScreen
+            print('Toggle fullscreen!')
+            self.__releaseMouse()
+            self.set_fullscreen(self.__fullScreen)
+            time.sleep(1)
+            if self.__fullScreen:
+                self.grabMouse()
+
+            if self.currentScreen:
+                self.__releaseMouse()
+                self.__resize(self.width, self.height)
+
+            print(f'Size: {self.width}, {self.height}')
+        except:
+            print(traceback.format_exc())
+
+    def __resize(self, width, height):
+        if self.currentScreen:
+            screenWidth = width * 240 // height
+            screenHeight = height * 240 // height
+            screen.setWorldAndResolution(self, screenWidth, screenHeight)
 
     def __runTick(self):
         self.playerController.onUpdate()
@@ -565,7 +587,7 @@ class Minecraft(window.Window):
         self.theWorld.tick()
         self.effectRenderer.updateEffects()
 
-    def generateNewLevel(self, size, shape, levelType, theme):
+    def generateLevel(self, size, shape, levelType, theme):
         name = self.session.username if self.session else 'anonymous'
         levelGen = LevelGenerator(self.loadingScreen)
         levelGen.islandGen = levelType == 1
@@ -583,24 +605,26 @@ class Minecraft(window.Window):
             height = width
             length = 256
 
-        self.__setLevel(levelGen.generate(name, width, height, length))
+        self.setLevel(levelGen.generate(name, width, height, length))
 
-    def __setLevel(self, world):
+    def setLevel(self, world):
         self.theWorld = world
         if world:
             world.load()
             self.playerController.onWorldChange(world)
             self.thePlayer = world.findSubclassOf(EntityPlayerSP)
+            world.playerEntity = self.thePlayer
 
         if not self.thePlayer:
-            self.thePlayer = EntityPlayerSP(world)
+            self.thePlayer = EntityPlayerSP(self, world)
             self.thePlayer.preparePlayerToSpawn()
             self.playerController.flipPlayer(self.thePlayer)
             if world:
+                world.spawnEntityInWorld(self.thePlayer)
                 world.playerEntity = self.thePlayer
 
         self.thePlayer.movementInput = MovementInputFromOptions(self.options)
-        self.playerController.flipPlayer(self.thePlayer)
+        self.playerController.onRespawn(self.thePlayer)
 
         if self.renderGlobal:
             self.renderGlobal.changeWorld(world)

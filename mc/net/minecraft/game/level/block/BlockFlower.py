@@ -8,7 +8,7 @@ class BlockFlower(Block):
         self._setTickOnLoad(True)
         self._setBlockBounds(0.3, 0.0, 0.3, 0.7, 0.6, 0.7)
 
-    def updateTick(self, world, x, y, z):
+    def updateTick(self, world, x, y, z, random):
         below = world.getBlockId(x, y - 1, z)
         if not world.isHalfLit(x, y, z) or \
            (below != self.blocks.dirt.blockID and below != self.blocks.grass.blockID):

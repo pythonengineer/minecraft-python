@@ -8,8 +8,8 @@ from pyglet import window
 
 class GuiIngameMenu(GuiScreen):
 
-    def initGui(self, minecraft, width, height):
-        super().initGui(minecraft, width, height)
+    def setWorldAndResolution(self, minecraft, width, height):
+        super().setWorldAndResolution(minecraft, width, height)
         self._controlList.clear()
         self._controlList.append(GuiButton(0, self.width // 2 - 100, self.height // 4, 'Options...'))
         self._controlList.append(GuiButton(1, self.width // 2 - 100, self.height // 4 + 24, 'Generate new world...'))
@@ -31,7 +31,7 @@ class GuiIngameMenu(GuiScreen):
             self._mc.displayGuiScreen(GuiLoadLevel(self))
         elif button.id == 4:
             self._mc.displayGuiScreen(None)
-            self._mc.setIngameFocus()
+            self._mc.grabMouse()
 
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)

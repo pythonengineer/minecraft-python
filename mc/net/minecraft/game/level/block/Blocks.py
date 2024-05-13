@@ -6,6 +6,7 @@ from mc.net.minecraft.game.level.block.BlockStationary import BlockStationary
 from mc.net.minecraft.game.level.block.BlockBookshelf import BlockBookshelf
 from mc.net.minecraft.game.level.block.BlockSponge import BlockSponge
 from mc.net.minecraft.game.level.block.BlockMushroom import BlockMushroom
+from mc.net.minecraft.game.level.block.BlockChest import BlockChest
 from mc.net.minecraft.game.level.block.BlockFlower import BlockFlower
 from mc.net.minecraft.game.level.block.BlockGlass import BlockGlass
 from mc.net.minecraft.game.level.block.BlockGrass import BlockGrass
@@ -19,6 +20,7 @@ from mc.net.minecraft.game.level.block.BlockStep import BlockStep
 from mc.net.minecraft.game.level.block.BlockStone import BlockStone
 from mc.net.minecraft.game.level.block.BlockTNT import BlockTNT
 from mc.net.minecraft.game.level.block.BlockSapling import BlockSapling
+from mc.net.minecraft.game.level.block.BlockSource import BlockSource
 from mc.net.minecraft.game.level.block.StepSound import StepSound
 from mc.net.minecraft.game.level.material.Material import Material
 
@@ -30,7 +32,7 @@ class Blocks:
         self.opaqueCubeLookup = [False] * 256
         self.lightOpacity = [0] * 256
         self.canBlockGrass = [False] * 256
-        self.isBlockFlowing = [False] * 256
+        self.isBlockContainer = [False] * 256
         self.lightValue = [0] * 256
 
         self.soundPowderFootstep = StepSound('stone', 1.0, 1.0)
@@ -40,8 +42,7 @@ class Blocks:
         self.soundStoneFootstep = StepSound('stone', 1.0, 1.0)
         self.soundMetalFootstep = StepSound('stone', 1.0, 1.5)
 
-        self.stone = BlockStone(self, 1, 1).setHardness(1.0)
-        self.stone.canExplode = False
+        self.stone = BlockStone(self, 1, 1).setHardness(1.0).setResistance(10.0)
         self.stone.stepSound = self.soundStoneFootstep
 
         self.grass = BlockGrass(self, 2).setHardness(0.6)
@@ -49,18 +50,16 @@ class Blocks:
 
         self.dirt = BlockDirt(self, 3, 2).setHardness(0.5)
         self.dirt.stepSound = self.soundGravelFootstep
-        self.cobblestone = Block(self, 4, 16).setHardness(1.5)
-        self.cobblestone.canExplode = False
+        self.cobblestone = Block(self, 4, 16).setHardness(1.5).setResistance(10.0)
         self.cobblestone.stepSound = self.soundStoneFootstep
-        self.planks = Block(self, 5, 4).setHardness(1.5)
+        self.planks = Block(self, 5, 4).setHardness(1.5).setResistance(5.0)
         self.planks.stepSound = self.soundWoodFootstep
         self.sapling = BlockSapling(self, 6, 15).setHardness(0.0)
         self.sapling.stepSound = self.soundGrassFootstep
-        self.bedrock = Block(self, 7, 17).setHardness(999.0)
-        self.bedrock.canExplode = False
+        self.bedrock = Block(self, 7, 17).setHardness(999.0).setResistance(6000000.0)
         self.bedrock.stepSound = self.soundStoneFootstep
 
-        self.waterMoving = BlockFlowing(self, 8, Material.water).setHardness(100.0).setLightOpacity(2)
+        self.waterMoving = BlockFlowing(self, 8, Material.water).setHardness(100.0).setLightOpacity(4)
         self.waterStill = BlockStationary(self, 9, Material.water).setHardness(100.0).setLightOpacity(2)
 
         self.lavaMoving = BlockFlowing(self, 10, Material.lava).setHardness(0.0).setLightValue(1.0).setLightOpacity(255)
@@ -71,14 +70,11 @@ class Blocks:
         self.gravel = BlockSand(self, 13, 19).setHardness(0.6)
         self.gravel.stepSound = self.soundGravelFootstep
 
-        self.oreGold = BlockOre(self, 14, 32).setHardness(3.0)
-        self.oreGold.canExplode = False
+        self.oreGold = BlockOre(self, 14, 32).setHardness(3.0).setResistance(5.0)
         self.oreGold.stepSound = self.soundStoneFootstep
-        self.oreIron = BlockOre(self, 15, 33).setHardness(3.0)
-        self.oreIron.canExplode = False
+        self.oreIron = BlockOre(self, 15, 33).setHardness(3.0).setResistance(5.0)
         self.oreIron.stepSound = self.soundStoneFootstep
-        self.oreCoal = BlockOre(self, 16, 34).setHardness(3.0)
-        self.oreCoal.canExplode = False
+        self.oreCoal = BlockOre(self, 16, 34).setHardness(3.0).setResistance(5.0)
         self.oreCoal.stepSound = self.soundStoneFootstep
 
         self.wood = BlockLog(self, 17).setHardness(2.5)
@@ -134,22 +130,17 @@ class Blocks:
         self.mushroomRed = BlockMushroom(self, 40, 28).setHardness(0.0)
         self.mushroomRed.stepSound = self.soundGrassFootstep
 
-        self.blockGold = BlockOreBlock(self, 41, 40).setHardness(3.0)
-        self.blockGold.canExplode = False
+        self.blockGold = BlockOreBlock(self, 41, 40).setHardness(3.0).setResistance(10.0)
         self.blockGold.stepSound = self.soundMetalFootstep
-        self.blockSteel = BlockOreBlock(self, 42, 39).setHardness(5.0)
-        self.blockSteel.canExplode = False
+        self.blockSteel = BlockOreBlock(self, 42, 39).setHardness(5.0).setResistance(10.0)
         self.blockSteel.stepSound = self.soundMetalFootstep
 
-        self.stairDouble = BlockStep(self, 43, True).setHardness(2.0)
-        self.stairDouble.canExplode = False
+        self.stairDouble = BlockStep(self, 43, True).setHardness(2.0).setResistance(10.0)
         self.stairDouble.stepSound = self.soundStoneFootstep
-        self.stairSingle = BlockStep(self, 44, False).setHardness(2.0)
-        self.stairSingle.canExplode = False
+        self.stairSingle = BlockStep(self, 44, False).setHardness(2.0).setResistance(10.0)
         self.stairSingle.stepSound = self.soundStoneFootstep
 
-        self.brick = Block(self, 45, 7).setHardness(2.0)
-        self.brick.canExplode = False
+        self.brick = Block(self, 45, 7).setHardness(2.0).setResistance(10.0)
         self.brick.stepSound = self.soundStoneFootstep
 
         self.tnt = BlockTNT(self, 46, 8).setHardness(0.0)
@@ -159,19 +150,20 @@ class Blocks:
         self.bookShelf.stepSound = self.soundWoodFootstep
 
         self.cobblestoneMossy = Block(self, 48, 36).setHardness(1.0)
-        self.cobblestoneMossy.canExplode = False
         self.cobblestoneMossy.stepSound = self.soundStoneFootstep
-        self.obsidian = BlockStone(self, 49, 37).setHardness(10.0)
-        self.obsidian.canExplode = False
+        self.obsidian = BlockStone(self, 49, 37).setHardness(10.0).setResistance(10.0)
         self.obsidian.stepSound = self.soundStoneFootstep
 
-        self.torch = BlockTorch(self, 50, 80).setHardness(0.0).setLightValue(0.9)
+        self.torch = BlockTorch(self, 50, 80).setHardness(0.0).setLightValue(14.0 / 16.0)
         self.torch.stepSound = self.soundWoodFootstep
 
         self.fire = BlockFire(self, 51, 31).setHardness(0.0).setLightValue(1.0)
         self.fire.stepSound = self.soundWoodFootstep
 
-        self.blocksList[1:52] = [self.stone, self.grass, self.dirt, self.cobblestone, self.planks,
+        self.chest = BlockChest(self, 54).setHardness(2.5)
+        self.chest.stepSound = self.soundWoodFootstep
+
+        self.blocksList[1:55] = [self.stone, self.grass, self.dirt, self.cobblestone, self.planks,
                                  self.sapling, self.bedrock, self.waterMoving, self.waterStill,
                                  self.lavaMoving, self.lavaStill, self.sand, self.gravel, self.oreGold,
                                  self.oreIron, self.oreCoal, self.wood, self.leaves, self.sponge,
@@ -184,6 +176,13 @@ class Blocks:
                                  self.mushroomBrown, self.mushroomRed, self.blockGold,
                                  self.blockSteel, self.stairDouble, self.stairSingle,
                                  self.brick, self.tnt, self.bookShelf, self.cobblestoneMossy,
-                                 self.obsidian, self.torch, self.fire]
+                                 self.obsidian, self.torch, self.fire, None, None, self.chest]
+
+        self.waterSource = BlockSource(self, 52, self.waterMoving.blockID).setHardness(0.0)
+        self.waterSource.stepSound = self.soundWoodFootstep
+        self.blocksList[52] = self.waterSource
+        self.lavaSource = BlockSource(self, 53, self.lavaMoving.blockID).setHardness(0.0)
+        self.lavaSource.stepSound = self.soundWoodFootstep
+        self.blocksList[53] = self.lavaSource
 
 blocks = Blocks()

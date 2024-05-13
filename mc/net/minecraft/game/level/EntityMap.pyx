@@ -13,8 +13,8 @@ cdef class EntityMap:
     def __init__(self, int w, int h, int d):
         self.__slot = EntityMapSlot(self)
         self.__slot2 = EntityMapSlot(self)
-        self.entities = []
-        self.__entitiesExcludingEntity = []
+        self.all = []
+        self.__tmp = []
         self.width = w // 16
         self.depth = h // 16
         self.height = d // 16
@@ -32,23 +32,25 @@ cdef class EntityMap:
                     self.entityGrid[(d * self.depth + h) * self.width + w] = []
 
     cdef insert(self, Entity entity):
-        self.entities.append(entity)
+        self.all.append(entity)
         self.__slot.init(entity.posX, entity.posY, entity.posZ).add(entity)
         entity.lastTickPosX = entity.posX
         entity.lastTickPosY = entity.posY
         entity.lastTickPosZ = entity.posZ
 
     cdef remove(self, Entity entity):
-        self.__slot.init(entity.lastTickPosX, entity.lastTickPosY, entity.lastTickPosZ).remove(entity)
+        self.__slot.init(entity.lastTickPosX, entity.lastTickPosY,
+                         entity.lastTickPosZ).remove(entity)
+        self.__slot.init(entity.posX, entity.posY, entity.posZ).remove(entity)
         try:
-            self.entities.remove(entity)
+            self.all.remove(entity)
         except:
             pass
 
     cdef list getEntities(self, Entity oEntity, float x0, float y0, float z0,
                           float x1, float y1, float z1):
-        self.__entitiesExcludingEntity.clear()
-        return self.__addEntities(oEntity, x0, y0, z0, x1, y1, z1, self.__entitiesExcludingEntity)
+        self.__tmp.clear()
+        return self.__addEntities(oEntity, x0, y0, z0, x1, y1, z1, self.__tmp)
 
     cdef list __addEntities(self, Entity oEntity, float x0, float y0, float z0,
                             float x1, float y1, float z1, list l):
@@ -66,24 +68,24 @@ cdef class EntityMap:
                         for entity in entities:
                             if entity != oEntity and entity.boundingBox.intersects(x0, y0, z0,
                                                                                    x1, y1, z1):
-                                self.__entitiesExcludingEntity.append(entity)
+                                self.__tmp.append(entity)
 
         return l
 
     cpdef list getEntitiesWithinAABBExcludingEntity(self, Entity entity, AxisAlignedBB aabb):
-        self.__entitiesExcludingEntity.clear()
+        self.__tmp.clear()
         if aabb:
             return self.__addEntities(entity, aabb.minX, aabb.minY, aabb.minZ,
-                                      aabb.maxX, aabb.maxY, aabb.maxZ, self.__entitiesExcludingEntity)
+                                      aabb.maxX, aabb.maxY, aabb.maxZ, self.__tmp)
         else:
-            return self.__entitiesExcludingEntity
+            return self.__tmp
 
     cdef updateEntities(self):
         cdef int xOld, yOld, zOld, x, y, z
         cdef Entity entity
         cdef EntityMapSlot oldSlot, newSlot
 
-        for entity in list(self.entities):
+        for entity in list(self.all):
             entity.lastTickPosX = entity.posX
             entity.lastTickPosY = entity.posY
             entity.lastTickPosZ = entity.posZ
@@ -91,7 +93,7 @@ cdef class EntityMap:
             entity.ticksExisted += 1
             if entity.isDead:
                 try:
-                    self.entities.remove(entity)
+                    self.all.remove(entity)
                 except:
                     pass
 

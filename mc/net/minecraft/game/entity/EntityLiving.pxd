@@ -11,12 +11,8 @@ cdef class EntityLiving(Entity):
         public float prevRenderYawOffset
         float __prevRotationYawHead
         float __rotationYawHead
-        int __maxAir
-        bint __inWater
         public int health
         public int prevHealth
-        public int heartsLife
-        public int air
         public int hurtTime
         public int maxHurtTime
         public float attackedAtYaw
@@ -26,7 +22,5 @@ cdef class EntityLiving(Entity):
         public float cameraPitch
         public AILiving _entityAI
 
-    cpdef onEntityUpdate(self)
-    cpdef onLivingUpdate(self)
     cdef _fall(self, float d)
     cdef travel(self, float x, float z)

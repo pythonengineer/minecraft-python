@@ -7,28 +7,25 @@ from libc.math cimport sin, cos, ceil, sqrt, atan2, pi
 from mc.net.minecraft.game.entity.Entity cimport Entity
 from mc.net.minecraft.game.entity.AILiving cimport AILiving
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.JavaUtils cimport random
 from pyglet import gl
 
-import random
+from nbtlib.tag import Short
 
 cdef class EntityLiving(Entity):
     ATTACK_DURATION = 5
-    TOTAL_AIR_SUPPLY = 300
     HEALTH = 20
 
     def __init__(self, world):
         super().__init__(world)
+        self.preventEntitySpawning = True
         self.heartsHalvesLife = EntityLiving.HEALTH
         self.renderYawOffset = 0.0
         self.prevRenderYawOffset = 0.0
         self.__prevRotationYawHead = 0.0
         self.__rotationYawHead = 0.0
-        self.__maxAir = EntityLiving.TOTAL_AIR_SUPPLY
-        self.__inWater = False
         self.health = EntityLiving.HEALTH
         self.prevHealth = 0
-        self.heartsLife = 0
-        self.air = EntityLiving.TOTAL_AIR_SUPPLY
         self.hurtTime = 0
         self.maxHurtTime = 0
         self.attackedAtYaw = 0.0
@@ -37,8 +34,9 @@ cdef class EntityLiving(Entity):
         self.prevCameraPitch = 0.0
         self.cameraPitch = 0.0
         self._entityAI = AILiving()
-        self.stepHeight = 0.5
         self.setPosition(self.posX, self.posY, self.posZ)
+        self.rotationYaw = random() * (pi * 2.0)
+        self.stepHeight = 0.5
 
     def canBeCollidedWith(self):
         return not self.isDead
@@ -47,11 +45,22 @@ cdef class EntityLiving(Entity):
         return not self.isDead
 
     @cython.cdivision(True)
-    cpdef onEntityUpdate(self):
+    def onEntityUpdate(self):
         cdef float xd, zd, f3, rot, step, f6
         cdef bint b1
 
         Entity.onEntityUpdate(self)
+
+        if self.isInsideOfMaterial():
+            if self.air > 0:
+                self.air -= 1
+            else:
+                self.attackEntityFrom(None, 2)
+
+            self.fire = 0
+        else:
+            self.air = self._maxAir
+
         self.prevCameraPitch = self.cameraPitch
         if self.__attackTime > 0:
             self.__attackTime -= 1
@@ -63,43 +72,6 @@ cdef class EntityLiving(Entity):
             self.deathTime += 1
             if self.deathTime > 20:
                 self.setEntityDead()
-
-        if self.isInsideOfMaterial():
-            if self.air > 0:
-                self.air -= 1
-            else:
-                self.attackEntityFrom(None, 2)
-
-            self.fire = 0
-        else:
-            self.air = self.__maxAir
-
-        if self.handleWaterMovement():
-            if not self.__inWater:
-                volume = sqrt(self.motionX * self.motionX * 0.2 + self.motionY * \
-                              self.motionY + self.motionZ * self.motionZ * 0.2) * 0.2
-                if volume > 1.0:
-                    volume = 1.0
-
-                self._worldObj.playSoundAtEntity(
-                    self, 'random.splash', volume,
-                    1.0 + (self._rand.random() - self._rand.random()) * 0.4
-                )
-
-            self._fallDistance = 0.0
-            self.__inWater = True
-        else:
-            self.__inWater = False
-
-        if self.fire > 0:
-            if self.fire % 20 == 0:
-                self.attackEntityFrom(None, 1)
-
-            self.fire -= 1
-
-        if self.handleLavaMovement():
-            self.attackEntityFrom(None, 10)
-            self.fire = 600
 
         self.prevRenderYawOffset = self.renderYawOffset
         self.prevRotationYaw = self.rotationYaw
@@ -159,7 +131,7 @@ cdef class EntityLiving(Entity):
 
         self.__prevRotationYawHead += step
 
-    cpdef onLivingUpdate(self):
+    def onLivingUpdate(self):
         if self._entityAI:
             self._entityAI.onLivingUpdate(self._worldObj, self)
 
@@ -195,7 +167,7 @@ cdef class EntityLiving(Entity):
 
         self._worldObj.playSoundAtEntity(
             self, 'random.hurt', 1.0,
-            (self._rand.random() - self._rand.random()) * 0.2 + 1.0
+            (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2 + 1.0
         )
         self.attackedAtYaw = 0.0
         if entity:
@@ -212,7 +184,7 @@ cdef class EntityLiving(Entity):
             if self.motionY > 0.4:
                 self.motionY = 0.4
         else:
-            self.attackedAtYaw = <int>(random.random() * 2.0) * 180
+            self.attackedAtYaw = <int>(random() * 2.0) * 180
 
         if self.health <= 0:
             self.onDeath(entity)
@@ -233,7 +205,7 @@ cdef class EntityLiving(Entity):
                                                sound.soundVolume * 0.5,
                                                sound.soundPitch * (12.0 / 16.0))
 
-    def setEntityAI(self, ai):
+    def setAI(self, ai):
         self._entityAI = ai
 
     cdef travel(self, float x, float z):
@@ -269,3 +241,18 @@ cdef class EntityLiving(Entity):
             if self.onGround:
                 self.motionX *= 0.6
                 self.motionZ *= 0.6
+
+    def _writeEntityToNBT(self, compound):
+        compound['Health'] = Short(self.health)
+        compound['HurtTime'] = Short(self.hurtTime)
+        compound['DeathTime'] = Short(self.deathTime)
+        compound['AttackTime'] = Short(self.__attackTime)
+
+    def _readEntityFromNBT(self, compound):
+        self.health = compound['Health'].real
+        self.hurtTime = compound['HurtTime'].real
+        self.deathTime = compound['DeathTime'].real
+        self.__attackTime = compound['AttackTime'].real
+
+    def _getEntityString(self):
+        return 'Mob'

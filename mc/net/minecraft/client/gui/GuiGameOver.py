@@ -7,8 +7,8 @@ from pyglet import gl
 
 class GuiGameOver(GuiScreen):
 
-    def initGui(self, minecraft, width, height):
-        super().initGui(minecraft, width, height)
+    def setWorldAndResolution(self, minecraft, width, height):
+        super().setWorldAndResolution(minecraft, width, height)
         self._controlList.clear()
         self._controlList.append(GuiButton(1, self.width // 2 - 100, self.height // 4 + 72,
                                            'Generate new world...'))

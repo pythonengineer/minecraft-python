@@ -3,8 +3,9 @@ from mc.net.minecraft.game.item.Item import Item
 
 class ItemFlintAndSteel(Item):
 
-    def __init__(self, itemId):
-        super().__init__(259)
+    def __init__(self, items, itemId):
+        super().__init__(items, 259)
+        self._maxStackSize = 1
 
     def onItemUse(self, stack, world, x, y, z, sideHit):
         if sideHit == 0: y -= 1

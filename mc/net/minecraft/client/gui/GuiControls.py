@@ -10,8 +10,8 @@ class GuiControls(GuiScreen):
         self.__parentScreen = screen
         self.__options = options
 
-    def initGui(self, minecraft, width, height):
-        super().initGui(minecraft, width, height)
+    def setWorldAndResolution(self, minecraft, width, height):
+        super().setWorldAndResolution(minecraft, width, height)
         for i, binding in enumerate(self.__options.keyBindings):
             self._controlList.append(GuiSmallButton(i, self.width // 2 - 155 + i % 2 * 160,
                                                     self.height // 6 + 24 * (i >> 1),

@@ -2,13 +2,15 @@
 
 from libc.math cimport sin, cos, sqrt, pi
 
-from mc.net.minecraft.game.level.material.Material cimport Material
+from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.physics.AxisAlignedBB cimport AxisAlignedBB
+from mc.JavaUtils cimport Random
 
-from random import Random
+from nbtlib.tag import String, Float, Short, List
 
 cdef class Entity:
+    TOTAL_AIR_SUPPLY = 300
 
     def __cinit__(self):
         self.posX = 0.0
@@ -24,6 +26,7 @@ cdef class Entity:
         self.rotationPitch = 0.0
         self.prevRotationYaw = 0.0
         self.prevRotationPitch = 0.0
+        self.preventEntitySpawning = False
         self.boundingBox = None
         self.onGround = False
         self.isCollidedHorizontally = False
@@ -35,19 +38,23 @@ cdef class Entity:
         self.prevDistanceWalkedModified = 0.0
         self.distanceWalkedModified = 0.0
         self._canTriggerWalking = True
-        self._fallDistance = 0.0
+        self.__fallDistance = 0.0
         self.__nextStepDistance = 1
         self.lastTickPosX = 0.0
         self.lastTickPosY = 0.0
         self.lastTickPosZ = 0.0
         self.__ySize = 0.0
         self.stepHeight = 0.0
-        self.__noClip = False
+        self.noClip = False
         self.__entityCollisionReduction = 0.0
         self._rand = Random()
         self.ticksExisted = 0
         self.fireResistance = 1
         self.fire = 0
+        self._maxAir = Entity.TOTAL_AIR_SUPPLY
+        self.__inWater = False
+        self.heartsLife = 0
+        self.air = Entity.TOTAL_AIR_SUPPLY
 
     def __init__(self, world):
         self._worldObj = world
@@ -107,15 +114,42 @@ cdef class Entity:
         if self.rotationPitch > 90.0:
             self.rotationPitch = 90.0
 
-    cpdef onEntityUpdate(self):
+    def onEntityUpdate(self):
         self.prevDistanceWalkedModified = self.distanceWalkedModified
         self.prevPosX = self.posX
         self.prevPosY = self.posY
         self.prevPosZ = self.posZ
         self.prevRotationPitch = self.rotationPitch
         self.prevRotationYaw = self.rotationYaw
+        if self.handleWaterMovement():
+            if not self.__inWater:
+                volume = sqrt(self.motionX * self.motionX * 0.2 + self.motionY * \
+                              self.motionY + self.motionZ * self.motionZ * 0.2) * 0.2
+                if volume > 1.0:
+                    volume = 1.0
 
-    cpdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za):
+                self._worldObj.playSoundAtEntity(
+                    self, 'random.splash', volume,
+                    1.0 + (self._rand.nextFloat() - self._rand.nextFloat()) * 0.4
+                )
+
+            self.__fallDistance = 0.0
+            self.__inWater = True
+            self.fire = 0
+        else:
+            self.__inWater = False
+
+        if self.fire > 0:
+            if self.fire % 20 == 0:
+                self.attackEntityFrom(None, 1)
+
+            self.fire -= 1
+
+        if self.handleLavaMovement():
+            self.attackEntityFrom(None, 10)
+            self.fire = 600
+
+    cdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za):
         cdef AxisAlignedBB axisAlignedBB = self.boundingBox.cloneMove(xa, ya, za)
         aABBs = self._worldObj.getCollidingBoundingBoxes(axisAlignedBB)
         if len(aABBs) > 0:
@@ -128,6 +162,13 @@ cdef class Entity:
         cdef float xOrg, zOrg, xaOrg, yaOrg, zaOrg, xo, yo, zo, xd, zd
         cdef bint onGround
         cdef AxisAlignedBB aabbOrg, aABB, aabb
+
+        if self.noClip:
+            self.boundingBox.offset(x, y, z)
+            self.posX = (self.boundingBox.minX + self.boundingBox.maxX) / 2.0
+            self.posY = self.boundingBox.minY + self.yOffset - self.__ySize
+            self.posZ = (self.boundingBox.minZ + self.boundingBox.maxZ) / 2.0
+            return
 
         xOrg = self.posX
         zOrg = self.posZ
@@ -216,11 +257,11 @@ cdef class Entity:
         self.isCollidedHorizontally = xaOrg != x or zaOrg != z
         self.onGround = yaOrg != y and yaOrg < 0.0
         if self.onGround:
-            if self._fallDistance > 0.0:
-                self._fall(self._fallDistance)
-                self._fallDistance = 0.0
+            if self.__fallDistance > 0.0:
+                self._fall(self.__fallDistance)
+                self.__fallDistance = 0.0
         elif y < 0.0:
-            self._fallDistance -= y
+            self.__fallDistance -= y
 
         if xaOrg != x:
             self.motionX = 0.0
@@ -256,14 +297,14 @@ cdef class Entity:
         if inWater and self.fire > 0:
             self._worldObj.playSoundAtEntity(
                 self, 'random.fizz', 0.7,
-                1.6 + (self._rand.random() - self._rand.random()) * 0.4
+                1.6 + (self._rand.nextFloat() - self._rand.nextFloat()) * 0.4
             )
             self.fire = -self.fireResistance
 
     cdef _fall(self, float distance):
         pass
 
-    cdef bint handleWaterMovement(self):
+    cpdef bint handleWaterMovement(self):
         return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),
                                                          Material.water)
 
@@ -315,8 +356,11 @@ cdef class Entity:
         self.prevPosY = self.posY = y
         self.prevPosZ = self.posZ = z
         self.rotationYaw = yaw
-        self.rotationPitch = 0.0
+        self.rotationPitch = pitch
         self.setPosition(x, y, z)
+
+    def onCollideWithPlayer(self, player):
+        pass
 
     cdef applyEntityCollision(self, entity):
         cdef float x, z, d
@@ -348,7 +392,7 @@ cdef class Entity:
     def canBePushed(self):
         return False
 
-    cpdef bint shouldRender(self, vec):
+    def shouldRender(self, vec):
         cdef float xd, yd, zd
         xd = self.posX - vec.xCoord
         yd = self.posY - vec.yCoord
@@ -358,3 +402,52 @@ cdef class Entity:
     cdef bint shouldRenderAtSqrDistance(self, float d):
         cdef float size = self.boundingBox.getSize() * 64.0
         return d < size * size
+
+    def writeToNBT(self, compound):
+        if not self.isDead and self._getEntityString():
+            compound['id'] = String(self._getEntityString())
+            compound['Pos'] = self.__newDoubleNBTList([self.posX, self.posY, self.posZ])
+            compound['Motion'] = self.__newDoubleNBTList([self.motionX, self.motionY, self.motionZ])
+            compound['Rotation'] = self.__newDoubleNBTList([self.rotationYaw, self.rotationPitch])
+            compound['FallDistance'] = Float(self.__fallDistance)
+            compound['Fire'] = Short(self.fire)
+            compound['Air'] = Short(self.air)
+            self._writeEntityToNBT(compound)
+
+    def readFromNBT(self, compound):
+        pos = compound['Pos']
+        motion = compound['Motion']
+        rot = compound['Rotation']
+        self.posX = pos[0].real
+        self.posY = pos[1].real
+        self.posZ = pos[2].real
+        self.motionX = motion[0].real
+        self.motionY = motion[1].real
+        self.motionZ = motion[2].real
+        self.rotationYaw = rot[0].real
+        self.rotationPitch = rot[1].real
+        self.__fallDistance = compound['FallDistance'].real
+        self.fire = compound['Fire'].real
+        self.air = compound['Air'].real
+        self.setPositionAndRotation(self.posX, self.posY, self.posZ,
+                                    self.rotationYaw, self.rotationPitch)
+        self._readEntityFromNBT(compound)
+
+    def _getEntityString(self):
+        return ''
+
+    def _readEntityFromNBT(self, compound):
+        pass
+
+    def _writeEntityToNBT(self, compound):
+        pass
+
+    def __newDoubleNBTList(self, floats):
+        tagList = List[Float]()
+        for val in floats:
+            tagList.append(Float(val))
+
+        return tagList
+
+    def getShadowSize(self):
+        return self.height / 2.0

@@ -1,12 +1,12 @@
-from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.item.ItemStack import ItemStack
+from mc.net.minecraft.game.Inventory import Inventory
 
-class InventoryPlayer:
-    MAX_STACK = 99
+class InventoryPlayer(Inventory):
 
     def __init__(self):
         self.currentItem = 0
-        self.mainInventory = [None] * 64
+        self.mainInventory = [None] * 40
 
     def getCurrentItem(self):
         return self.mainInventory[self.currentItem]
@@ -48,30 +48,86 @@ class InventoryPlayer:
             if self.mainInventory[i] and self.mainInventory[i].animationsToGo > 0:
                 self.mainInventory[i].animationsToGo -= 1
 
-    def swapSlots(self, selectedItem, slotIndex):
-        stack = self.mainInventory[slotIndex]
-        self.mainInventory[slotIndex] = self.mainInventory[selectedItem]
-        self.mainInventory[selectedItem] = stack
+    def consumeInventoryItem(self, item):
+        slot = self.__getInventorySlotContainItem(item)
+        if slot < 0:
+            return False
+
+        self.mainInventory[slot].stackSize -= 1
+        if self.mainInventory[slot].stackSize <= 0:
+            self.mainInventory[slot] = None
+
+        return True
 
     def addItemStackToInventory(self, stack):
-        if stack.itemID < 256:
-            item = stack.itemID
-            slot = self.__getInventorySlotContainItem(item)
-            if slot < 0:
-                slot = self.__storeItemStack()
+        stackSize = stack.stackSize
+        itemId = stack.itemID
+        maybeSlot = 0
+        slot = 0
+        while True:
+            if maybeSlot >= len(self.mainInventory):
+                slot = -1
+                break
 
-            if slot >= 0:
-                if not self.mainInventory[slot]:
-                    self.mainInventory[slot] = ItemStack(item, 0)
+            if self.mainInventory[maybeSlot] and self.mainInventory[maybeSlot].itemID == itemId:
+                item = self.mainInventory[maybeSlot]
+                if self.mainInventory[maybeSlot].stackSize < item.getItem().getItemStackLimit():
+                    slot = maybeSlot
+                    break
 
-                if self.mainInventory[slot].stackSize < InventoryPlayer.MAX_STACK:
-                    self.mainInventory[slot].stackSize += 1
-                    self.mainInventory[slot].animationsToGo = 5
-                    return True
+            maybeSlot += 1
+
+        if slot < 0:
+            slot = self.__storeItemStack()
+
+        if slot >= 0:
+            if not self.mainInventory[slot]:
+                self.mainInventory[slot] = ItemStack(itemId, 0)
+
+            stackExcess = stackSize
+            item = self.mainInventory[slot]
+            if stackSize > item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize:
+                item = self.mainInventory[slot]
+                stackExcess = item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize
+
+            if stackExcess == 0:
+                stackSize = stackSize
+            else:
+                stackSize -= stackExcess
+                self.mainInventory[slot].stackSize += stackExcess
+                self.mainInventory[slot].animationsToGo = 5
+
+        stack.stackSize = stackSize
+        if stack.stackSize == 0:
+            return True
         else:
             slot = self.__storeItemStack()
             if slot >= 0:
                 self.mainInventory[slot] = stack
+                self.mainInventory[slot].animationsToGo = 5
                 return True
+            else:
+                return False
 
-        return False
+    def decrStackSize(self, slot, size):
+        if not self.mainInventory[slot]:
+            return None
+
+        if self.mainInventory[slot].stackSize <= size:
+            stack = self.mainInventory[slot]
+            self.mainInventory[slot] = None
+            return stack
+        else:
+            return self.mainInventory[slot].splitStack()
+
+    def setInventorySlotContents(self, slot, stack):
+        self.mainInventory[slot] = stack
+
+    def getSizeInventory(self):
+        return len(self.mainInventory)
+
+    def getStackInSlot(self, slot):
+        return self.mainInventory[slot]
+
+    def getInvName(self):
+        return 'Inventory'

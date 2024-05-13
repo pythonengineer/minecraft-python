@@ -5,12 +5,11 @@ from libc.string cimport memcpy
 
 from mc.net.minecraft.client.render.texture.TextureFX cimport TextureFX
 from mc.net.minecraft.game.level.block.Blocks import blocks
-from mc.JavaUtils cimport Random
+from mc.JavaUtils cimport random
 
 cdef class TextureWaterFX(TextureFX):
 
     cdef:
-        Random __random
         float __red[256]
         float __green[256]
         float __blue[256]
@@ -19,7 +18,6 @@ cdef class TextureWaterFX(TextureFX):
 
     def __init__(self):
         TextureFX.__init__(self, blocks.waterMoving.blockIndexInTexture)
-        self.__random = Random()
         for i in range(256):
             self.__red[i] = 0.0
             self.__green[i] = 0.0
@@ -50,7 +48,7 @@ cdef class TextureWaterFX(TextureFX):
                     self.__blue[x + (z << 4)] = 0.0
 
                 self.__alpha[x + (z << 4)] -= 0.1
-                if self.__random.randFloat() < 0.05:
+                if random() < 0.05:
                     self.__alpha[x + (z << 4)] = 0.5
 
         memcpy(red, self.__green, sizeof(self.__green))

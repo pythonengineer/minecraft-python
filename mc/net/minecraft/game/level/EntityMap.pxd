@@ -18,8 +18,8 @@ cdef class EntityMap:
         EntityMapSlot __slot2
 
         public list entityGrid
-        public list entities
-        list __entitiesExcludingEntity
+        public list all
+        list __tmp
 
     cdef insert(self, Entity entity)
     cdef remove(self, Entity entity)

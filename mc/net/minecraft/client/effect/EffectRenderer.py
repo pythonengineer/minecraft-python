@@ -1,13 +1,13 @@
 from mc.net.minecraft.client.effect.EntityDiggingFX import EntityDiggingFX
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.JavaUtils import Random
 from pyglet import gl
 
-import random
 import math
 
 class EffectRenderer:
-    __rand = random.Random()
+    __rand = Random()
 
     def __init__(self, world, renderEngine):
         if world:
@@ -79,9 +79,9 @@ class EffectRenderer:
         block = self.__worldObj.getBlockId(x, y, z)
         if block != 0:
             block = blocks.blocksList[block]
-            posX = x + self.__rand.random() * (block.maxX - block.minX - 0.2) + 0.1 + block.minX
-            posY = y + self.__rand.random() * (block.maxY - block.minY - 0.2) + 0.1 + block.minY
-            posZ = z + self.__rand.random() * (block.maxZ - block.minZ - 0.2) + 0.1 + block.minZ
+            posX = x + self.__rand.nextFloat() * (block.maxX - block.minX - 0.2) + 0.1 + block.minX
+            posY = y + self.__rand.nextFloat() * (block.maxY - block.minY - 0.2) + 0.1 + block.minY
+            posZ = z + self.__rand.nextFloat() * (block.maxZ - block.minZ - 0.2) + 0.1 + block.minZ
             if sideHit == 0:
                 posY = y + block.minY - 0.1
             elif sideHit == 1:

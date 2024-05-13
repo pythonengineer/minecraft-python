@@ -24,13 +24,13 @@ cdef class AILiving:
         self.__entityAge = 0
         self.__playerToAttack = None
 
-    cpdef onLivingUpdate(self, World world, EntityLiving mob):
+    def onLivingUpdate(self, World world, EntityLiving mob):
         cdef Entity entity
         cdef bint isInWater, isInLava
         cdef float xd, yd, zd
 
         self.__entityAge += 1
-        if self.__entityAge > 600 and <int>self.__rand.randFloatM(800) == 0:
+        if self.__entityAge > 600 and self.__rand.nextInt(800) == 0:
             entity = world.getPlayerEntity()
             if entity:
                 xd = entity.posX - mob.posX
@@ -75,17 +75,17 @@ cdef class AILiving:
 
                 entity.applyEntityCollision(mob)
 
-    cpdef updatePlayerActionState(self):
-        if self.__rand.randFloat() < 0.07:
-            self._moveStrafing = (self.__rand.randFloat() - 0.5) * self.__moveSpeed
-            self._moveForward = self.__rand.randFloat() * self.__moveSpeed
+    def updatePlayerActionState(self):
+        if self.__rand.nextFloat() < 0.07:
+            self._moveStrafing = (self.__rand.nextFloat() - 0.5) * self.__moveSpeed
+            self._moveForward = self.__rand.nextFloat() * self.__moveSpeed
 
-        self._isJumping = self.__rand.randFloat() < 0.01
-        if self.__rand.randFloat() < 0.04:
-            self.__randomYawVelocity = (self.__rand.randFloat() - 0.5) * 60.0
+        self._isJumping = self.__rand.nextFloat() < 0.01
+        if self.__rand.nextFloat() < 0.04:
+            self.__randomYawVelocity = (self.__rand.nextFloat() - 0.5) * 60.0
 
         self.__targetToAttack.rotationYaw += self.__randomYawVelocity
         self.__targetToAttack.rotationPitch = 0.0
 
         if self.__targetToAttack.handleWaterMovement() or self.__targetToAttack.handleLavaMovement():
-            self._isJumping = self.__rand.randFloat() < 0.8
+            self._isJumping = self.__rand.nextFloat() < 0.8

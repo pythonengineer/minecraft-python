@@ -3,8 +3,8 @@ from mc.net.minecraft.game.item.Item import Item
 
 class ItemBlock(Item):
 
-    def __init__(self, itemId):
-        super().__init__(itemId)
+    def __init__(self, items, itemId):
+        super().__init__(items, itemId)
         self.__blockID = itemId
 
     def onItemUse(self, stack, world, x, y, z, sideHit):
@@ -29,7 +29,7 @@ class ItemBlock(Item):
 
         block = blocks.blocksList[self.__blockID]
         aabb = block.getCollisionBoundingBoxFromPool(x, y, z)
-        if not world.checkIfAABBIsClear(aabb):
+        if not world.checkIfAABBIsClear(aabb) or not block.canPlaceBlockAt(world, x, y, z):
             return
 
         world.setBlockWithNotify(x, y, z, self.__blockID)

@@ -8,5 +8,5 @@ class BlockBookshelf(Block):
     def getBlockTexture(self, face):
         return 4 if face <= 1 else self.blockIndexInTexture
 
-    def quantityDropped(self):
+    def quantityDropped(self, random):
         return 0

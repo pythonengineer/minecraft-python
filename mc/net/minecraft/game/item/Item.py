@@ -1,7 +1,13 @@
-class Item:
+from mc.JavaUtils import Random
 
-    def __init__(self, itemId):
-        self.shiftedIndex = itemId
+class Item:
+    TOTAL_STACK_SIZE = 99
+    _rand = Random()
+
+    def __init__(self, items, itemId):
+        self.items = items
+        self.itemID = itemId
+        self._maxStackSize = Item.TOTAL_STACK_SIZE
 
     def getIconIndex(self):
         return self.iconIndex
@@ -12,5 +18,8 @@ class Item:
     def getStrVsBlock(self, block):
         return 1.0
 
-    def onPlaced(self, stack, player):
+    def onItemRightClick(self, stack, world, player):
         return False
+
+    def getItemStackLimit(self):
+        return self._maxStackSize

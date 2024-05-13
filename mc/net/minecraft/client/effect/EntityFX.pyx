@@ -2,14 +2,13 @@
 
 from libc.math cimport sqrt
 
-from mc.JavaUtils cimport Random
+from mc.JavaUtils cimport random
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
 from mc.net.minecraft.game.entity.Entity cimport Entity
 
 cdef class EntityFX(Entity):
 
     def __cinit__(self):
-        self._random = Random()
         self._particleTextureIndex = 0
         self._particleGravity = 0.0
 
@@ -20,23 +19,23 @@ cdef class EntityFX(Entity):
         self.setPosition(x, y, z)
 
         self._particleRed = self._particleGreen = self._particleBlue = 1.0
-        self._motionX1 = xr + (self._random.randFloat() * 2.0 - 1.0) * 0.4
-        self._motionY1 = yr + (self._random.randFloat() * 2.0 - 1.0) * 0.4
-        self._motionZ1 = zr + (self._random.randFloat() * 2.0 - 1.0) * 0.4
-        speed = (self._random.randFloat() + self._random.randFloat() + 1.0) * 0.15
+        self._motionX1 = xr + (random() * 2.0 - 1.0) * 0.4
+        self._motionY1 = yr + (random() * 2.0 - 1.0) * 0.4
+        self._motionZ1 = zr + (random() * 2.0 - 1.0) * 0.4
+        speed = (random() + random() + 1.0) * 0.15
 
         dd = sqrt(self._motionX1 * self._motionX1 + self._motionY1 * self._motionY1 + self._motionZ1 * self._motionZ1)
         self._motionX1 = self._motionX1 / dd * speed * 0.4
         self._motionY1 = self._motionY1 / dd * speed * 0.4 + 0.1
         self._motionZ1 = self._motionZ1 / dd * speed * 0.4
 
-        self._particleTextureJitterX = self._random.randFloat() * 3.0
-        self._particleTextureJitterY = self._random.randFloat() * 3.0
+        self._particleTextureJitterX = self._rand.nextFloat() * 3.0
+        self._particleTextureJitterY = self._rand.nextFloat() * 3.0
 
-        self._particleScale = self._random.randFloat() * 0.5 + 0.5
+        self._particleScale = self._rand.nextFloat() * 0.5 + 0.5
 
-        self._particleMaxAge = <int>(4 // (self._random.randFloat() * 0.9 + 0.1))
-        self.__particleAge = 0
+        self._particleMaxAge = <int>(4 // (self._rand.nextFloat() * 0.9 + 0.1))
+        self._particleAge = 0
         self._canTriggerWalking = False
 
     def multiplyVelocity(self, power):
@@ -50,15 +49,15 @@ cdef class EntityFX(Entity):
         self._particleScale *= 0.6
         return self
 
-    cpdef onEntityUpdate(self):
+    def onEntityUpdate(self):
         self.prevPosX = self.posX
         self.prevPosY = self.posY
         self.prevPosZ = self.posZ
 
-        if self.__particleAge >= self._particleMaxAge:
+        if self._particleAge >= self._particleMaxAge:
             self.setEntityDead()
 
-        self.__particleAge += 1
+        self._particleAge += 1
 
         self._motionY1 = self._motionY1 - 0.04 * self._particleGravity
         self.moveEntity(self._motionX1, self._motionY1, self._motionZ1)
@@ -85,12 +84,26 @@ cdef class EntityFX(Entity):
         z = self.prevPosZ + (self.posZ - self.prevPosZ) * a
 
         br = self.getBrightness()
-        t.setColorOpaque_F(self._particleRed * a, self._particleGreen * a, self._particleBlue * a)
+        t.setColorOpaque_F(self._particleRed * br, self._particleGreen * br,
+                           self._particleBlue * br)
 
-        t.addVertexWithUV(x - xa * r - xa2 * r, y - ya * r, z - za * r - ya2 * r, u0, v1)
-        t.addVertexWithUV(x - xa * r + xa2 * r, y + ya * r, z - za * r + ya2 * r, u0, v0)
-        t.addVertexWithUV(x + xa * r + xa2 * r, y + ya * r, z + za * r + ya2 * r, u1, v0)
-        t.addVertexWithUV(x + xa * r - xa2 * r, y - ya * r, z + za * r - ya2 * r, u1, v1)
+        t.addVertexWithUV(x - xa * r - xa2 * r, y - ya * r,
+                          z - za * r - ya2 * r, u0, v1)
+        t.addVertexWithUV(x - xa * r + xa2 * r, y + ya * r,
+                          z - za * r + ya2 * r, u0, v0)
+        t.addVertexWithUV(x + xa * r + xa2 * r, y + ya * r,
+                          z + za * r + ya2 * r, u1, v0)
+        t.addVertexWithUV(x + xa * r - xa2 * r, y - ya * r,
+                          z + za * r - ya2 * r, u1, v1)
 
     def getFXLayer(self):
         return 0
+
+    def _writeEntityToNBT(self, compound):
+        pass
+
+    def _getEntityString(self):
+        return None
+
+    def _readEntityFromNBT(self):
+        pass

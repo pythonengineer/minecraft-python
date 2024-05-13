@@ -1,10 +1,10 @@
 from mc.net.minecraft.client.sound.SoundPoolEntry import SoundPoolEntry
-
-import random
+from mc.JavaUtils import Random
 
 class SoundPool:
 
     def __init__(self):
+        self.__rand = Random()
         self.__nameToSoundPoolEntriesMapping = {}
         self.numberOfSoundPoolEntries = 0
 
@@ -26,4 +26,4 @@ class SoundPool:
 
     def getRandomSoundFromSoundPool(self, name):
         entries = self.__nameToSoundPoolEntriesMapping.get(name)
-        return entries[int(random.random() * len(entries))] if entries else None
+        return entries[self.__rand.nextInt(len(entries))] if entries else None

@@ -4,62 +4,84 @@
 cimport cython
 
 from libc.string cimport memcpy
-from libc.stdlib cimport srand, rand, RAND_MAX
-from libc.time cimport time
+from libc.math cimport sqrt, log
 
 from pyglet import gl
 
 import ctypes
-import time as pytime
+import time
 
 import numpy as np
 cimport numpy as np
 
 cpdef unsigned long long getMillis():
-    return <unsigned long long>(pytime.time() * 1000)
+    return <unsigned long long>(time.time() * 1000)
 
 cdef double signum(double val):
     return (0 < val) - (val < 0)
 
-cdef bint Random_seeded = False
-
 cdef class Random:
 
-    property seeded:
+    def __init__(self):
+        self.setSeed(time.perf_counter_ns())
+        self.__haveNextNextGaussian = False
 
-        def __get__(self):
-            return Random_seeded
+    def setSeed(self, long long seed):
+        self.__seed = (seed ^ 0x5DEECE66D) & ((1 << 48) - 1)
 
-        def __set__(self, x):
-            global Random_seeded
-            Random_seeded = x
+    cdef int _next(self, int bits):
+        self.__seed = (self.__seed * 0x5DEECE66D + 0xB) & ((1 << 48) - 1)
+        return <int>(self.__seed >> (48 - bits))
 
-    def __init__(self, seed=0):
-        if not self.seeded:
-            if seed == 0:
-                srand(time(NULL))
-            else:
-                srand(seed)
+    cpdef int nextInt(self, int limit = 0):
+        cdef int bits, val
 
-            self.seeded = True
-
-    cdef float randFloatM(self, float multiply):
-        return self.randFloat() * multiply
-
-    cdef float randFloat(self):
-        return rand() / <float>RAND_MAX
-
-    cdef int nextInt(self, int limit):
-        cdef double scaleFactor
-        cdef int value
+        if not limit:
+            return self._next(32)
 
         if limit <= 0:
             raise ValueError('limit must be a positive integer')
 
-        scaleFactor = limit / (RAND_MAX + 1.0)
-        value = <int>(rand() * scaleFactor)
+        if limit & -limit == limit:
+            return <int>((limit * <unsigned long long>self._next(31)) >> 31)
 
-        return value
+        val = 0
+        while True:
+            bits = self._next(31)
+            val = bits % limit
+            if bits - val + (limit - 1) >= 0:
+                break
+
+        return val
+
+    cpdef float nextFloat(self):
+        return self._next(24) / <float>(1 << 24)
+
+    cdef double nextDouble(self):
+        cdef unsigned long long l = (<unsigned long long>(self._next(26)) << 27) + self._next(27)
+        return l / <double>(1 << 53)
+
+    cpdef double nextGaussian(self):
+        cdef double v1, v2, s, multiplier
+        if not self.__haveNextNextGaussian:
+            s = 0
+            while s >= 1 or s == 0:
+                v1 = 2 * self.nextDouble() - 1
+                v2 = 2 * self.nextDouble() - 1
+                s = v1 * v1 + v2 * v2
+
+            multiplier = sqrt(-2 * log(s) / s)
+            self.__nextNextGaussian = v2 * multiplier
+            self.__haveNextNextGaussian = True
+            return v1 * multiplier
+        else:
+            self.__haveNextNextGaussian = False
+            return self.__nextNextGaussian
+
+cdef Random rand = Random()
+
+cpdef double random():
+    return rand.nextDouble()
 
 cdef class Bits:
 
@@ -376,6 +398,23 @@ cdef class IntBuffer(Buffer):
         self[self.nextPutIndex()] = value
         return self
 
+    cdef putInts(self, int* src, int offset, int length):
+        cdef int i, rem
+
+        assert self.checkBounds(offset, length, length)
+        assert self._position <= self._limit
+        rem = self._limit - self._position if self._position <= self._limit else 0
+        if length > rem:
+            raise Exception
+
+        cdef int[:] dest = self.__array[self._position + offset:self._position + offset + length]
+        for i in range(length):
+            dest[i] = src[i]
+
+        self._position += length
+
+        return self
+
     cpdef inline int get(self):
         return self[self.nextGetIndex()]
 
@@ -516,14 +555,18 @@ cdef class FloatBuffer(Buffer):
 
 cdef class BufferUtils:
 
+    @staticmethod
     def wrapByteBuffer(byteArray):
         return ByteBuffer(len(byteArray)).clear().putBytes(byteArray).clear()
 
+    @staticmethod
     def createByteBuffer(capacity):
         return ByteBuffer(capacity).clear()
 
+    @staticmethod
     def createIntBuffer(capacity):
         return IntBuffer(capacity).clear()
 
+    @staticmethod
     def createFloatBuffer(capacity):
         return FloatBuffer(capacity).clear()

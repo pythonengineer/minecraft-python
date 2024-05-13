@@ -64,9 +64,9 @@ cdef class Tessellator:
             self.__colors += 3
 
         self.__hasColor = True
-        self.__red = r
-        self.__green = g
-        self.__blue = b
+        self.__r = r
+        self.__g = g
+        self.__b = b
 
     cpdef void addVertexWithUV(self, float x, float y, float z, float u, float v):
         if not self.__hasTexture:
@@ -85,11 +85,11 @@ cdef class Tessellator:
             self.__addedVertices += 1
 
         if self.__hasColor:
-            self.__rawBuffer[self.__addedVertices] = self.__red
+            self.__rawBuffer[self.__addedVertices] = self.__r
             self.__addedVertices += 1
-            self.__rawBuffer[self.__addedVertices] = self.__green
+            self.__rawBuffer[self.__addedVertices] = self.__g
             self.__addedVertices += 1
-            self.__rawBuffer[self.__addedVertices] = self.__blue
+            self.__rawBuffer[self.__addedVertices] = self.__b
             self.__addedVertices += 1
 
         self.__rawBuffer[self.__addedVertices] = x
@@ -114,11 +114,11 @@ cdef class Tessellator:
             self.__colors += 3
 
         self.__hasColor = True
-        self.__red = <float>(r & 0xFF) / 255.0
-        self.__green = <float>(g & 0xFF) / 255.0
-        self.__blue = <float>(b & 0xFF) / 255.0
+        self.__r = <float>(r & 0xFF) / 255.0
+        self.__g = <float>(g & 0xFF) / 255.0
+        self.__b = <float>(b & 0xFF) / 255.0
 
-    cpdef inline void enableDrawMode(self):
+    cpdef inline void disableColor(self):
         self.__drawMode = True
 
     @staticmethod

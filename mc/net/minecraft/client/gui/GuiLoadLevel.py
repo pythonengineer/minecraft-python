@@ -1,5 +1,9 @@
+from mc.net.minecraft.client.gui.GuiLevelDialog import GuiLevelDialog
 from mc.net.minecraft.client.gui.GuiScreen import GuiScreen
 from mc.net.minecraft.client.gui.GuiButton import GuiButton
+from mc.net.minecraft.client.PlayerLoader import PlayerLoader
+
+import traceback
 
 class GuiLoadLevel(GuiScreen):
 
@@ -10,6 +14,16 @@ class GuiLoadLevel(GuiScreen):
         self.__levels = []
         self.__status = ''
         self._title = 'Load level'
+        self.__frozen = False
+        self.__selectedFile = ''
+
+    def updateScreen(self):
+        if self.__selectedFile:
+            if self.__selectedFile[-8:] != '.mclevel':
+                self.__selectedFile += '.mclevel'
+
+            self._openFile(self.__selectedFile)
+            self.__selectedFile = ''
 
     def _setLevels(self, levels):
         for i in range(5):
@@ -17,8 +31,10 @@ class GuiLoadLevel(GuiScreen):
             self._controlList[i].displayString = levels[i]
             self._controlList[i].visible = True
 
-    def initGui(self, minecraft, width, height):
-        super().initGui(minecraft, width, height)
+        self._controlList[5].visible = True
+
+    def setWorldAndResolution(self, minecraft, width, height):
+        super().setWorldAndResolution(minecraft, width, height)
 
         for i in range(5):
             self._controlList.append(GuiButton(i, self.width // 2 - 100,
@@ -35,17 +51,20 @@ class GuiLoadLevel(GuiScreen):
         self.__loaded = True
 
     def _actionPerformed(self, button):
-        if not button.enabled:
+        if self.__frozen or not button.enabled:
             return
 
         if self.__loaded and button.id < 5:
             self._openLevel(button.id)
+        elif self.__finished or self.__loaded and button.id == 5:
+            self.__frozen = True
+            GuiLevelDialog(self).run()
         elif self.__finished or self.__loaded and button.id == 6:
             self._mc.displayGuiScreen(self.__parent)
 
     def _openLevel(self, id_):
         self._mc.displayGuiScreen(None)
-        self._mc.setIngameFocus()
+        self._mc.grabMouse()
 
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
@@ -54,3 +73,16 @@ class GuiLoadLevel(GuiScreen):
             self.drawCenteredString(self._fontRenderer, self.__status, self.width // 2, self.height // 2 - 4, 0xFFFFFF)
 
         super().drawScreen(xm, ym)
+
+    def _openFile(self, file):
+        try:
+            world = PlayerLoader(self._mc, self._mc.loadingScreen).load(file)
+            self._mc.setLevel(world)
+        except Exception as e:
+            print(traceback.format_exc())
+
+    def setFile(self, file):
+        self.__selectedFile = file
+
+    def setFrozen(self, frozen):
+        self.__frozen = False
