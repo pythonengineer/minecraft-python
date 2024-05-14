@@ -65,12 +65,14 @@ cdef class World:
         self.map = {}
 
         self.rand = Random()
-        self.__randId = self.rand.nextInt()
+        self.__rand = Random()
+        self.__randInt = self.rand.nextInt()
 
         self.skyColor = 0x99CCFF
         self.fogColor = 0xFFFFFF
         self.cloudColor = 0xFFFFFF
 
+        self.__playTime = 0
         self.__updateLCG = 0
 
         self.multiplier = 3
@@ -95,7 +97,7 @@ cdef class World:
             self.__heightMap[i] = self.height
 
         self.__updateSkylight(0, 0, self.width, self.length)
-        self.__randId = self.rand.nextInt()
+        self.__randInt = self.rand.nextInt()
         self.__tickList = set()
 
         if not self.entityMap:
@@ -532,7 +534,7 @@ cdef class World:
         cdef char b
         cdef NextTickListEntry posType
 
-        self.__updateLCG += 1
+        self.__playTime += 1
 
         wShift = 1
         lShift = 1
@@ -561,12 +563,12 @@ cdef class World:
                         posType.zCoord, self.rand
                     )
 
-        self.__randInt += self.width * self.length * self.height
-        ticks = self.__randInt // self.__maxTicks
-        self.__randInt -= ticks * self.__maxTicks
+        self.__updateLCG += self.width * self.length * self.height
+        ticks = self.__updateLCG // self.__maxTicks
+        self.__updateLCG -= ticks * self.__maxTicks
         for i in range(ticks):
-            self.__randId = self.__randId * self.multiplier + self.addend
-            randValue = self.__randId >> 2
+            self.__randInt = self.__randInt * self.multiplier + self.addend
+            randValue = self.__randInt >> 2
             x = randValue & w
             y = randValue >> wShift + lShift & h
             z = randValue >> wShift & l
@@ -977,25 +979,11 @@ cdef class World:
                  blockId, pos, i
         cdef float xd, yd, zd, d, radX, radY, radZ, fallout, nextX, nextY, nextZ, \
                    pX, pY, pZ, xr, yr, zr
-        cdef list explodePositions, entities
+        cdef list entities, positions
+        cdef bint hurt
         cdef Block block
-        explodePositions = []
 
-        minX = <int>(x - 6.0 - 1.0)
-        maxX = <int>(x + 6.0 + 1.0)
-        minY = <int>(y - 6.0 - 1.0)
-        maxY = <int>(y + 6.0 + 1.0)
-        minZ = <int>(z - 6.0 - 1.0)
-        maxZ = <int>(z + 6.0 + 1.0)
-        entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ)
-        for e in entities:
-            xd = e.posX - x
-            yd = e.posY - y
-            zd = e.posZ - z
-            d = sqrt(xd * xd + yd * yd + zd * zd) / 6.0
-            if d <= 1.0:
-                d = 1.0 - d
-                e.attackEntityFrom(None, <int>((d * d + d) / 2.0 * 64.0 + 1.0))
+        explodePositions = set()
 
         for xx in range(16):
             for yy in range(16):
@@ -1023,17 +1011,57 @@ cdef class World:
 
                             if fallout > 0.0:
                                 pos = posX + (posY << 10) + (posZ << 10 << 10)
-                                if pos not in explodePositions:
-                                    explodePositions.append(pos)
+                                explodePositions.add(pos)
 
                             nextX += radX * 0.3
                             nextY += radY * 0.3
                             nextZ += radZ * 0.3
                             fallout -= 0.3
 
-        explodePositions.sort()
-        for i in range(len(explodePositions) - 1, -1, -1):
-            pos = explodePositions[i]
+        minX = <int>(x - 6.0 - 1.0)
+        maxX = <int>(x + 6.0 + 1.0)
+        minY = <int>(y - 6.0 - 1.0)
+        maxY = <int>(y + 6.0 + 1.0)
+        minZ = <int>(z - 6.0 - 1.0)
+        maxZ = <int>(z + 6.0 + 1.0)
+        entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ)
+        for e in entities:
+            xd = e.posX - x
+            yd = e.posY - y
+            zd = e.posZ - z
+            d = sqrt(xd * xd + yd * yd + zd * zd) / 6.0
+            if d > 1.0:
+                continue
+
+            d = 1.0 - d
+            minX = <int>(e.boundingBox.minX)
+            maxX = <int>(e.boundingBox.maxX)
+            minY = <int>(e.boundingBox.minY)
+            maxY = <int>(e.boundingBox.maxY)
+            minZ = <int>(e.boundingBox.minZ)
+            maxZ = <int>(e.boundingBox.maxZ)
+            hurt = False
+
+            for xx in range(minX, maxX + 1):
+                for yy in range(minY, maxY + 1):
+                    for zz in range(minZ, maxZ + 1):
+                        pos = xx + (yy << 10) + (zz << 10 << 10)
+                        if pos in explodePositions:
+                            hurt = True
+                            break
+
+                    if hurt:
+                        break
+
+                if hurt:
+                    break
+
+            if hurt:
+                e.attackEntityFrom(None, <int>((d * d + d) / 2.0 * 64.0 + 1.0))
+
+        positions = list(explodePositions)
+        for i in range(len(positions) - 1, -1, -1):
+            pos = positions[i]
             posX = pos & 1023
             posY = pos >> 10 & 1023
             posZ = pos >> 20 & 1023
@@ -1359,6 +1387,16 @@ cdef class World:
                       float xr, float yr, float zr):
         for worldAccess in self.__worldAccesses:
             worldAccess.spawnParticle(particle, x, y, z, xr, yr, zr)
+
+    def randomDisplayUpdates(self, int xo, int yo, int zo):
+        cdef int i, x, y, z, blockId
+        for i in range(1000):
+            x = xo + self.rand.nextInt(16) - self.rand.nextInt(16)
+            y = yo + self.rand.nextInt(16) - self.rand.nextInt(16)
+            z = zo + self.rand.nextInt(16) - self.rand.nextInt(16)
+            blockId = self.getBlockId(x, y, z)
+            if blockId > 0:
+                blocks.blocksList[blockId].randomDisplayTick(self, x, y, z, self.__rand)
 
     def getBlocks(self):
         cdef int i

@@ -11,6 +11,7 @@ class EntitySmokeFX(EntityFX):
         self._particleRed = random() * 0.3
         self._particleGreen = self._particleRed
         self._particleBlue = self._particleRed
+        self._particleScale *= 12.0 / 16.0
         self._particleMaxAge = int(8.0 / (random() * 0.8 + 0.2))
         self.noClip = True
 

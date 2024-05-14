@@ -21,14 +21,17 @@ class PlayerControllerSP(PlayerController):
             blocks.stone, blocks.grass, blocks.cobblestone, blocks.planks, blocks.sapling,
             blocks.bedrock, blocks.sand, blocks.gravel, blocks.oreGold, blocks.oreIron,
             blocks.oreCoal, blocks.wood, blocks.leaves, blocks.sponge, blocks.glass,
-            blocks.clothRed, blocks.clothOrange, blocks.clothYellow, blocks.clothChartreuse,
-            blocks.clothGreen, blocks.clothSpringGreen, blocks.clothCyan, blocks.clothCapri,
-            blocks.clothUltramarine, blocks.clothViolet, blocks.clothPurple, blocks.clothMagenta,
-            blocks.clothRose, blocks.clothDarkGray, blocks.clothGray, blocks.clothWhite,
             blocks.plantYellow, blocks.plantRed, blocks.mushroomBrown, blocks.mushroomRed,
             blocks.blockGold, blocks.blockSteel, blocks.stairSingle, blocks.brick, blocks.tnt,
             blocks.bookShelf, blocks.cobblestoneMossy, blocks.obsidian, blocks.torch,
             blocks.waterSource, blocks.lavaSource, blocks.chest
+        )
+        self.__woolChestArray = (
+            blocks.clothRed, blocks.clothOrange, blocks.clothYellow,
+            blocks.clothChartreuse, blocks.clothGreen, blocks.clothSpringGreen,
+            blocks.clothCyan, blocks.clothCapri, blocks.clothUltramarine,
+            blocks.clothViolet, blocks.clothPurple, blocks.clothMagenta,
+            blocks.clothRose, blocks.clothDarkGray, blocks.clothGray, blocks.clothWhite
         )
 
     def openInventory(self):
@@ -63,6 +66,8 @@ class PlayerControllerSP(PlayerController):
         tntChest1 = self._mc.theWorld.getBlockTileEntity(x - 1, y - 1, z + 2)
         self._mc.theWorld.setBlockWithNotify(x, y - 1, z + 2, blocks.chest.blockID)
         tntChest2 = self._mc.theWorld.getBlockTileEntity(x, y - 1, z + 2)
+        self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z + 1, blocks.chest.blockID)
+        woolChest = self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z + 1)
         slot = 0
         for i in range(256, 1024):
             if items.itemsList[i]:
@@ -85,6 +90,13 @@ class PlayerControllerSP(PlayerController):
                 blocksChest2.setInventorySlotContents(slot - 27, stack)
             else:
                 blocksChest1.setInventorySlotContents(slot, stack)
+
+        for slot in range(min(len(self.__woolChestArray), 54)):
+            stack = ItemStack(
+                self.__woolChestArray[slot],
+                items.itemsList[self.__woolChestArray[slot].blockID].getItemStackLimit()
+            )
+            woolChest.setInventorySlotContents(slot, stack)
 
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)

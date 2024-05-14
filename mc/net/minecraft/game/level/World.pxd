@@ -42,7 +42,8 @@ cdef class World:
         int* __heightMap
 
         public Random rand
-        int __randId
+        Random __rand
+        int __randInt
 
         public EntityMap entityMap
 
@@ -54,7 +55,7 @@ cdef class World:
         public int fogColor
         public int cloudColor
 
-        int __randInt
+        int __playTime
         int __updateLCG
 
         public int multiplier

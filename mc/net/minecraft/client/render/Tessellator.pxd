@@ -2,24 +2,23 @@
 
 cimport cython
 
-from mc.JavaUtils cimport FloatBuffer
+from mc.JavaUtils cimport IntBuffer
 
 @cython.final
 cdef class Tessellator:
 
     cdef:
-        int max_floats
+        int max_ints
 
-        FloatBuffer __floatBuffer
-        float[524288] __rawBuffer
+        IntBuffer __byteBuffer
+        int[:] __rawBuffer
 
         int __vertexCount
 
         float __textureU
         float __textureV
-        float __r
-        float __g
-        float __b
+
+        int __color
 
         bint __hasColor
         bint __hasTexture
@@ -33,6 +32,7 @@ cdef class Tessellator:
     cdef void __reset(self)
     cpdef void startDrawingQuads(self)
     cpdef inline void setColorOpaque_F(self, float r, float g, float b)
+    cdef inline void __setColorOpaque(self, int r, int g, int b)
     cpdef void addVertexWithUV(self, float x, float y, float z, float u, float v)
     cpdef void addVertex(self, float x, float y, float z)
     cpdef inline void setColorOpaque_I(self, int c)

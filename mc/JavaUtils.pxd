@@ -4,6 +4,7 @@ cimport cython
 
 cpdef unsigned long long getMillis()
 cdef double signum(double val)
+cdef unsigned int floatToRawIntBits(float x)
 
 cdef class Random:
 
@@ -82,7 +83,7 @@ cdef class IntBuffer(Buffer):
         object __dataPtr
 
     cpdef inline put(self, int value)
-    cdef putInts(self, int* src, int offset, int length)
+    cdef putInts(self, int[:] src, int offset, int length)
     cpdef inline int get(self)
     cpdef inline int getAt(self, int idx)
     cdef inline __getDataPtr(self)

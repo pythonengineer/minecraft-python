@@ -63,6 +63,6 @@ cdef class Entity:
     cpdef bint handleWaterMovement(self)
     cdef bint handleLavaMovement(self)
     cpdef moveFlying(self, float xa, float za, float speed)
-    cpdef float getBrightness(self)
+    cpdef float getBrightness(self, float a)
     cdef applyEntityCollision(self, entity)
     cdef bint shouldRenderAtSqrDistance(self, float d)

@@ -79,6 +79,8 @@ cdef class BlockFlowing(BlockFluid):
                             hasChanged = self.__liquidSpread(world, x, y, z, x, y, z - 1)
                         if self.__flowArray[i] == 3 and not hasChanged:
                             hasChanged = self.__liquidSpread(world, x, y, z, x, y, z + 1)
+                elif self.__material == Material.lava:
+                    world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)
                 else:
                     world.setBlockWithNotify(x, y, z, 0)
 

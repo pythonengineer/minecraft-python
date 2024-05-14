@@ -12,6 +12,8 @@ from mc.net.minecraft.game.entity.player.EntityPlayer import EntityPlayer
 from mc.net.minecraft.client.effect.EntityBubbleFX import EntityBubbleFX
 from mc.net.minecraft.client.effect.EntityExplodeFX import EntityExplodeFX
 from mc.net.minecraft.client.effect.EntitySmokeFX import EntitySmokeFX
+from mc.net.minecraft.client.effect.EntityFlameFX import EntityFlameFX
+from mc.net.minecraft.client.effect.EntityLavaFX import EntityLavaFX
 from mc.net.minecraft.client.render.Frustum cimport Frustum
 from mc.net.minecraft.client.render.EntitySorter import EntitySorter
 from mc.net.minecraft.client.render.Tessellator import tessellator
@@ -26,7 +28,6 @@ from functools import cmp_to_key
 
 @cython.final
 cdef class RenderGlobal:
-    MAX_REBUILDS_PER_FRAME = 3
     CHUNK_SIZE = 16
 
     def __init__(self, minecraft, renderEngine):
@@ -313,9 +314,12 @@ cdef class RenderGlobal:
         )
 
         last = len(self.__worldRenderersToUpdate) - 1
-        for i in range(min(len(self.__worldRenderersToUpdate),
-                       RenderGlobal.MAX_REBUILDS_PER_FRAME)):
-            chunk = self.__worldRenderersToUpdate.pop(last - i)
+        for i in range(last + 1):
+            chunk = self.__worldRenderersToUpdate[last - i]
+            if chunk.distanceToEntitySquared(player) > 2500.0 and i > 2:
+                return
+
+            self.__worldRenderersToUpdate.remove(chunk)
             chunk.updateRenderer()
             chunk.needsUpdate = False
 
@@ -427,4 +431,12 @@ cdef class RenderGlobal:
         elif particle == 'explode':
             self.__mc.effectRenderer.addEffect(
                 EntityExplodeFX(self.__worldObj, x, y, z, xr, yr, zr)
+            )
+        elif particle == 'flame':
+            self.__mc.effectRenderer.addEffect(
+                EntityFlameFX(self.__worldObj, x, y, z)
+            )
+        elif particle == 'lava':
+            self.__mc.effectRenderer.addEffect(
+                EntityLavaFX(self.__worldObj, x, y, z)
             )

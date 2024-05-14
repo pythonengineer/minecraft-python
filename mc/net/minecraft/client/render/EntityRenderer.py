@@ -191,6 +191,9 @@ class EntityRenderer:
                     gl.glTranslatef(-((i << 1) - 1) * 0.07, 0.0, 0.0)
 
                 fov = 70.0
+                if self.__mc.thePlayer.isInsideOfMaterial():
+                    fov = 60.0
+
                 if self.__mc.thePlayer.health <= 0:
                     t = self.__mc.thePlayer.deathTime + alpha
                     fov /= (1.0 - 500.0 / (t + 500.0)) * 2.0 + 1.0

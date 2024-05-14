@@ -1,5 +1,5 @@
 from mc.net.minecraft.client.effect.EntityFX import EntityFX
-from mc.JavaUtils import Random, random
+from mc.JavaUtils import random
 
 class EntityExplodeFX(EntityFX):
 

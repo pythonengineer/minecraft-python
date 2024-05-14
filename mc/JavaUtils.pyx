@@ -20,6 +20,11 @@ cpdef unsigned long long getMillis():
 cdef double signum(double val):
     return (0 < val) - (val < 0)
 
+cdef unsigned int floatToRawIntBits(float x):
+    cdef unsigned int y = 0
+    memcpy(&y, &x, 4)
+    return y
+
 cdef class Random:
 
     def __init__(self):
@@ -398,7 +403,7 @@ cdef class IntBuffer(Buffer):
         self[self.nextPutIndex()] = value
         return self
 
-    cdef putInts(self, int* src, int offset, int length):
+    cdef putInts(self, int[:] src, int offset, int length):
         cdef int i, rem
 
         assert self.checkBounds(offset, length, length)
@@ -408,8 +413,7 @@ cdef class IntBuffer(Buffer):
             raise Exception
 
         cdef int[:] dest = self.__array[self._position + offset:self._position + offset + length]
-        for i in range(length):
-            dest[i] = src[i]
+        dest[:length] = src[:length]
 
         self._position += length
 
@@ -432,6 +436,9 @@ cdef class IntBuffer(Buffer):
 
     def glDrawElements(self, int mode, int count, int type):
         gl.glDrawElements(mode, count, type, self.__getDataPtr())
+
+    def glInterleavedArrays(self, int format, int stride):
+        gl.glInterleavedArrays(format, stride, self.__getDataPtr())
 
 cdef class FloatBuffer(Buffer):
 
@@ -546,9 +553,6 @@ cdef class FloatBuffer(Buffer):
 
     def glTexCoordPointer(self, int size, int type, int stride):
         gl.glTexCoordPointer(size, type, stride, self.__getDataPtr())
-
-    def glInterleavedArrays(self, int format, int stride):
-        gl.glInterleavedArrays(format, stride, self.__getDataPtr())
 
     def glMultMatrix(self):
         gl.glMultMatrixf(self.__getDataPtr())

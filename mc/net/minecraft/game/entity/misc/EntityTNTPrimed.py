@@ -18,7 +18,7 @@ class EntityTNTPrimed(Entity):
         self.motionY = 0.2
         self.motionZ = -math.cos(r * math.pi / 180.0) * 0.02
         self._canTriggerWalking = False
-        self.fuse = 40
+        self.fuse = 80
         self.prevPosX = x
         self.prevPosY = y
         self.prevPosZ = z

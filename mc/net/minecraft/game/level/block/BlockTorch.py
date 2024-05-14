@@ -30,3 +30,23 @@ class BlockTorch(Block):
             self._setBlockBounds(0.4, 0.0, 0.4, 0.6, 0.6, 0.6)
 
         return super().collisionRayTrace(world, x, y, z, v0, v1)
+
+    def randomDisplayTick(self, world, x, y, z, random):
+        posX = x + 0.5
+        posY = y + 0.7
+        posZ = z + 0.5
+        if world.isBlockNormalCube(x - 1, y, z):
+            world.spawnParticle('smoke', posX - 0.27, posY + 0.22, posZ, 0.0, 0.0, 0.0)
+            world.spawnParticle('flame', posX - 0.27, posY + 0.22, posZ, 0.0, 0.0, 0.0)
+        elif world.isBlockNormalCube(x + 1, y, z):
+            world.spawnParticle('smoke', posX + 0.27, posY + 0.22, posZ, 0.0, 0.0, 0.0)
+            world.spawnParticle('flame', posX + 0.27, posY + 0.22, posZ, 0.0, 0.0, 0.0)
+        elif world.isBlockNormalCube(x, y, z - 1):
+            world.spawnParticle('smoke', posX, posY + 0.22, posZ - 0.27, 0.0, 0.0, 0.0)
+            world.spawnParticle('flame', posX, posY + 0.22, posZ - 0.27, 0.0, 0.0, 0.0)
+        elif world.isBlockNormalCube(x, y, z + 1):
+            world.spawnParticle('smoke', posX, posY + 0.22, posZ + 0.27, 0.0, 0.0, 0.0)
+            world.spawnParticle('flame', posX, posY + 0.22, posZ + 0.27, 0.0, 0.0, 0.0)
+        else:
+            world.spawnParticle('smoke', posX, posY, posZ, 0.0, 0.0, 0.0)
+            world.spawnParticle('flame', posX, posY, posZ, 0.0, 0.0, 0.0)

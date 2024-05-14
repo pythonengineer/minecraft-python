@@ -32,7 +32,7 @@ cdef class EntityFX(Entity):
         self._particleTextureJitterX = self._rand.nextFloat() * 3.0
         self._particleTextureJitterY = self._rand.nextFloat() * 3.0
 
-        self._particleScale = self._rand.nextFloat() * 0.5 + 0.5
+        self._particleScale = (self._rand.nextFloat() * 0.5 + 0.5) * 2.0
 
         self._particleMaxAge = <int>(4 // (self._rand.nextFloat() * 0.9 + 0.1))
         self._particleAge = 0
@@ -83,10 +83,9 @@ cdef class EntityFX(Entity):
         y = self.prevPosY + (self.posY - self.prevPosY) * a
         z = self.prevPosZ + (self.posZ - self.prevPosZ) * a
 
-        br = self.getBrightness()
+        br = self.getBrightness(a)
         t.setColorOpaque_F(self._particleRed * br, self._particleGreen * br,
                            self._particleBlue * br)
-
         t.addVertexWithUV(x - xa * r - xa2 * r, y - ya * r,
                           z - za * r - ya2 * r, u0, v1)
         t.addVertexWithUV(x - xa * r + xa2 * r, y + ya * r,

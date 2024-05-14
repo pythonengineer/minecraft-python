@@ -87,6 +87,9 @@ cdef class Block:
     cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *:
         pass
 
+    cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *:
+        pass
+
     def onBlockDestroyedByPlayer(self, World world, int x, int y, int z):
         pass
 

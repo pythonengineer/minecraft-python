@@ -585,6 +585,9 @@ class Minecraft(window.Window):
         self.renderGlobal.updateClouds()
         self.theWorld.updateEntities()
         self.theWorld.tick()
+        self.theWorld.randomDisplayUpdates(int(self.thePlayer.posX),
+                                           int(self.thePlayer.posY),
+                                           int(self.thePlayer.posZ))
         self.effectRenderer.updateEffects()
 
     def generateLevel(self, size, shape, levelType, theme):

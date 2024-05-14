@@ -22,6 +22,7 @@ cdef class BlockFluid(Block):
 
         self._setBlockBounds(0.01, -0.09, 0.01, 1.01, 0.90999997, 1.01)
         self._setTickOnLoad(True)
+        self.setResistance(2.0)
 
     cpdef int getBlockTexture(self, int face):
         if self._material == Material.lava or face == 1 or face == 0:
@@ -158,3 +159,13 @@ cdef class BlockFluid(Block):
 
     cdef int getRenderBlockPass(self):
         return 1 if self._material == Material.water else 0
+
+    cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *:
+        cdef float posX, posY, posZ
+        if self._material == Material.lava and \
+           world.getBlockMaterial(x, y + 1, z) == Material.air and not \
+           world.isBlockNormalCube(x, y + 1, z) and random.nextInt(100) == 0:
+            posX = x + random.nextFloat()
+            posY = y + self.maxY
+            posZ = z + random.nextFloat()
+            world.spawnParticle('lava', posX, posY, posZ, 0.0, 0.0, 0.0)

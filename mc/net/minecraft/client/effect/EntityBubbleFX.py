@@ -11,13 +11,11 @@ class EntityBubbleFX(EntityFX):
         self._particleBlue = 1.0
         self._particleTextureIndex = 32
         self.setSize(0.02, 0.02)
+        self._particleScale *= self._rand.nextFloat() * 0.6 + 0.2
         self._motionX1 = xr * 0.2 + (random() * 2.0 - 1.0) * 0.02
         self._motionY1 = yr * 0.2 + (random() * 2.0 - 1.0) * 0.02
         self._motionZ1 = zr * 0.2 + (random() * 2.0 - 1.0) * 0.02
         self._particleMaxAge = int(8.0 / (random() * 0.8 + 0.2))
-
-    def renderParticle(self, t, a, xa, ya, za, xa2, ya2):
-        super().renderParticle(t, a, xa, ya, za, xa2, ya2)
 
     def onEntityUpdate(self):
         self.prevPosX = self.posX

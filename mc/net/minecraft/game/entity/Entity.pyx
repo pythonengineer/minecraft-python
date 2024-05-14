@@ -341,7 +341,7 @@ cdef class Entity:
         self.motionX += xa * co - za * si
         self.motionZ += za * co + xa * si
 
-    cpdef float getBrightness(self):
+    cpdef float getBrightness(self, float a):
         cdef int x, y, z
         x = <int>self.posX
         y = <int>(self.posY + self.yOffset / 2.0)

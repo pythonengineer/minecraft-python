@@ -25,13 +25,13 @@ class GuiChest(GuiInventory):
             self._slotsList.append(Slot(self, upperChestInventory, row,
                                         8 + row * 18, yOffset + 161))
 
-    def _drawStrings(self):
+    def _drawGuiContainerForegroundLayer(self):
         self._fontRenderer.drawString(self.__lowerChestInventory.getInvName(),
                                       8, 6, 4210752)
         self._fontRenderer.drawString(self.__upperChestInventory.getInvName(),
                                       8, self.ySize - 96 + 2, 4210752)
 
-    def _drawRows(self):
+    def _drawGuiContainerBackgroundLayer(self):
         tex = self._mc.renderEngine.getTexture('gui/container.png')
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, tex)

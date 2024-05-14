@@ -152,6 +152,49 @@ cdef class BlockFire(Block):
         if not isFire:
             world.setBlockWithNotify(x, y, z, self.blocks.fire.blockID)
 
+    cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random):
+        cdef int i
+        cdef float posX, posY, posZ
+
+        if not world.isBlockNormalCube(x, y - 1, z) and not \
+           self.blocks.fire.canBlockCatchFire(world, x, y - 1, z):
+            if self.blocks.fire.canBlockCatchFire(world, x - 1, y, z):
+                for i in range(2):
+                    posX = x + random.nextFloat() * 0.1
+                    posY = y + random.nextFloat()
+                    posZ = z + random.nextFloat()
+                    world.spawnParticle('smoke', posX, posY, posZ, 0.0, 0.0, 0.0)
+            if self.blocks.fire.canBlockCatchFire(world, x + 1, y, z):
+                for i in range(2):
+                    posX = (x + 1) - random.nextFloat() * 0.1
+                    posY = y + random.nextFloat()
+                    posZ = z + random.nextFloat()
+                    world.spawnParticle('smoke', posX, posY, posZ, 0.0, 0.0, 0.0)
+            if self.blocks.fire.canBlockCatchFire(world, x, y, z - 1):
+                for i in range(2):
+                    posX = x + random.nextFloat()
+                    posY = y + random.nextFloat()
+                    posZ = z + random.nextFloat() * 0.1
+                    world.spawnParticle('smoke', posX, posY, posZ, 0.0, 0.0, 0.0)
+            if self.blocks.fire.canBlockCatchFire(world, x, y, z + 1):
+                for i in range(2):
+                    posX = x + random.nextFloat()
+                    posY = y + random.nextFloat()
+                    posZ = (z + 1) - random.nextFloat() * 0.1
+                    world.spawnParticle('smoke', posX, posY, posZ, 0.0, 0.0, 0.0)
+            if self.blocks.fire.canBlockCatchFire(world, x, y + 1, z):
+                for i in range(2):
+                    posX = x + random.nextFloat()
+                    posY = (y + 1) - random.nextFloat() * 0.1
+                    posZ = z + random.nextFloat()
+                    world.spawnParticle('smoke', posX, posY, posZ, 0.0, 0.0, 0.0)
+        else:
+            for i in range(3):
+                posX = x + random.nextFloat()
+                posY = y + random.nextFloat()
+                posZ = z + random.nextFloat()
+                world.spawnParticle('smoke', posX, posY, posZ, 0.0, 0.0, 0.0)
+
     cdef bint __fireCheck(self, World world, int x, int y, int z):
         cdef int blockId = world.getBlockId(x, y, z)
         if blockId == self.blocks.fire.blockID:

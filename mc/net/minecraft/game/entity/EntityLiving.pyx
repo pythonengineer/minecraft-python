@@ -46,15 +46,25 @@ cdef class EntityLiving(Entity):
 
     @cython.cdivision(True)
     def onEntityUpdate(self):
-        cdef float xd, zd, f3, rot, step, f6
-        cdef bint b1
+        cdef int i
+        cdef float x, y, z, xd, zd, d, rot, step, head
+        cdef bint angle
 
         Entity.onEntityUpdate(self)
 
         if self.isInsideOfMaterial():
-            if self.air > 0:
-                self.air -= 1
-            else:
+            self.air -= 1
+            if self.air == -20:
+                self.air = 0
+                for i in range(8):
+                    x = self._rand.nextFloat() - self._rand.nextFloat()
+                    y = self._rand.nextFloat() - self._rand.nextFloat()
+                    z = self._rand.nextFloat() - self._rand.nextFloat()
+                    self._worldObj.spawnParticle(
+                        'bubble', self.posX + x, self.posY + y, self.posZ + z,
+                        self.motionX, self.motionY, self.motionZ
+                    )
+
                 self.attackEntityFrom(None, 2)
 
             self.fire = 0
@@ -80,18 +90,18 @@ cdef class EntityLiving(Entity):
         self.onLivingUpdate()
         xd = self.posX - self.prevPosX
         zd = self.posZ - self.prevPosZ
-        f3 = sqrt(xd * xd + zd * zd)
+        d = sqrt(xd * xd + zd * zd)
         rot = self.renderYawOffset
         step = 0.0
-        f6 = 0.0
-        if not f3 <= 0.05:
-            f6 = 1.0
-            step = f3 * 3.0
+        head = 0.0
+        if not d <= 0.05:
+            head = 1.0
+            step = d * 3.0
             rot = atan2(zd, xd) * 180.0 / pi - 90.0
         if not self.onGround:
-            f6 = 0.0
+            head = 0.0
 
-        self.__rotationYawHead += (f6 - self.__rotationYawHead) * 0.3
+        self.__rotationYawHead += (head - self.__rotationYawHead) * 0.3
         rot -= self.renderYawOffset
         while rot < -180.0:
             rot += 360.0
@@ -105,15 +115,12 @@ cdef class EntityLiving(Entity):
         while rot >= 180.0:
             rot -= 360.0
 
-        bl = rot < -90.0 or rot >= 90.0
-        if rot < -75.0:
-            rot = -75.0
-        if rot >= 75.0:
-            rot = 75.0
+        angle = rot < -90.0 or rot >= 90.0
+        rot = min(max(rot, -75.0), 75.0)
 
         self.renderYawOffset = self.rotationYaw - rot
         self.renderYawOffset += rot * 0.1
-        if bl:
+        if angle:
             step = -step
 
         while self.rotationYaw - self.prevRotationYaw < -180.0:

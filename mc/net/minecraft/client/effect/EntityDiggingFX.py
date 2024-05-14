@@ -7,6 +7,7 @@ class EntityDiggingFX(EntityFX):
         self._particleTextureIndex = block.blockIndexInTexture
         self._particleGravity = block.blockParticleGravity
         self._particleRed = self._particleGreen = self._particleBlue = 0.6
+        self._particleScale /= 2.0
 
     def getFXLayer(self):
         return 1
@@ -20,7 +21,7 @@ class EntityDiggingFX(EntityFX):
         x = self.prevPosX + (self.posX - self.prevPosX) * a
         y = self.prevPosY + (self.posY - self.prevPosY) * a
         z = self.prevPosZ + (self.posZ - self.prevPosZ) * a
-        br = self.getBrightness()
+        br = self.getBrightness(a)
         t.setColorOpaque_F(br * self._particleRed, br * self._particleGreen, br * self._particleBlue)
         t.addVertexWithUV(x - xa * r - xa2 * r, y - ya * r, z - za * r - ya2 * r, u0, v1)
         t.addVertexWithUV(x - xa * r + xa2 * r, y + ya * r, z - za * r + ya2 * r, u0, v0)

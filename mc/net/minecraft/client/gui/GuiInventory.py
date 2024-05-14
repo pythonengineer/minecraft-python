@@ -38,7 +38,7 @@ class GuiInventory(GuiScreen):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
         w = (self.width - self.xSize) // 2
         h = (self.height - self.ySize) // 2
-        self._drawRows()
+        self._drawGuiContainerBackgroundLayer()
         gl.glPushMatrix()
         gl.glRotatef(180.0, 1.0, 0.0, 0.0)
         RenderHelper.enableStandardItemLighting()
@@ -86,18 +86,18 @@ class GuiInventory(GuiScreen):
         RenderHelper.disableStandardItemLighting()
         gl.glDisable(gl.GL_LIGHTING)
         gl.glDisable(gl.GL_DEPTH_TEST)
-        self._drawStrings()
+        self._drawGuiContainerForegroundLayer()
         gl.glEnable(gl.GL_LIGHTING)
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glPopMatrix()
 
-    def _drawStrings(self):
+    def _drawGuiContainerForegroundLayer(self):
         self._fontRenderer.drawString('PLAYER NAME', 84, 8, 4210752)
         self._fontRenderer.drawString('ATK: 100', 84, 24, 4210752)
         self._fontRenderer.drawString('DEF: 100', 84, 32, 4210752)
         self._fontRenderer.drawString('SPD: 100', 84, 40, 4210752)
 
-    def _drawRows(self):
+    def _drawGuiContainerBackgroundLayer(self):
         tex = self._mc.renderEngine.getTexture('gui/inventory.png')
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, tex)

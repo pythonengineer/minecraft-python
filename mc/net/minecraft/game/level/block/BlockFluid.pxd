@@ -28,3 +28,4 @@ cdef class BlockFluid(Block):
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
     cpdef int quantityDropped(self, Random random)
     cdef int getRenderBlockPass(self)
+    cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *
