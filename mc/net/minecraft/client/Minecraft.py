@@ -40,16 +40,20 @@ from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.client.model.ModelBiped import ModelBiped
 from mc.net.minecraft.client.player.EntityPlayerSP import EntityPlayerSP
 from mc.net.minecraft.client.player.MovementInputFromOptions import MovementInputFromOptions
+from mc.net.minecraft.client.gui.ScaledResolution import ScaledResolution
 from mc.net.minecraft.client.gui.FontRenderer import FontRenderer
 from mc.net.minecraft.client.gui.GuiErrorScreen import GuiErrorScreen
 from mc.net.minecraft.client.gui.GuiIngameMenu import GuiIngameMenu
 from mc.net.minecraft.client.gui.GuiGameOver import GuiGameOver
+from mc.net.minecraft.client.gui.GuiInventory import GuiInventory
 from mc.net.minecraft.client.gui.GuiIngame import GuiIngame
+from mc.net.minecraft.client.gui.GuiCrafting import GuiCrafting
 from mc.net.minecraft.client.effect.EffectRenderer import EffectRenderer
 from mc.net.minecraft.client.render.texture.TextureFlamesFX import TextureFlamesFX
 from mc.net.minecraft.client.render.texture.TextureWaterFlowFX import TextureWaterFlowFX
 from mc.net.minecraft.client.render.texture.TextureWaterFX import TextureWaterFX
 from mc.net.minecraft.client.render.texture.TextureLavaFX import TextureLavaFX
+from mc.net.minecraft.client.render.texture.TextureGearsFX import TextureGearsFX
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.RenderGlobal import RenderGlobal
 from mc.net.minecraft.client.render.EntityRenderer import EntityRenderer
@@ -85,7 +89,7 @@ class Minecraft(window.Window):
     loadMapUser = ''
     loadMapID = 0
 
-    __active = False
+    isGamePaused = True
 
     ingameGUI = None
     skipRenderWorld = False
@@ -151,8 +155,9 @@ class Minecraft(window.Window):
             self.currentScreen = screen
             if screen:
                 self.__releaseMouse()
-                screenWidth = self.width * 240 // self.height
-                screenHeight = self.height * 240 // self.height
+                scaledRes = ScaledResolution(self.width, self.height)
+                screenWidth = scaledRes.getScaledWidth()
+                screenHeight = scaledRes.getScaledHeight()
                 screen.setWorldAndResolution(self, screenWidth, screenHeight)
                 self.skipRenderWorld = False
             else:
@@ -164,20 +169,20 @@ class Minecraft(window.Window):
         self.sndManager.closeMinecraft()
 
     def isActive(self):
-        return self.__active
+        return not self.isGamePaused
 
     def on_close(self):
         self.running = False
 
     def on_activate(self):
-        self.__active = True
+        self.isGamePaused = False
 
         # Remove this hack when the window boundary issue is fixed upstream:
         if self.ingameFocus and compat_platform == 'win32':
             self._update_clipped_cursor()
 
     def on_deactivate(self):
-        self.__active = False
+        self.isGamePaused = True
         self.__releaseMouse()
 
     def on_mouse_press(self, x, y, button, modifiers):
@@ -244,7 +249,7 @@ class Minecraft(window.Window):
     def on_key_press(self, symbol, modifiers):
         try:
             if symbol == window.key.F11:
-                self.toggleFullScreen()
+                self.toggleFullscreen()
                 return
 
             if self.currentScreen:
@@ -265,7 +270,9 @@ class Minecraft(window.Window):
                 elif symbol == window.key.F5:
                     self.renderRain = not self.renderRain
                 elif symbol == self.options.keyBindInventory.keyCode:
-                    self.playerController.openInventory()
+                    self.displayGuiScreen(GuiInventory(self.thePlayer.inventory))
+                elif symbol == window.key.B:
+                    self.displayGuiScreen(GuiCrafting(self.thePlayer.inventory))
                 elif symbol == self.options.keyBindDrop.keyCode:
                     self.thePlayer.dropPlayerItemWithRandomChoice(
                         self.thePlayer.inventory.decrStackSize(
@@ -325,7 +332,13 @@ class Minecraft(window.Window):
 
     def on_draw(self):
         try:
-            self.__timer.updateTimer()
+            if self.isGamePaused:
+                prevTicks = self.__timer.renderPartialTicks
+                self.__timer.updateTimer()
+                self.__timer.renderPartialTicks = prevTicks
+            else:
+                self.__timer.updateTimer()
+
             for i in range(self.__timer.elapsedTicks):
                 self.__ticksRan += 1
                 self.__runTick()
@@ -400,6 +413,8 @@ class Minecraft(window.Window):
         self.renderEngine.registerTextureFX(TextureWaterFlowFX())
         self.renderEngine.registerTextureFX(TextureFlamesFX(0))
         self.renderEngine.registerTextureFX(TextureFlamesFX(1))
+        self.renderEngine.registerTextureFX(TextureGearsFX(0))
+        self.renderEngine.registerTextureFX(TextureGearsFX(1))
         self.fontRenderer = FontRenderer(self.options, 'default.png', self.renderEngine)
 
         imgData = BufferUtils.createIntBuffer(256)
@@ -466,8 +481,11 @@ class Minecraft(window.Window):
             self.displayGuiScreen(GuiIngameMenu())
 
     def __clickMouse(self, editMode):
+        if editMode == 0 and self.__leftClickCounter > 0:
+            return
+
         item = self.thePlayer.inventory.getCurrentItem()
-        if editMode == 0 and self.__leftClickCounter <= 0:
+        if editMode == 0:
             self.entityRenderer.itemRenderer.swingItem()
             self.entityRenderer.updateRenderer()
         elif editMode == 1 and item:
@@ -519,7 +537,7 @@ class Minecraft(window.Window):
             if item.stackSize != prevSize:
                 self.entityRenderer.itemRenderer.resetEquippedProgress()
 
-    def toggleFullScreen(self):
+    def toggleFullscreen(self):
         try:
             self.__fullScreen = not self.__fullScreen
             print('Toggle fullscreen!')
@@ -544,7 +562,9 @@ class Minecraft(window.Window):
             screen.setWorldAndResolution(self, screenWidth, screenHeight)
 
     def __runTick(self):
-        self.playerController.onUpdate()
+        if not self.isGamePaused:
+            self.playerController.onUpdate()
+
         self.ingameGUI.addChatMessage()
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderEngine.getTexture('terrain.png'))
@@ -557,10 +577,12 @@ class Minecraft(window.Window):
                 self.__leftClickCounter -= 1
 
             if not self.currentScreen:
-                if self.msh[window.mouse.LEFT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
+                if self.msh[window.mouse.LEFT] and \
+                   self.__ticksRan - self.__prevFrameTime >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
                     self.__clickMouse(0)
                     self.__prevFrameTime = self.__ticksRan
-                elif self.msh[window.mouse.RIGHT] and float(self.__ticksRan - self.__prevFrameTime) >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
+                elif self.msh[window.mouse.RIGHT] and \
+                     self.__ticksRan - self.__prevFrameTime >= self.__timer.ticksPerSecond / 4.0 and self.ingameFocus:
                     self.__clickMouse(1)
                     self.__prevFrameTime = self.__ticksRan
 
@@ -583,8 +605,10 @@ class Minecraft(window.Window):
 
         self.entityRenderer.updateRenderer()
         self.renderGlobal.updateClouds()
-        self.theWorld.updateEntities()
-        self.theWorld.tick()
+        if not self.isGamePaused:
+            self.theWorld.updateEntities()
+            self.theWorld.tick()
+
         self.theWorld.randomDisplayUpdates(int(self.thePlayer.posX),
                                            int(self.thePlayer.posY),
                                            int(self.thePlayer.posZ))

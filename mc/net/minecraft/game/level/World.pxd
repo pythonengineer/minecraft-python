@@ -43,7 +43,7 @@ cdef class World:
 
         public Random rand
         Random __rand
-        int __randInt
+        int __randId
 
         public EntityMap entityMap
 

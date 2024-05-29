@@ -12,7 +12,7 @@ cdef class AILiving:
         public float _moveStrafing
         public float _moveForward
         float __randomYawVelocity
-        EntityLiving __targetToAttack
+        EntityLiving __entityLiving
         public bint _isJumping
         int __fire
         float __moveSpeed

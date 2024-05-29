@@ -27,12 +27,12 @@ class BlockStationary(BlockFluid):
 
         if blockType != 0:
             material = self.blocks.blocksList[blockType].getBlockMaterial()
-            if self._material == Material.water and material == Material.lava or \
-               material == Material.water and self._material == Material.lava:
+            if self._liquidMaterial == Material.water and material == Material.lava or \
+               material == Material.water and self._liquidMaterial == Material.lava:
                 world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)
                 return
 
-        if self.blocks.fire.canBlockIdCatchFire(blockType):
+        if self.blocks.fire.getChanceOfNeighborsEncouragingFire(blockType):
             hasAirNeighbor = True
 
         if hasAirNeighbor:

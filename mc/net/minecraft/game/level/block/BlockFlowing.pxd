@@ -7,10 +7,10 @@ from mc.JavaUtils cimport Random
 cdef class BlockFlowing(BlockFluid):
 
     cdef:
-        int __material
+        int __liquidMaterial
         int __stillId
         int __movingId
-        Random __random
+        Random __rand
         int[4] __flowArray
 
     cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *
@@ -20,7 +20,7 @@ cdef class BlockFlowing(BlockFluid):
     cdef bint __flow(self, World world, int x0, int y0, int z0,
                      int x1, int y1, int z1)
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer)
-    cdef bint isCollidable(self)
+    cpdef bint isCollidable(self)
     cpdef bint isOpaqueCube(self)
     cpdef int getBlockMaterial(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
@@ -28,5 +28,5 @@ cdef class BlockFlowing(BlockFluid):
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)
     cpdef int quantityDropped(self, Random random)
     cdef int getRenderBlockPass(self)
-    cdef bint __waterAdjacent(self, World world, int x, int y, int z)
     cdef bint __extinguishFireLava(self, World world, int x, int y, int z)
+    cdef bint __fireSpread(self, World world, int x, int y, int z)

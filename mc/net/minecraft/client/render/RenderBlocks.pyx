@@ -171,6 +171,11 @@ cdef class RenderBlocks:
             self.__tessellator.setColorOpaque_F(b, b, b)
             self.__renderBlockFire(block, x, y, z)
             return True
+        elif renderType == 5:
+            b = block.getBlockBrightness(self.__blockAccess, x, y, z)
+            self.__tessellator.setColorOpaque_F(b, b, b)
+            self.__renderBlockGear(block, x, y, z)
+            return True
         else:
             return False
 
@@ -347,6 +352,66 @@ cdef class RenderBlocks:
             self.__tessellator.addVertexWithUV(x + 1, y, z2, u0, v1)
             self.__tessellator.addVertexWithUV(x, y, z2, u1, v1)
             self.__tessellator.addVertexWithUV(x, y + 1.4, z0, u1, v0)
+
+    cdef __renderBlockGear(self, Block block, int x, int y, int z):
+        cdef int tex, zt, xt
+        cdef float xu0, xu1, xv0, xv1, zu0, zu1, zv0, zv1
+
+        tex = block.getBlockTexture(0)
+        if self.__overrideBlockTexture >= 0:
+            tex = self.__overrideBlockTexture
+
+        xt = ((tex & 15) << 4) + 16
+        zt = (tex & 15) << 4
+        if (x + y + z & 1) == 1:
+            xt = (tex & 15) << 4
+            zt = ((tex & 15) << 4) + 16
+
+        tex &= 240
+        xu0 = xt / 256.0
+        xu1 = (xt + 15.99) / 256.0
+        xv0 = tex / 256.0
+        xv1 = (tex + 15.99) / 256.0
+        zu0 = zt / 256.0
+        zu1 = (zt + 15.99) / 256.0
+        zv0 = tex / 256.0
+        zv1 = (tex + 15.99) / 256.0
+        if self.__blockAccess.isBlockNormalCube(x - 1, y, z):
+            self.__tessellator.addVertexWithUV(x + 0.05, (y + 1) + 2.0 / 16.0,
+                                               (z + 1) + 2.0 / 16.0, xu0, xv0)
+            self.__tessellator.addVertexWithUV(x + 0.05, y - 2.0 / 16.0,
+                                               (z + 1) + 2.0 / 16.0, xu0, xv1)
+            self.__tessellator.addVertexWithUV(x + 0.05, y - 2.0 / 16.0,
+                                               z - 2.0 / 16.0, xu1, xv1)
+            self.__tessellator.addVertexWithUV(x + 0.05, (y + 1) + 2.0 / 16.0,
+                                               z - 2.0 / 16.0, xu1, xv0)
+        if self.__blockAccess.isBlockNormalCube(x + 1, y, z):
+            self.__tessellator.addVertexWithUV((x + 1) - 0.05, y - 2.0 / 16.0,
+                                               (z + 1) + 2.0 / 16.0, xu1, xv1)
+            self.__tessellator.addVertexWithUV((x + 1) - 0.05, (y + 1) + 2.0 / 16.0,
+                                               (z + 1) + 2.0 / 16.0, xu1, xv0)
+            self.__tessellator.addVertexWithUV((x + 1) - 0.05, (y + 1) + 2.0 / 16.0,
+                                               z - 2.0 / 16.0, xu0, xv0)
+            self.__tessellator.addVertexWithUV((x + 1) - 0.05, y - 2.0 / 16.0,
+                                               z - 2.0 / 16.0, xu0, xv1)
+        if self.__blockAccess.isBlockNormalCube(x, y, z - 1):
+            self.__tessellator.addVertexWithUV((x + 1) + 2.0 / 16.0, y - 2.0 / 16.0,
+                                               z + 0.05, zu1, zv1)
+            self.__tessellator.addVertexWithUV((x + 1) + 2.0 / 16.0, (y + 1) + 2.0 / 16.0,
+                                               z + 0.05, zu1, zv0)
+            self.__tessellator.addVertexWithUV(x - 2.0 / 16.0, (y + 1) + 2.0 / 16.0,
+                                               z + 0.05, zu0, zv0)
+            self.__tessellator.addVertexWithUV(x - 2.0 / 16.0, y - 2.0 / 16.0,
+                                               z + 0.05, zu0, zv1)
+        if self.__blockAccess.isBlockNormalCube(x, y, z + 1):
+            self.__tessellator.addVertexWithUV((x + 1) + 2.0 / 16.0, (y + 1) + 2.0 / 16.0,
+                                               (z + 1) - 0.05, zu0, zv0)
+            self.__tessellator.addVertexWithUV((x + 1) + 2.0 / 16.0, y - 2.0 / 16.0,
+                                               (z + 1) - 0.05, zu0, zv1)
+            self.__tessellator.addVertexWithUV(x - 2.0 / 16.0, y - 2.0 / 16.0,
+                                               (z + 1) - 0.05, zu1, zv1)
+            self.__tessellator.addVertexWithUV(x - 2.0 / 16.0, (y + 1) + 2.0 / 16.0,
+                                               (z + 1) - 0.05, zu1, zv0)
 
     cdef __renderBlockTorch(self, Block block, float x, float y, float z,
                             float xOffset, float zOffset):

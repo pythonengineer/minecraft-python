@@ -116,7 +116,7 @@ class EntityItem(Entity):
         return 'Item'
 
     def onCollideWithPlayer(self, player):
-        if self.delayBeforeCanPickup == 0 and player.inventory.addItemStackToInventory(self.item):
+        if self.delayBeforeCanPickup == 0 and player.inventory.storePartialItemStack(self.item):
             self._worldObj.playSoundAtEntity(
                 self, 'random.pop', 0.2,
                 ((self._rand.nextFloat() - self._rand.nextFloat()) * 0.7 + 1.0) * 2.0

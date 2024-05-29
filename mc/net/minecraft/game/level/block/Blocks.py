@@ -10,6 +10,7 @@ from mc.net.minecraft.game.level.block.BlockChest import BlockChest
 from mc.net.minecraft.game.level.block.BlockFlower import BlockFlower
 from mc.net.minecraft.game.level.block.BlockGlass import BlockGlass
 from mc.net.minecraft.game.level.block.BlockGrass import BlockGrass
+from mc.net.minecraft.game.level.block.BlockGears import BlockGears
 from mc.net.minecraft.game.level.block.BlockDirt import BlockDirt
 from mc.net.minecraft.game.level.block.BlockLeaves import BlockLeaves
 from mc.net.minecraft.game.level.block.BlockTorch import BlockTorch
@@ -124,7 +125,6 @@ class Blocks:
         self.plantYellow.stepSound = self.soundGrassFootstep
         self.plantRed = BlockFlower(self, 38, 12).setHardness(0.0)
         self.plantRed.stepSound = self.soundGrassFootstep
-
         self.mushroomBrown = BlockMushroom(self, 39, 29).setHardness(0.0)
         self.mushroomBrown.stepSound = self.soundGrassFootstep
         self.mushroomRed = BlockMushroom(self, 40, 28).setHardness(0.0)
@@ -156,27 +156,8 @@ class Blocks:
 
         self.torch = BlockTorch(self, 50, 80).setHardness(0.0).setLightValue(14.0 / 16.0)
         self.torch.stepSound = self.soundWoodFootstep
-
         self.fire = BlockFire(self, 51, 31).setHardness(0.0).setLightValue(1.0)
         self.fire.stepSound = self.soundWoodFootstep
-
-        self.chest = BlockChest(self, 54).setHardness(2.5)
-        self.chest.stepSound = self.soundWoodFootstep
-
-        self.blocksList[1:55] = [self.stone, self.grass, self.dirt, self.cobblestone, self.planks,
-                                 self.sapling, self.bedrock, self.waterMoving, self.waterStill,
-                                 self.lavaMoving, self.lavaStill, self.sand, self.gravel, self.oreGold,
-                                 self.oreIron, self.oreCoal, self.wood, self.leaves, self.sponge,
-                                 self.glass, self.clothRed, self.clothOrange, self.clothYellow,
-                                 self.clothChartreuse, self.clothGreen, self.clothSpringGreen,
-                                 self.clothCyan, self.clothCapri, self.clothUltramarine,
-                                 self.clothViolet, self.clothPurple, self.clothMagenta,
-                                 self.clothRose, self.clothDarkGray, self.clothGray,
-                                 self.clothWhite, self.plantYellow, self.plantRed,
-                                 self.mushroomBrown, self.mushroomRed, self.blockGold,
-                                 self.blockSteel, self.stairDouble, self.stairSingle,
-                                 self.brick, self.tnt, self.bookShelf, self.cobblestoneMossy,
-                                 self.obsidian, self.torch, self.fire, None, None, self.chest]
 
         self.waterSource = BlockSource(self, 52, self.waterMoving.blockID).setHardness(0.0)
         self.waterSource.stepSound = self.soundWoodFootstep
@@ -184,5 +165,16 @@ class Blocks:
         self.lavaSource = BlockSource(self, 53, self.lavaMoving.blockID).setHardness(0.0)
         self.lavaSource.stepSound = self.soundWoodFootstep
         self.blocksList[53] = self.lavaSource
+
+        self.chest = BlockChest(self, 54).setHardness(2.5)
+        self.chest.stepSound = self.soundWoodFootstep
+
+        self.cog = BlockGears(self, 55, 62).setHardness(0.5)
+        self.cog.stepSound = self.soundMetalFootstep
+
+        self.oreDiamond = BlockOre(self, 56, 50).setHardness(3.0).setResistance(5.0)
+        self.oreDiamond.stepSound = self.soundStoneFootstep
+        self.blockDiamond = BlockOreBlock(self, 57, 104).setHardness(5.0).setResistance(10.0)
+        self.blockDiamond.stepSound = self.soundMetalFootstep
 
 blocks = Blocks()

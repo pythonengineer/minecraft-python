@@ -3,16 +3,16 @@ from mc.net.minecraft.game.level.block.Block import Block
 class BlockStep(Block):
 
     def __init__(self, blocks, blockId, half):
-        self.__isDouble = half
+        self.__blockType = half
         super().__init__(blocks, blockId, 6)
-        if not self.__isDouble:
+        if not self.__blockType:
             self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 0.5, 1.0)
 
     def getBlockTexture(self, face):
         return 6 if face <= 1 else 5
 
     def isOpaqueCube(self):
-        return self.__isDouble
+        return self.__blockType
 
     def onNeighborBlockChange(self, world, x, y, z, blockType):
         if self == self.blocks.stairSingle:
@@ -30,7 +30,7 @@ class BlockStep(Block):
         return self.blocks.stairSingle.blockID
 
     def renderAsNormalBlock(self):
-        return self.__isDouble
+        return self.__blockType
 
     def shouldSideBeRendered(self, world, x, y, z, layer):
         if layer == 1:

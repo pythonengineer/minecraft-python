@@ -9,12 +9,12 @@ from nbtlib.tag import Compound, ByteArray, List, String, Byte, Short, Long, Int
 class LevelLoader:
 
     def __init__(self, loadingScreen):
-        self.__loadingScreen = loadingScreen
+        self.__guiLoading = loadingScreen
 
     def load(self, file):
-        if self.__loadingScreen:
-            self.__loadingScreen.displayProgressMessage('Loading level')
-            self.__loadingScreen.displayLoadingString('Reading..')
+        if self.__guiLoading:
+            self.__guiLoading.displayProgressMessage('Loading level')
+            self.__guiLoading.displayLoadingString('Reading..')
 
         levelTag = LoadingScreenRenderer.writeLevelTags(file)
         aboutTag = levelTag['About']
@@ -25,8 +25,8 @@ class LevelLoader:
         length = mapTag['Length'].real
         height = mapTag['Height'].real
         world = World()
-        if self.__loadingScreen:
-            self.__loadingScreen.displayLoadingString('Preparing level..')
+        if self.__guiLoading:
+            self.__guiLoading.displayLoadingString('Preparing level..')
 
         spawnTag = mapTag['Spawn']
         world.xSpawn = spawnTag[0].real
@@ -44,8 +44,8 @@ class LevelLoader:
         world.waterLevel = environmentTag['SurroundingWaterHeight'].real
         world.defaultFluid = environmentTag['SurroundingWaterType'].real
         world.generate(width, height, length, bytearray(mapTag['Blocks']))
-        if self.__loadingScreen:
-            self.__loadingScreen.displayLoadingString('Preparing entities..')
+        if self.__guiLoading:
+            self.__guiLoading.displayLoadingString('Preparing entities..')
 
         for compound in entityTag:
             entityType = str(compound['id'])
@@ -72,9 +72,9 @@ class LevelLoader:
         return None
 
     def save(self, world, file):
-        if self.__loadingScreen:
-            self.__loadingScreen.displayProgressMessage('Saving level')
-            self.__loadingScreen.displayLoadingString('Preparing level..')
+        if self.__guiLoading:
+            self.__guiLoading.displayProgressMessage('Saving level')
+            self.__guiLoading.displayLoadingString('Preparing level..')
 
         environmentTag = Compound({'CloudColor': Int(world.cloudColor),
                                    'SkyColor': Int(world.skyColor),
@@ -96,8 +96,8 @@ class LevelLoader:
                              'Name': String(world.name),
                              'CreatedOn': Long(world.createTime)})
 
-        if self.__loadingScreen:
-            self.__loadingScreen.displayLoadingString('Preparing entities..')
+        if self.__guiLoading:
+            self.__guiLoading.displayLoadingString('Preparing entities..')
 
         entityTag = List[Compound]()
         for entity in world.entityMap.all:
@@ -116,8 +116,8 @@ class LevelLoader:
                              'Environment': environmentTag, 'Entities': entityTag,
                              'TileEntities': tileTag})
 
-        if self.__loadingScreen:
-            self.__loadingScreen.displayLoadingString('Writing..')
+        if self.__guiLoading:
+            self.__guiLoading.displayLoadingString('Writing..')
 
         f = File(levelTag, gzipped=True)
         f.save(file)

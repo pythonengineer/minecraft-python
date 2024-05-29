@@ -21,22 +21,22 @@ cdef class TextureFlamesFX(TextureFX):
 
     cpdef onTick(self):
         cdef int x, z, i, xx, zz, pixel, r, g, b, a, nr
-        cdef float value
+        cdef float color
         cdef float frame[320]
 
         for x in range(16):
             for z in range(20):
                 i = 18
-                value = self.__currentFireFrame[x + ((z + 1) % 20 << 4)] * 18.0
+                color = self.__currentFireFrame[x + ((z + 1) % 20 << 4)] * 18.0
 
                 for xx in range(x - 1, x + 2):
                     for zz in range(z, z + 2):
                         if xx >= 0 and zz >= 0 and xx < 16 and zz < 20:
-                            value += self.__currentFireFrame[xx + (zz << 4)]
+                            color += self.__currentFireFrame[xx + (zz << 4)]
 
                         i += 1
 
-                self.__lastFireFrame[x + (z << 4)] = value / (i * 1.06)
+                self.__lastFireFrame[x + (z << 4)] = color / (i * 1.06)
                 if z >= 19:
                     self.__lastFireFrame[x + (z << 4)] = random() * random() * \
                                                          random() * 4.0 + \
@@ -47,17 +47,17 @@ cdef class TextureFlamesFX(TextureFX):
         self.__currentFireFrame = frame
 
         for pixel in range(256):
-            value = self.__currentFireFrame[pixel] * 1.8
-            if value > 1.0:
-                value = 1.0
+            color = self.__currentFireFrame[pixel] * 1.8
+            if color > 1.0:
+                color = 1.0
 
-            if value < 0.0:
-                value = 0.0
+            if color < 0.0:
+                color = 0.0
 
-            r = <int>(value * 155.0 + 100.0)
-            g = <int>(value * value * 255.0)
-            b = <int>(value * value * value * value * value * value * value * value * value * value * 255.0)
-            a = 0 if value < 0.5 else 255
+            r = <int>(color * 155.0 + 100.0)
+            g = <int>(color * color * 255.0)
+            b = <int>(color * color * color * color * color * color * color * color * color * color * 255.0)
+            a = 0 if color < 0.5 else 255
             if self.anaglyphEnabled:
                 nr = (r * 30 + g * 59 + b * 11) // 100
                 g = (r * 30 + g * 70) // 100

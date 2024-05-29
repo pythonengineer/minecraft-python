@@ -221,9 +221,10 @@ cdef class LevelGenerator:
                                             if self.__blocksByteArray[blockId] == stone:
                                                 self.__blocksByteArray[blockId] = 0
 
-                self.__populateOre(blocks.oreCoal.blockID, 90, 1, 4)
-                self.__populateOre(blocks.oreIron.blockID, 70, 2, 4)
-                self.__populateOre(blocks.oreGold.blockID, 50, 3, 4)
+                self.__populateOre(blocks.oreCoal.blockID, 90, 1, 5)
+                self.__populateOre(blocks.oreIron.blockID, 70, 2, 5)
+                self.__populateOre(blocks.oreGold.blockID, 30, 3, 5)
+                self.__populateOre(blocks.oreDiamond.blockID, 20, 4, 5)
 
             self.__guiLoading.displayLoadingString('Watering..')
 

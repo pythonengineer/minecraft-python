@@ -212,7 +212,7 @@ cdef class EntityLiving(Entity):
                                                sound.soundVolume * 0.5,
                                                sound.soundPitch * (12.0 / 16.0))
 
-    def setAI(self, ai):
+    def setEntityAI(self, ai):
         self._entityAI = ai
 
     cdef travel(self, float x, float z):

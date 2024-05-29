@@ -8,6 +8,7 @@ class GuiChest(GuiInventory):
         super().__init__(None)
         self.__upperChestInventory = upperChestInventory
         self.__lowerChestInventory = lowerChestInventory
+        self.allowUserInput = False
         self.__inventoryRows = lowerChestInventory.getSizeInventory() // 9
         self.ySize = 114 + self.__inventoryRows * 18
         yOffset = (self.__inventoryRows - 4) * 18

@@ -14,3 +14,6 @@ class Inventory:
 
     def getInvName(self):
         return ''
+
+    def getInventoryStackLimit(self):
+        return 0

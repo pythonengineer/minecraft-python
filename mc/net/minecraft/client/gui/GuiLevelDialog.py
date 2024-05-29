@@ -7,11 +7,11 @@ except:
 class GuiLevelDialog:
 
     def __init__(self, loadLevel):
-        self.__guiLoadLevel = loadLevel
+        self.__screen = loadLevel
 
     def run(self):
         from mc.net.minecraft.client.gui.GuiSaveLevel import GuiSaveLevel
-        isLoad = not isinstance(self.__guiLoadLevel, GuiSaveLevel)
+        isLoad = not isinstance(self.__screen, GuiSaveLevel)
         try:
             title = 'Open mclevel file' if isLoad else 'Save mclevel file'
             style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST if isLoad else wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
@@ -21,7 +21,7 @@ class GuiLevelDialog:
                 if fileDialog.ShowModal() == wx.ID_CANCEL:
                     return
 
-                self.__guiLoadLevel.setFile(fileDialog.GetPath())
+                self.__screen.setFile(fileDialog.GetPath())
             wx.GetApp().ExitMainLoop()
         except NameError:
             root = tk.Tk()
@@ -30,8 +30,8 @@ class GuiLevelDialog:
                 fileChooser = askopenfilename if isLoad else asksaveasfilename
                 file = fileChooser(filetypes=[('Minecraft levels', '*.mclevel')])
                 if file:
-                    self.__guiLoadLevel.setFile(file)
+                    self.__screen.setFile(file)
             finally:
                 root.quit()
         finally:
-            self.__guiLoadLevel.setFrozen(False)
+            self.__screen.setFrozen(False)

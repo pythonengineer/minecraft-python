@@ -9,6 +9,10 @@ from mc.JavaUtils cimport Random
 cdef class Block:
 
     def __init__(self, blocks, int blockId, int tex=0):
+        if blocks.blocksList[blockId]:
+            raise RuntimeError(f'Slot {blockId} is already occupied by {blocks.blocksList[blockId]} when adding {self}')
+
+        blocks.blocksList[blockId] = self
         self.blocks = blocks
         self.blockID = blockId
         if tex:
@@ -81,7 +85,7 @@ cdef class Block:
     cpdef bint isOpaqueCube(self):
         return True
 
-    cdef bint isCollidable(self):
+    cpdef bint isCollidable(self):
         return True
 
     cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *:

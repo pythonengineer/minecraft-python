@@ -119,7 +119,7 @@ cdef class BlockFire(Block):
         else:
             return self.canBlockCatchFire(world, x, y, z + 1)
 
-    cdef bint isCollidable(self):
+    cpdef bint isCollidable(self):
         return False
 
     cpdef bint canBlockCatchFire(self, World world, int x, int y, int z):
@@ -133,7 +133,7 @@ cdef class BlockFire(Block):
         if not world.isBlockNormalCube(x, y - 1, z) and not self.__canNeighborCatchFire(world, x, y, z):
             world.setBlockWithNotify(x, y, z, 0)
 
-    cpdef bint canBlockIdCatchFire(self, int blockId):
+    cpdef bint getChanceOfNeighborsEncouragingFire(self, int blockId):
         return self.__chanceToEncourageFire[blockId] > 0
 
     cpdef fireSpread(self, World world, int x, int y, int z):

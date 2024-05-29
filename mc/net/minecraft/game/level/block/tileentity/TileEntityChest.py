@@ -5,6 +5,7 @@ from mc.net.minecraft.game.Inventory import Inventory
 from nbtlib.tag import Compound, String, Byte, List
 
 class TileEntityChest(TileEntity, Inventory):
+    CHEST_STACK_LIMIT = 100
 
     def __init__(self):
         self.__chestContents = [None] * 36
@@ -14,17 +15,6 @@ class TileEntityChest(TileEntity, Inventory):
 
     def getStackInSlot(self, slot):
         return self.__chestContents[slot]
-
-    def decrStackSize(self, slot, size):
-        if self.__chestContents[slot]:
-            if self.__chestContents[slot].stackSize <= size:
-                stack = self.__chestContents[slot]
-                self.__chestContents[slot] = None
-                return stack
-            else:
-                return self.__chestContents[slot].splitStack()
-
-        return None
 
     def setInventorySlotContents(self, slot, stack):
         self.__chestContents[slot] = stack
@@ -49,3 +39,6 @@ class TileEntityChest(TileEntity, Inventory):
                 tagList.append(comp)
 
         compound['Items'] = tagList
+
+    def getInventoryStackLimit(self):
+        return TileEntityChest.CHEST_STACK_LIMIT

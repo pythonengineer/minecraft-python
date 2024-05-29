@@ -133,7 +133,7 @@ class EntityArrow(Entity):
     def onCollideWithPlayer(self, player):
         from mc.net.minecraft.game.item.Items import items
         if self.__inGround and self.__owner == player and self.arrowShake <= 0 and \
-           player.inventory.addItemStackToInventory(ItemStack(items.arrow.itemID, 1)):
+           player.inventory.storePartialItemStack(ItemStack(items.arrow.shiftedIndex, 1)):
             self.setEntityDead()
 
     def getShadowSize(self):

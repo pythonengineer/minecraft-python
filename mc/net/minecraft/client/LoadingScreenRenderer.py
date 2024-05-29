@@ -1,5 +1,6 @@
 from mc.net.minecraft.client import MinecraftError
 from mc.net.minecraft.client.render.Tessellator import tessellator
+from mc.net.minecraft.client.gui.ScaledResolution import ScaledResolution
 from pyglet import clock, gl
 
 import nbtlib
@@ -16,8 +17,9 @@ class LoadingScreenRenderer:
             raise MinecraftError
         else:
             self.__title = title
-            screenWidth = self.__mc.width * 240 / self.__mc.height
-            screenHeight = self.__mc.height * 240 / self.__mc.height
+            scaledRes = ScaledResolution(self.__mc.width, self.__mc.height)
+            screenWidth = scaledRes.getScaledWidth()
+            screenHeight = scaledRes.getScaledHeight()
 
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
             gl.glMatrixMode(gl.GL_PROJECTION)
@@ -38,8 +40,9 @@ class LoadingScreenRenderer:
         if not self.__mc.running:
             raise MinecraftError
         else:
-            screenWidth = self.__mc.width * 240 // self.__mc.height
-            screenHeight = self.__mc.height * 240 // self.__mc.height
+            scaledRes = ScaledResolution(self.__mc.width, self.__mc.height)
+            screenWidth = scaledRes.getScaledWidth()
+            screenHeight = scaledRes.getScaledHeight()
 
             gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
             gl.glMatrixMode(gl.GL_PROJECTION)

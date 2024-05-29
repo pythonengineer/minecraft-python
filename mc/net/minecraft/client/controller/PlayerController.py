@@ -10,9 +10,6 @@ class PlayerController:
     def onWorldChange(self, world):
         pass
 
-    def openInventory(self):
-        pass
-
     def clickBlock(self, x, y, z):
         self.sendBlockRemoved(x, y, z)
 

@@ -5,7 +5,7 @@ from mc.net.minecraft.game.level.block.Blocks import blocks
 from pyglet import gl
 
 class RenderTNTPrimed(Render):
-    __renderBlocks = RenderBlocks(tessellator)
+    __blockRenderer = RenderBlocks(tessellator)
 
     def doRender(self, entity, xd, yd, zd, yaw, a):
         gl.glPushMatrix()
@@ -21,14 +21,14 @@ class RenderTNTPrimed(Render):
         alpha = (1.0 - (entity.fuse - a + 1.0) / 100.0) * 0.8
 
         self._loadTexture('terrain.png')
-        self.__renderBlocks.renderBlockOnInventory(blocks.tnt)
+        self.__blockRenderer.renderBlockOnInventory(blocks.tnt)
         if entity.fuse // 5 % 2 == 0:
             gl.glDisable(gl.GL_TEXTURE_2D)
             gl.glDisable(gl.GL_LIGHTING)
             gl.glEnable(gl.GL_BLEND)
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_DST_ALPHA)
             gl.glColor4f(1.0, 1.0, 1.0, alpha)
-            self.__renderBlocks.renderBlockOnInventory(blocks.tnt)
+            self.__blockRenderer.renderBlockOnInventory(blocks.tnt)
             gl.glColor4f(1.0, 1.0, 1.0, 1.0)
             gl.glDisable(gl.GL_BLEND)
             gl.glEnable(gl.GL_LIGHTING)

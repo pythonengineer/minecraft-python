@@ -15,9 +15,9 @@ class ItemStack:
             self.itemID = compound['id'].real
             self.stackSize = compound['Count'].real
 
-    def splitStack(self):
-        self.stackSize -= 1
-        return ItemStack(self.itemID, 1)
+    def splitStack(self, portion):
+        self.stackSize -= portion
+        return ItemStack(self.itemID, portion)
 
     def getItem(self):
         from mc.net.minecraft.game.item.Items import items

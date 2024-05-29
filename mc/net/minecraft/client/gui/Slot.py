@@ -17,8 +17,14 @@ class Slot:
                y >= self.yDisplayPosition - 1 and \
                y < self.yDisplayPosition + 16 + 1
 
-    def putStacks(self, slot):
-        ourStack = self.inventory.getStackInSlot(self.slotIndex)
-        theirStack = slot.inventory.getStackInSlot(slot.slotIndex)
-        slot.inventory.setInventorySlotContents(slot.slotIndex, ourStack)
-        self.inventory.setInventorySlotContents(self.slotIndex, theirStack)
+    def onPickupFromSlot(self):
+        pass
+
+    def isItemValid(self):
+        return True
+
+    def getCurrentItemStack(self):
+        return self.inventory.getStackInSlot(self.slotIndex)
+
+    def putStack(self, stack):
+        self.inventory.setInventorySlotContents(self.slotIndex, stack)

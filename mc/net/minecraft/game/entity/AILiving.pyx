@@ -17,7 +17,7 @@ cdef class AILiving:
         self._moveStrafing = 0.0
         self._moveForward = 0.0
         self.__randomYawVelocity = 0.0
-        self.__targetToAttack = None
+        self.__entityLiving = None
         self._isJumping = False
         self.__fire = 0
         self.__moveSpeed = 0.7
@@ -41,7 +41,7 @@ cdef class AILiving:
                 else:
                     mob.setEntityDead()
 
-        self.__targetToAttack = mob
+        self.__entityLiving = mob
         if self.__fire > 0:
             self.__fire -= 1
 
@@ -61,7 +61,7 @@ cdef class AILiving:
             elif isInLava:
                 mob.motionY += 0.04
             elif mob.onGround:
-                self.__targetToAttack.motionY = 0.42
+                self.__entityLiving.motionY = 0.42
 
         self._moveStrafing *= 0.98
         self._moveForward *= 0.98
@@ -84,8 +84,8 @@ cdef class AILiving:
         if self.__rand.nextFloat() < 0.04:
             self.__randomYawVelocity = (self.__rand.nextFloat() - 0.5) * 60.0
 
-        self.__targetToAttack.rotationYaw += self.__randomYawVelocity
-        self.__targetToAttack.rotationPitch = 0.0
+        self.__entityLiving.rotationYaw += self.__randomYawVelocity
+        self.__entityLiving.rotationPitch = 0.0
 
-        if self.__targetToAttack.handleWaterMovement() or self.__targetToAttack.handleLavaMovement():
+        if self.__entityLiving.handleWaterMovement() or self.__entityLiving.handleLavaMovement():
             self._isJumping = self.__rand.nextFloat() < 0.8

@@ -46,8 +46,9 @@ class ItemRenderer:
             slot = (self.__swingProgress + alpha) / 8.0
             swingY = math.sin((slot * slot) * math.pi)
             swingX = math.sin(math.sqrt(slot) * math.pi)
-            gl.glRotatef(swingX * 80.0, 0.0, 1.0, 0.0)
-            gl.glRotatef(-swingY * 20.0, 1.0, 0.0, 0.0)
+            gl.glRotatef(-swingY * 20.0, 0.0, 1.0, 0.0)
+            gl.glRotatef(-swingX * 20.0, 0.0, 0.0, 1.0)
+            gl.glRotatef(-swingX * 80.0, 1.0, 0.0, 0.0)
 
         brightness = self.__mc.theWorld.getBlockLightValue(int(self.__mc.thePlayer.posX),
                                                            int(self.__mc.thePlayer.posY),
@@ -61,19 +62,80 @@ class ItemRenderer:
                 self.__renderBlocksInstance.renderBlockOnInventory(blocks.blocksList[item.itemID])
             else:
                 gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/items.png'))
-                gl.glDisable(gl.GL_LIGHTING)
                 t = tessellator
-                u0 = (item.getItem().getIconIndex() % 16 << 4) / 256.0
-                u1 = ((item.getItem().getIconIndex() % 16 << 4) + 16) / 256.0
-                v0 = (item.getItem().getIconIndex() // 16 << 4) / 256.0
-                v1 = ((item.getItem().getIconIndex() // 16 << 4) + 16) / 256.0
+                u0 = (self.__itemToRender.getItem().getIconIndex() % 16 << 4) / 256.0
+                u1 = ((self.__itemToRender.getItem().getIconIndex() % 16 << 4) + 16) / 256.0
+                v0 = (self.__itemToRender.getItem().getIconIndex() // 16 << 4) / 256.0
+                v1 = ((self.__itemToRender.getItem().getIconIndex() // 16 << 4) + 16) / 256.0
+                gl.glEnable(gl.GL_NORMALIZE)
+                gl.glTranslatef(0.0, -0.3, 0.0)
+                gl.glScalef(1.5, 1.5, 1.5)
+                gl.glRotatef(50.0, 0.0, 1.0, 0.0)
+                gl.glRotatef(335.0, 0.0, 0.0, 1.0)
+                gl.glTranslatef(-(15.0 / 16.0), -(1.0 / 16.0), 0.0)
+                t.setNormal(0.0, 0.0, 1.0)
                 t.startDrawingQuads()
-                t.addVertexWithUV(-0.4, -0.2, -0.4, u0, v1)
-                t.addVertexWithUV(0.29999998, -0.2, 0.29999998, u1, v1)
-                t.addVertexWithUV(0.29999998, 0.8, 0.29999998, u1, v0)
-                t.addVertexWithUV(-0.4, 0.8, -0.4, u0, v0)
+                t.addVertexWithUV(0.0, 0.0, 0.0, u1, v1)
+                t.addVertexWithUV(1.0, 0.0, 0.0, u0, v1)
+                t.addVertexWithUV(1.0, 1.0, 0.0, u0, v0)
+                t.addVertexWithUV(0.0, 1.0, 0.0, u1, v0)
                 t.draw()
-                gl.glEnable(gl.GL_LIGHTING)
+                t.setNormal(0.0, 0.0, -1.0)
+                t.startDrawingQuads()
+                t.addVertexWithUV(0.0, 1.0, -(1.0 / 16.0), u1, v0)
+                t.addVertexWithUV(1.0, 1.0, -(1.0 / 16.0), u0, v0)
+                t.addVertexWithUV(1.0, 0.0, -(1.0 / 16.0), u0, v1)
+                t.addVertexWithUV(0.0, 0.0, -(1.0 / 16.0), u1, v1)
+                t.draw()
+                t.setNormal(-1.0, 0.0, 0.0)
+                t.startDrawingQuads()
+                for i in range(16):
+                    x = i / 16.0
+                    u = u1 + (u0 - u1) * x + 0.001953125
+                    x = x * 1.0 - 1.0 / 16.0
+                    t.addVertexWithUV(x, 0.0, -(1.0 / 16.0), u, v1)
+                    t.addVertexWithUV(x, 0.0, 0.0, u, v1)
+                    t.addVertexWithUV(x, 1.0, 0.0, u, v0)
+                    t.addVertexWithUV(x, 1.0, -(1.0 / 16.0), u, v0)
+
+                t.draw()
+                t.setNormal(1.0, 0.0, 0.0)
+                t.startDrawingQuads()
+                for i in range(16):
+                    x = i / 16.0
+                    u = u1 + (u0 - u1) * x + 0.001953125
+                    x *= 1.0
+                    t.addVertexWithUV(x, 1.0, -(1.0 / 16.0), u, v0)
+                    t.addVertexWithUV(x, 1.0, 0.0, u, v0)
+                    t.addVertexWithUV(x, 0.0, 0.0, u, v1)
+                    t.addVertexWithUV(x, 0.0, -(1.0 / 16.0), u, v1)
+
+                t.draw()
+                t.setNormal(0.0, 1.0, 0.0)
+                t.startDrawingQuads()
+                for i in range(16):
+                    y = i / 16.0
+                    v = v1 + (v0 - v1) * y - 0.001953125
+                    y = y * 1.0 + 1.0 / 16.0
+                    t.addVertexWithUV(0.0, y, 0.0, u1, v)
+                    t.addVertexWithUV(1.0, y, 0.0, u0, v)
+                    t.addVertexWithUV(1.0, y, -(1.0 / 16.0), u0, v)
+                    t.addVertexWithUV(0.0, y, -(1.0 / 16.0), u1, v)
+
+                t.draw()
+                t.setNormal(0.0, -1.0, 0.0)
+                t.startDrawingQuads()
+                for i in range(16):
+                    y = i / 16.0
+                    v = v1 + (v0 - v1) * y - 0.001953125
+                    y *= 1.0
+                    t.addVertexWithUV(1.0, y, 0.0, u0, v)
+                    t.addVertexWithUV(0.0, y, 0.0, u1, v)
+                    t.addVertexWithUV(0.0, y, -(1.0 / 16.0), u1, v)
+                    t.addVertexWithUV(1.0, y, -(1.0 / 16.0), u0, v)
+
+                t.draw()
+                gl.glDisable(gl.GL_NORMALIZE)
         else:
             gl.glScalef(1.0, -1.0, -1.0)
             gl.glTranslatef(0.0, 0.2, 0.0)

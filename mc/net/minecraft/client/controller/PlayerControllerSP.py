@@ -1,5 +1,4 @@
 from mc.net.minecraft.client.controller.PlayerController import PlayerController
-from mc.net.minecraft.client.gui.GuiInventory import GuiInventory
 from mc.net.minecraft.game.level.MobSpawner import MobSpawner
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
@@ -33,9 +32,6 @@ class PlayerControllerSP(PlayerController):
             blocks.clothViolet, blocks.clothPurple, blocks.clothMagenta,
             blocks.clothRose, blocks.clothDarkGray, blocks.clothGray, blocks.clothWhite
         )
-
-    def openInventory(self):
-        self._mc.displayGuiScreen(GuiInventory(self._mc.thePlayer.inventory))
 
     def flipPlayer(self, player):
         x = int(player.posX)
@@ -81,6 +77,7 @@ class PlayerControllerSP(PlayerController):
             blockId = blocks.tnt.blockID
             stack = ItemStack(blockId, items.itemsList[blockId].getItemStackLimit())
             tntChest1.setInventorySlotContents(slot, stack)
+            stack = ItemStack(blockId, items.itemsList[blockId].getItemStackLimit())
             tntChest2.setInventorySlotContents(slot, stack)
 
         for slot in range(min(len(self.__mainChestArray), 54)):

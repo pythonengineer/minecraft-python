@@ -26,20 +26,20 @@ cdef class TextureLavaFX(TextureFX):
 
     cpdef onTick(self):
         cdef int x, z, y0, y1, xx, zz, pixel, r, g, b, nr
-        cdef float value
+        cdef float color
         cdef float red[256]
 
         for x in range(16):
             for z in range(16):
-                value = 0.0
+                color = 0.0
                 y0 = <int>(sin(z * pi * 2.0 / 16.0) * 1.2)
                 y1 = <int>(sin(x * pi * 2.0 / 16.0) * 1.2)
 
                 for xx in range(x - 1, x + 2):
                     for zz in range(z - 1, z + 2):
-                        value += self.__red[(xx + y0 & 15) + ((zz + y1 & 15) << 4)]
+                        color += self.__red[(xx + y0 & 15) + ((zz + y1 & 15) << 4)]
 
-                self.__green[x + (z << 4)] = value / 10.0 + (self.__blue[(x & 15) + \
+                self.__green[x + (z << 4)] = color / 10.0 + (self.__blue[(x & 15) + \
                     ((z & 15) << 4)] + \
                     self.__blue[(x + 1 & 15) + ((z & 15) << 4)] + \
                     self.__blue[(x + 1 & 15) + ((z + 1 & 15) << 4)] + \
@@ -57,16 +57,16 @@ cdef class TextureLavaFX(TextureFX):
         self.__red = red
 
         for pixel in range(256):
-            value = self.__red[pixel] * 2.0
-            if value > 1.0:
-                value = 1.0
+            color = self.__red[pixel] * 2.0
+            if color > 1.0:
+                color = 1.0
 
-            if value < 0.0:
-                value = 0.0
+            if color < 0.0:
+                color = 0.0
 
-            r = <int>(value * 100.0 + 155.0)
-            g = <int>(value * value * 255.0)
-            b = <int>(value * value * value * value * 128.0)
+            r = <int>(color * 100.0 + 155.0)
+            g = <int>(color * color * 255.0)
+            b = <int>(color * color * color * color * 128.0)
             if self.anaglyphEnabled:
                 nr = (r * 30 + g * 59 + b * 11) // 100
                 g = (r * 30 + g * 70) // 100

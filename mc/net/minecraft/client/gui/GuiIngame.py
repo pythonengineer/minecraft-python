@@ -1,6 +1,7 @@
 from mc.net.minecraft.client.controller.PlayerControllerSP import PlayerControllerSP
 from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.Tessellator import tessellator
+from mc.net.minecraft.client.gui.ScaledResolution import ScaledResolution
 from mc.net.minecraft.client.gui.Gui import Gui
 from mc.net.minecraft.client.RenderHelper import RenderHelper
 from mc.net.minecraft.client.ChatLine import ChatLine
@@ -19,8 +20,9 @@ class GuiIngame(Gui):
         self.__updateCounter = 0
 
     def renderGameOverlay(self, a):
-        scaledWidth = self.__mc.width * 240 // self.__mc.height
-        scaledHeight = self.__mc.height * 240 // self.__mc.height
+        scaledRes = ScaledResolution(self.__mc.width, self.__mc.height)
+        scaledWidth = scaledRes.getScaledWidth()
+        scaledHeight = scaledRes.getScaledHeight()
         self.__mc.entityRenderer.setupOverlayRendering()
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/gui.png'))
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)

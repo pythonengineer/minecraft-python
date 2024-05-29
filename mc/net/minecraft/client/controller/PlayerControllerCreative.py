@@ -1,14 +1,10 @@
 from mc.net.minecraft.client.Session import Session
 from mc.net.minecraft.client.controller.PlayerController import PlayerController
-from mc.net.minecraft.client.gui.GuiInventory import GuiInventory
 from mc.net.minecraft.game.level.MobSpawner import MobSpawner
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.item.ItemStack import ItemStack
 
 class PlayerControllerCreative(PlayerController):
-
-    def openInventory(self):
-        self._mc.displayGuiScreen(GuiInventory(self._mc.thePlayer.inventory))
 
     def onRespawn(self, player):
         for i in range(9):

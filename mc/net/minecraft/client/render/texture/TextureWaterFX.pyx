@@ -28,18 +28,18 @@ cdef class TextureWaterFX(TextureFX):
 
     cpdef onTick(self):
         cdef int x, z, y, pixel, r, g, b, a, nr
-        cdef float value
+        cdef float color
         cdef float red[256]
 
         self.__tickCounter += 1
 
         for x in range(16):
             for z in range(16):
-                value = 0.0
+                color = 0.0
                 for y in range(x - 1, x + 2):
-                    value += self.__red[(y & 15) + ((z & 15) << 4)]
+                    color += self.__red[(y & 15) + ((z & 15) << 4)]
 
-                self.__green[x + (z << 4)] = value / 3.3 + self.__blue[x + (z << 4)] * 0.8
+                self.__green[x + (z << 4)] = color / 3.3 + self.__blue[x + (z << 4)] * 0.8
 
         for x in range(16):
             for z in range(16):
@@ -56,18 +56,18 @@ cdef class TextureWaterFX(TextureFX):
         self.__red = red
 
         for pixel in range(256):
-            value = self.__red[pixel]
-            if value > 1.0:
-                value = 1.0
+            color = self.__red[pixel]
+            if color > 1.0:
+                color = 1.0
 
-            if value < 0.0:
-                value = 0.0
+            if color < 0.0:
+                color = 0.0
 
-            value *= value
-            r = <int>(32.0 + value * 32.0)
-            g = <int>(50.0 + value * 64.0)
+            color *= color
+            r = <int>(32.0 + color * 32.0)
+            g = <int>(50.0 + color * 64.0)
             b = 255
-            a = <int>(146.0 + value * 50.0)
+            a = <int>(146.0 + color * 50.0)
             if self.anaglyphEnabled:
                 nr = (r * 30 + g * 59 + 2805) // 100
                 g = (r * 30 + g * 70) // 100

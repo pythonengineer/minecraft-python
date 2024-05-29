@@ -17,6 +17,7 @@ cdef class RenderBlocks:
 
     cdef bint renderBlockByRenderType(self, Block block, int x, int y, int z)
     cdef __renderBlockFire(self, Block block, int x, int y, int z)
+    cdef __renderBlockGear(self, Block block, int x, int y, int z)
     cdef __renderBlockTorch(self, Block block, float x, float y, float z,
                             float xOffset, float zOffset)
     cdef __renderBlockPlant(self, Block block, float x, float y, float z)

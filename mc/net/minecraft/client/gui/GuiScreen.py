@@ -38,7 +38,7 @@ class GuiScreen(Gui):
 
     def handleKeyboardEvent(self, key=None, char=None, motion=None):
         if key == window.key.F11:
-            self._mc.toggleFullScreen()
+            self._mc.toggleFullscreen()
             return
 
         self._keyTyped(key, char, motion)

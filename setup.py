@@ -44,6 +44,9 @@ extensions = [
     Extension(name='mc.net.minecraft.client.render.texture.TextureFlamesFX',
               sources=['mc/net/minecraft/client/render/texture/TextureFlamesFX.pyx'],
               include_dirs=[numpy.get_include()], **flags),
+    Extension(name='mc.net.minecraft.client.render.texture.TextureGearsFX',
+              sources=['mc/net/minecraft/client/render/texture/TextureGearsFX.pyx'],
+              include_dirs=[numpy.get_include()], **flags),
     Extension(name='mc.net.minecraft.client.render.texture.TextureLavaFX',
               sources=['mc/net/minecraft/client/render/texture/TextureLavaFX.pyx'],
               include_dirs=[numpy.get_include()], **flags),
@@ -92,7 +95,7 @@ extensions = [
 
 setup(
     name='minecraft-python',
-    version='0.31.20100125',
+    version='0.31.20100128',
     author='pythonengineer',
     description='A project that seeks to recreate every old Minecraft version in Python using Pyglet and Cython.',
     long_description=open('README.md').read(),

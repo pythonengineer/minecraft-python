@@ -3,7 +3,7 @@ from mc.net.minecraft.game.item.Item import Item
 class ItemFood(Item):
 
     def __init__(self, items, itemId, healAmount):
-        super().__init__(items, 260)
+        super().__init__(items, 4)
         self.__healAmount = 4
 
     def onItemRightClick(self, stack, world, player):

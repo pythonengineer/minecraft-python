@@ -5,7 +5,7 @@ class ItemBlock(Item):
 
     def __init__(self, items, itemId):
         super().__init__(items, itemId)
-        self.__blockID = itemId
+        self.__blockID = itemId + 256
 
     def onItemUse(self, stack, world, x, y, z, sideHit):
         if sideHit == 0: y -= 1

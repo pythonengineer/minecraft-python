@@ -66,7 +66,7 @@ cdef class World:
 
         self.rand = Random()
         self.__rand = Random()
-        self.__randInt = self.rand.nextInt()
+        self.__randId = self.rand.nextInt()
 
         self.skyColor = 0x99CCFF
         self.fogColor = 0xFFFFFF
@@ -97,7 +97,7 @@ cdef class World:
             self.__heightMap[i] = self.height
 
         self.__updateSkylight(0, 0, self.width, self.length)
-        self.__randInt = self.rand.nextInt()
+        self.__randId = self.rand.nextInt()
         self.__tickList = set()
 
         if not self.entityMap:
@@ -567,8 +567,8 @@ cdef class World:
         ticks = self.__updateLCG // self.__maxTicks
         self.__updateLCG -= ticks * self.__maxTicks
         for i in range(ticks):
-            self.__randInt = self.__randInt * self.multiplier + self.addend
-            randValue = self.__randInt >> 2
+            self.__randId = self.__randId * self.multiplier + self.addend
+            randValue = self.__randId >> 2
             x = randValue & w
             y = randValue >> wShift + lShift & h
             z = randValue >> wShift & l

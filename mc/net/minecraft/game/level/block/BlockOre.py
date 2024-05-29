@@ -6,14 +6,13 @@ class BlockOre(Block):
         super().__init__(blocks, blockId, tex)
 
     def idDropped(self):
-        if self == self.blocks.oreCoal:
-            return self.blocks.stairSingle.blockID
-        elif self == self.blocks.oreGold:
-            return self.blocks.blockGold.blockID
-        elif self == self.blocks.oreIron:
-            return self.blocks.blockSteel.blockID
+        from mc.net.minecraft.game.item.Items import items
+        if self.blockID == self.blocks.oreCoal.blockID:
+            return items.coal.shiftedIndex
+        elif self.blockID == self.blocks.oreDiamond.blockID:
+            return items.diamond.shiftedIndex
         else:
             return self.blockID
 
     def quantityDropped(self, random):
-        return random.nextInt(3) + 1
+        return 1 if self.idDropped() == self.blockID else random.nextInt(3) + 1

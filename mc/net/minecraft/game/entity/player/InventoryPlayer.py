@@ -3,6 +3,7 @@ from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.Inventory import Inventory
 
 class InventoryPlayer(Inventory):
+    PLAYER_STACK_LIMIT = 50
 
     def __init__(self):
         self.currentItem = 0
@@ -59,7 +60,7 @@ class InventoryPlayer(Inventory):
 
         return True
 
-    def addItemStackToInventory(self, stack):
+    def storePartialItemStack(self, stack):
         stackSize = stack.stackSize
         itemId = stack.itemID
         maybeSlot = 0
@@ -71,7 +72,8 @@ class InventoryPlayer(Inventory):
 
             if self.mainInventory[maybeSlot] and self.mainInventory[maybeSlot].itemID == itemId:
                 item = self.mainInventory[maybeSlot]
-                if self.mainInventory[maybeSlot].stackSize < item.getItem().getItemStackLimit():
+                if self.mainInventory[maybeSlot].stackSize < item.getItem().getItemStackLimit() and \
+                   self.mainInventory[maybeSlot].stackSize < 50:
                     slot = maybeSlot
                     break
 
@@ -90,6 +92,7 @@ class InventoryPlayer(Inventory):
                 item = self.mainInventory[slot]
                 stackExcess = item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize
 
+            stackExcess = min(stackExcess, 50 - self.mainInventory[slot].stackSize)
             if stackExcess == 0:
                 stackSize = stackSize
             else:
@@ -118,7 +121,11 @@ class InventoryPlayer(Inventory):
             self.mainInventory[slot] = None
             return stack
         else:
-            return self.mainInventory[slot].splitStack()
+            stack = self.mainInventory[slot].splitStack(1)
+            if self.mainInventory[slot].stackSize == 0:
+                self.mainInventory[slot] = None
+
+            return stack
 
     def setInventorySlotContents(self, slot, stack):
         self.mainInventory[slot] = stack
@@ -131,3 +138,6 @@ class InventoryPlayer(Inventory):
 
     def getInvName(self):
         return 'Inventory'
+
+    def getInventoryStackLimit(self):
+        return InventoryPlayer.PLAYER_STACK_LIMIT

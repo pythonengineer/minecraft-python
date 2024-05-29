@@ -5,39 +5,39 @@ from mc.net.minecraft.game.entity.AILiving import AILiving
 class MobSpawner:
 
     def __init__(self, world):
-        self.__level = world
+        self.__worldObj = world
 
     def spawnMobs(self):
-        size = self.__level.width * self.__level.length * self.__level.height // 64 // 64 // 64
-        if self.__level.rand.nextInt(100) < size and \
-           self.__level.entitiesInLevelList(EntityLiving) < size * 20:
-            self.spawnMob(size, self.__level.playerEntity, None)
+        size = self.__worldObj.width * self.__worldObj.length * self.__worldObj.height // 64 // 64 // 64
+        if self.__worldObj.rand.nextInt(100) < size and \
+           self.__worldObj.entitiesInLevelList(EntityLiving) < size * 20:
+            self.spawnMob(size, self.__worldObj.playerEntity, None)
 
     def spawnMob(self, count, entity, loader):
         mobs = 0
         for i in range(count):
-            self.__level.rand.nextInt(5)
-            blockX = self.__level.rand.nextInt(self.__level.width)
-            blockY = int(min(self.__level.rand.nextFloat(),
-                             self.__level.rand.nextFloat()) * self.__level.height)
-            blockZ = self.__level.rand.nextInt(self.__level.length)
-            if not self.__level.isBlockNormalCube(blockX, blockY, blockZ) and \
-               self.__level.getBlockMaterial(blockX, blockY, blockZ) == Material.air and \
-               (not self.__level.isHalfLit(blockX, blockY, blockZ) or \
-                self.__level.rand.nextInt(5) == 0):
+            self.__worldObj.rand.nextInt(5)
+            blockX = self.__worldObj.rand.nextInt(self.__worldObj.width)
+            blockY = int(min(self.__worldObj.rand.nextFloat(),
+                             self.__worldObj.rand.nextFloat()) * self.__worldObj.height)
+            blockZ = self.__worldObj.rand.nextInt(self.__worldObj.length)
+            if not self.__worldObj.isBlockNormalCube(blockX, blockY, blockZ) and \
+               self.__worldObj.getBlockMaterial(blockX, blockY, blockZ) == Material.air and \
+               (not self.__worldObj.isHalfLit(blockX, blockY, blockZ) or \
+                self.__worldObj.rand.nextInt(5) == 0):
                 for j in range(8):
                     xx = blockX
                     yy = blockY
                     zz = blockZ
                     for k in range(3):
-                        xx += self.__level.rand.nextInt(6) - self.__level.rand.nextInt(6)
-                        yy += self.__level.rand.nextInt(1) - self.__level.rand.nextInt(1)
-                        zz += self.__level.rand.nextInt(6) - self.__level.rand.nextInt(6)
+                        xx += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
+                        yy += self.__worldObj.rand.nextInt(1) - self.__worldObj.rand.nextInt(1)
+                        zz += self.__worldObj.rand.nextInt(6) - self.__worldObj.rand.nextInt(6)
                         if xx >= 0 and zz >= 0 and yy >= 0 and \
-                           yy < self.__level.height - 2 and xx < self.__level.width and zz < self.__level.length and \
-                           self.__level.isBlockNormalCube(xx, yy - 1, zz) and not \
-                           self.__level.isBlockNormalCube(xx, yy, zz) and not \
-                           self.__level.isBlockNormalCube(xx, yy + 1, zz):
+                           yy < self.__worldObj.height - 2 and xx < self.__worldObj.width and zz < self.__worldObj.length and \
+                           self.__worldObj.isBlockNormalCube(xx, yy - 1, zz) and not \
+                           self.__worldObj.isBlockNormalCube(xx, yy, zz) and not \
+                           self.__worldObj.isBlockNormalCube(xx, yy + 1, zz):
                             x = xx + 0.5
                             y = yy + 1.0
                             z = zz + 0.5
@@ -46,19 +46,19 @@ class MobSpawner:
                                 yd = y - entity.posY
                                 zd = z - entity.posZ
                             else:
-                                xd = x - self.__level.xSpawn
-                                yd = y - self.__level.ySpawn
-                                zd = z - self.__level.zSpawn
+                                xd = x - self.__worldObj.xSpawn
+                                yd = y - self.__worldObj.ySpawn
+                                zd = z - self.__worldObj.zSpawn
 
                             if xd * xd + yd * yd + zd * zd < 256.0:
                                 continue
 
-                            mob = EntityLiving(self.__level)
-                            yaw = self.__level.rand.nextFloat() * 360.0
+                            mob = EntityLiving(self.__worldObj)
+                            yaw = self.__worldObj.rand.nextFloat() * 360.0
                             mob.setPositionAndRotation(x, y, z, yaw, 0.0)
-                            mob.setAI(AILiving())
-                            if self.__level.checkIfAABBIsClearSpawn(mob.boundingBox):
+                            mob.setEntityAI(AILiving())
+                            if self.__worldObj.checkIfAABBIsClearSpawn(mob.boundingBox):
                                 mobs += 1
-                                self.__level.spawnEntityInWorld(mob)
+                                self.__worldObj.spawnEntityInWorld(mob)
 
         return mobs

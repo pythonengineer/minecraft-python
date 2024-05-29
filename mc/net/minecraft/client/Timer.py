@@ -4,7 +4,7 @@ import time
 
 class Timer:
     NS_PER_SECOND = 1000000
-    MAX_TICKS_PER_UPDATE = 100
+    MAX_TICKS_PER_UPDATE = 10
     __lastHRTime = 0.0
     elapsedTicks = 0
     renderPartialTicks = 0.0

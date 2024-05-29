@@ -30,9 +30,9 @@ class GuiNewLevel(GuiScreen):
                                            self.height // 4 + 96 + 12, 'Create'))
         self._controlList.append(GuiButton(5, self.width // 2 - 100,
                                            self.height // 4 + 120 + 12, 'Cancel'))
-        self.__updateText()
+        self.__worldOptions()
 
-    def __updateText(self):
+    def __worldOptions(self):
         self._controlList[0].displayString = 'Type: ' + self.__worldType[self.__selectedWorldType]
         self._controlList[1].displayString = 'Shape: ' + self.__worldShape[self.__selectedWorldShape]
         self._controlList[2].displayString = 'Size: ' + self.__worldSize[self.__selectedWorldSize]
@@ -55,7 +55,7 @@ class GuiNewLevel(GuiScreen):
         elif button.id == 3:
             self.__selectedWorldTheme = (self.__selectedWorldTheme + 1) % len(self.__worldTheme)
 
-        self.__updateText()
+        self.__worldOptions()
 
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)

@@ -9,7 +9,7 @@ from mc.JavaUtils cimport Random
 cdef class BlockFlowing(BlockFluid):
 
     def __cinit__(self):
-        self.__random = Random()
+        self.__rand = Random()
         self.__flowArray[0] = 0
         self.__flowArray[1] = 1
         self.__flowArray[2] = 2
@@ -17,7 +17,7 @@ cdef class BlockFlowing(BlockFluid):
 
     def __init__(self, blocks, int blockId, int material):
         BlockFluid.__init__(self, blocks, blockId, material)
-        self.__material = material
+        self.__liquidMaterial = material
 
         self.blockIndexInTexture = 14
         if material == Material.lava:
@@ -43,13 +43,13 @@ cdef class BlockFlowing(BlockFluid):
                  self._canFlow(world, x + 1, y, z) or \
                  self._canFlow(world, x, y, z - 1) or \
                  self._canFlow(world, x, y, z + 1)
-        if change and world.getBlockMaterial(x, y - 1, z) == self.__material and not \
+        if change and world.getBlockMaterial(x, y - 1, z) == self.__liquidMaterial and not \
            world.floodFill(x, y - 1, z, self.__movingId, self.__stillId):
             return False
 
         hasChanged = self.__flow(world, x, y, z, x, y - 1, z)
         for i in range(4):
-            randSide = self.__random.nextInt(4 - i) + i
+            randSide = self.__rand.nextInt(4 - i) + i
             flowSide = self.__flowArray[i]
             self.__flowArray[i] = self.__flowArray[randSide]
             self.__flowArray[randSide] = flowSide
@@ -63,11 +63,11 @@ cdef class BlockFlowing(BlockFluid):
                 hasChanged = self.__flow(world, x, y, z, x, y, z + 1)
 
         if not hasChanged and change:
-            if self.__random.nextInt(3) == 0:
-                if self.__random.nextInt(3) == 0:
+            if self.__rand.nextInt(3) == 0:
+                if self.__rand.nextInt(3) == 0:
                     hasChanged = False
                     for i in range(4):
-                        randSide = self.__random.nextInt(4 - i) + i
+                        randSide = self.__rand.nextInt(4 - i) + i
                         flowSide = self.__flowArray[i]
                         self.__flowArray[i] = self.__flowArray[randSide]
                         self.__flowArray[randSide] = flowSide
@@ -79,23 +79,23 @@ cdef class BlockFlowing(BlockFluid):
                             hasChanged = self.__liquidSpread(world, x, y, z, x, y, z - 1)
                         if self.__flowArray[i] == 3 and not hasChanged:
                             hasChanged = self.__liquidSpread(world, x, y, z, x, y, z + 1)
-                elif self.__material == Material.lava:
+                elif self.__liquidMaterial == Material.lava:
                     world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)
                 else:
                     world.setBlockWithNotify(x, y, z, 0)
 
             return False
 
-        if self.__material == Material.water:
-            hasChanged |= self.__waterAdjacent(world, x - 1, y, z)
-            hasChanged |= self.__waterAdjacent(world, x + 1, y, z)
-            hasChanged |= self.__waterAdjacent(world, x, y, z - 1)
-            hasChanged |= self.__waterAdjacent(world, x, y, z + 1)
-        if self.__material == Material.lava:
+        if self.__liquidMaterial == Material.water:
             hasChanged |= self.__extinguishFireLava(world, x - 1, y, z)
             hasChanged |= self.__extinguishFireLava(world, x + 1, y, z)
             hasChanged |= self.__extinguishFireLava(world, x, y, z - 1)
             hasChanged |= self.__extinguishFireLava(world, x, y, z + 1)
+        if self.__liquidMaterial == Material.lava:
+            hasChanged |= self.__fireSpread(world, x - 1, y, z)
+            hasChanged |= self.__fireSpread(world, x + 1, y, z)
+            hasChanged |= self.__fireSpread(world, x, y, z - 1)
+            hasChanged |= self.__fireSpread(world, x, y, z + 1)
 
         if hasChanged:
             world.scheduleBlockUpdate(x, y, z, self.__movingId)
@@ -156,7 +156,7 @@ cdef class BlockFlowing(BlockFluid):
         else:
             return False
 
-    cdef bint isCollidable(self):
+    cpdef bint isCollidable(self):
         return False
 
     def getCollisionBoundingBoxFromPool(self, int x, int y, int z):
@@ -166,13 +166,13 @@ cdef class BlockFlowing(BlockFluid):
         return False
 
     cpdef int getBlockMaterial(self):
-        return self.__material
+        return self.__liquidMaterial
 
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
         pass
 
     cdef int tickRate(self):
-        return 25 if self.__material == Material.lava else 5
+        return 25 if self.__liquidMaterial == Material.lava else 5
 
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
         pass
@@ -184,9 +184,9 @@ cdef class BlockFlowing(BlockFluid):
         return 0
 
     cdef int getRenderBlockPass(self):
-        return 1 if self.__material == Material.water else 0
+        return 1 if self.__liquidMaterial == Material.water else 0
 
-    cdef bint __waterAdjacent(self, World world, int x, int y, int z):
+    cdef bint __extinguishFireLava(self, World world, int x, int y, int z):
         if world.getBlockId(x, y, z) == self.blocks.fire.blockID:
             world.setBlockWithNotify(x, y, z, 0)
             return True
@@ -197,8 +197,8 @@ cdef class BlockFlowing(BlockFluid):
             world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)
             return True
 
-    cdef bint __extinguishFireLava(self, World world, int x, int y, int z):
-        if self.blocks.fire.canBlockIdCatchFire(world.getBlockId(x, y, z)):
+    cdef bint __fireSpread(self, World world, int x, int y, int z):
+        if self.blocks.fire.getChanceOfNeighborsEncouragingFire(world.getBlockId(x, y, z)):
             self.blocks.fire.fireSpread(world, x, y, z)
             return True
         else:

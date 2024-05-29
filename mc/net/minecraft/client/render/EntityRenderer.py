@@ -8,6 +8,7 @@ from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.effect.EntityRainFX import EntityRainFX
 from mc.net.minecraft.client.RenderHelper import RenderHelper
+from mc.net.minecraft.client.gui.ScaledResolution import ScaledResolution
 from mc.net.minecraft.client.controller.PlayerControllerCreative import PlayerControllerCreative
 from mc.JavaUtils import BufferUtils, Random
 
@@ -122,8 +123,9 @@ class EntityRenderer:
 
         self.__displayActive = self.__mc.isActive()
 
-        screenWidth = self.__mc.width * 240 // self.__mc.height
-        screenHeight = self.__mc.height * 240 // self.__mc.height
+        scaledRes = ScaledResolution(self.__mc.width, self.__mc.height)
+        screenWidth = scaledRes.getScaledWidth()
+        screenHeight = scaledRes.getScaledHeight()
         xMouse = self.__mc.mouseX * screenWidth // self.__mc.width
         yMouse = screenHeight - self.__mc.mouseY * screenHeight // self.__mc.height - 1
         if self.__mc.theWorld:
@@ -488,8 +490,9 @@ class EntityRenderer:
         return img
 
     def setupOverlayRendering(self):
-        screenWidth = self.__mc.width * 240 // self.__mc.height
-        screenHeight = self.__mc.height * 240 // self.__mc.height
+        scaledRes = ScaledResolution(self.__mc.width, self.__mc.height)
+        screenWidth = scaledRes.getScaledWidth()
+        screenHeight = scaledRes.getScaledHeight()
 
         gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
         gl.glMatrixMode(gl.GL_PROJECTION)

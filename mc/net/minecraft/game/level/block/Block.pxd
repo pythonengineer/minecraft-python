@@ -28,7 +28,7 @@ cdef class Block:
     cpdef int getBlockTextureFromSideAndMetadata(self, World world, int x, int y, int z, int layer)
     cpdef int getBlockTexture(self, int face)
     cpdef bint isOpaqueCube(self)
-    cdef bint isCollidable(self)
+    cpdef bint isCollidable(self)
     cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *
     cpdef int getBlockMaterial(self)

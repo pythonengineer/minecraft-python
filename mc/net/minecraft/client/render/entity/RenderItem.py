@@ -11,11 +11,11 @@ class RenderItem(Render):
 
     def __init__(self):
         super().__init__()
-        self.__blockRenderer = RenderBlocks(tessellator)
-        self.__rand = Random()
+        self.__renderBlocks = RenderBlocks(tessellator)
+        self.__random = Random()
 
     def doRender(self, entity, xd, yd, zd, yaw, a):
-        self.__rand.setSeed(187)
+        self.__random.setSeed(187)
         item = entity.item
         gl.glPushMatrix()
         hoverY = math.sin((entity.age + a) / 10.0 + entity.hoverStart) * 0.1 + 0.1
@@ -43,12 +43,12 @@ class RenderItem(Render):
             for i in range(renders):
                 gl.glPushMatrix()
                 if i > 0:
-                    x = (self.__rand.nextFloat() * 2.0 - 1.0) * 0.2 / scale
-                    y = (self.__rand.nextFloat() * 2.0 - 1.0) * 0.2 / scale
-                    z = (self.__rand.nextFloat() * 2.0 - 1.0) * 0.2 / scale
+                    x = (self.__random.nextFloat() * 2.0 - 1.0) * 0.2 / scale
+                    y = (self.__random.nextFloat() * 2.0 - 1.0) * 0.2 / scale
+                    z = (self.__random.nextFloat() * 2.0 - 1.0) * 0.2 / scale
                     gl.glTranslatef(x, y, z)
 
-                self.__blockRenderer.renderBlockOnInventory(blocks.blocksList[item.itemID])
+                self.__renderBlocks.renderBlockOnInventory(blocks.blocksList[item.itemID])
                 gl.glPopMatrix()
         else:
             gl.glScalef(0.5, 0.5, 0.5)
@@ -63,9 +63,9 @@ class RenderItem(Render):
             for i in range(renders):
                 gl.glPushMatrix()
                 if i > 0:
-                    x = (self.__rand.nextFloat() * 2.0 - 1.0) * 0.3
-                    y = (self.__rand.nextFloat() * 2.0 - 1.0) * 0.3
-                    z = (self.__rand.nextFloat() * 2.0 - 1.0) * 0.3
+                    x = (self.__random.nextFloat() * 2.0 - 1.0) * 0.3
+                    y = (self.__random.nextFloat() * 2.0 - 1.0) * 0.3
+                    z = (self.__random.nextFloat() * 2.0 - 1.0) * 0.3
                     gl.glTranslatef(x, y, z)
 
                 gl.glRotatef(-self._renderManager.playerViewY, 0.0, 1.0, 0.0)
