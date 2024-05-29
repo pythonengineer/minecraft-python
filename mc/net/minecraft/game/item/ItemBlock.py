@@ -40,3 +40,6 @@ class ItemBlock(Item):
         volume = (block.stepSound.soundVolume + 1.0) / 2.0
         world.playSoundEffect(x, y, z, name, volume, block.stepSound.soundPitch * 0.8)
         stack.stackSize -= 1
+
+    def onPlaced(self, world, x, y, z):
+        return blocks.blocksList[self.__blockID].oreDrop(world, x, y, z)

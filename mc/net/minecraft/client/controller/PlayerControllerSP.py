@@ -16,22 +16,6 @@ class PlayerControllerSP(PlayerController):
         self.__prevBlockDamage = 0
         self.__blockHitWait = 0
         self.__mobSpawner = None
-        self.__mainChestArray = (
-            blocks.stone, blocks.grass, blocks.cobblestone, blocks.planks, blocks.sapling,
-            blocks.bedrock, blocks.sand, blocks.gravel, blocks.oreGold, blocks.oreIron,
-            blocks.oreCoal, blocks.wood, blocks.leaves, blocks.sponge, blocks.glass,
-            blocks.plantYellow, blocks.plantRed, blocks.mushroomBrown, blocks.mushroomRed,
-            blocks.blockGold, blocks.blockSteel, blocks.stairSingle, blocks.brick, blocks.tnt,
-            blocks.bookShelf, blocks.cobblestoneMossy, blocks.obsidian, blocks.torch,
-            blocks.waterSource, blocks.lavaSource, blocks.chest
-        )
-        self.__woolChestArray = (
-            blocks.clothRed, blocks.clothOrange, blocks.clothYellow,
-            blocks.clothChartreuse, blocks.clothGreen, blocks.clothSpringGreen,
-            blocks.clothCyan, blocks.clothCapri, blocks.clothUltramarine,
-            blocks.clothViolet, blocks.clothPurple, blocks.clothMagenta,
-            blocks.clothRose, blocks.clothDarkGray, blocks.clothGray, blocks.clothWhite
-        )
 
     def flipPlayer(self, player):
         x = int(player.posX)
@@ -53,47 +37,12 @@ class PlayerControllerSP(PlayerController):
                     self._mc.theWorld.setBlockWithNotify(xx, yy, zz, blockId)
 
         self._mc.theWorld.setBlockWithNotify(x - 2, y - 1, z - 2, blocks.chest.blockID)
-        itemsChest = self._mc.theWorld.getBlockTileEntity(x - 2, y - 1, z - 2)
+        self._mc.theWorld.getBlockTileEntity(x - 2, y - 1, z - 2)
         self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z - 2, blocks.chest.blockID)
-        blocksChest1 = self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 2)
+        self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 2)
         self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z - 1, blocks.chest.blockID)
-        blocksChest2 = self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 1)
-        self._mc.theWorld.setBlockWithNotify(x - 1, y - 1, z + 2, blocks.chest.blockID)
-        tntChest1 = self._mc.theWorld.getBlockTileEntity(x - 1, y - 1, z + 2)
-        self._mc.theWorld.setBlockWithNotify(x, y - 1, z + 2, blocks.chest.blockID)
-        tntChest2 = self._mc.theWorld.getBlockTileEntity(x, y - 1, z + 2)
-        self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z + 1, blocks.chest.blockID)
-        woolChest = self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z + 1)
-        slot = 0
-        for i in range(256, 1024):
-            if items.itemsList[i]:
-                limit = items.itemsList[i].getItemStackLimit()
-                itemsChest.setInventorySlotContents(slot, ItemStack(i, limit))
-                slot += 1
-                if slot >= 27:
-                    break
-
-        for slot in range(27):
-            blockId = blocks.tnt.blockID
-            stack = ItemStack(blockId, items.itemsList[blockId].getItemStackLimit())
-            tntChest1.setInventorySlotContents(slot, stack)
-            stack = ItemStack(blockId, items.itemsList[blockId].getItemStackLimit())
-            tntChest2.setInventorySlotContents(slot, stack)
-
-        for slot in range(min(len(self.__mainChestArray), 54)):
-            blockId = self.__mainChestArray[slot]
-            stack = ItemStack(blockId, items.itemsList[blockId.blockID].getItemStackLimit())
-            if slot >= 27:
-                blocksChest2.setInventorySlotContents(slot - 27, stack)
-            else:
-                blocksChest1.setInventorySlotContents(slot, stack)
-
-        for slot in range(min(len(self.__woolChestArray), 54)):
-            stack = ItemStack(
-                self.__woolChestArray[slot],
-                items.itemsList[self.__woolChestArray[slot].blockID].getItemStackLimit()
-            )
-            woolChest.setInventorySlotContents(slot, stack)
+        self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 1)
+        player.inventory.mainInventory[8] = ItemStack(items.flintSteel)
 
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)

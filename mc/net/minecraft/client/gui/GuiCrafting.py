@@ -42,7 +42,7 @@ class GuiCrafting(GuiInventory):
             else:
                 items[slot] = -1
 
-        self.__iInventory.setInventorySlotContents(0, CraftingManager.addRecipe(items))
+        self.__iInventory.setInventorySlotContents(0, CraftingManager.getInstance().addRecipe(items))
 
     def _drawGuiContainerForegroundLayer(self):
         self._fontRenderer.drawString('Crafting', 8, 6, 4210752)

@@ -21,6 +21,8 @@ cdef class EntityLiving(Entity):
         public float prevCameraPitch
         public float cameraPitch
         public AILiving _entityAI
+        public float randVal
+        public int mobType
 
     cdef _fall(self, float d)
     cdef travel(self, float x, float z)

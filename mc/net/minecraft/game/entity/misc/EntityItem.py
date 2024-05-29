@@ -97,6 +97,14 @@ class EntityItem(Entity):
         if self.age >= 6000:
             self.setEntityDead()
 
+    def _hurt(self, hp):
+        if self.item.getItem().onPlaced(self._worldObj, self.posX,
+                                        self.posY, self.posZ):
+            self.item.stackSize = 0
+
+        if self.item.stackSize == 0:
+            self.setEntityDead()
+
     def attackEntityFrom(self, entity, damage):
         self.__health -= damage
         if self.__health <= 0:

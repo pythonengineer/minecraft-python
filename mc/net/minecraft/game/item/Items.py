@@ -14,18 +14,18 @@ class Items:
     def __init__(self):
         self.itemsList = [None] * 1024
 
-        ironShovel = ItemSpade(self, 0)
-        ironShovel.iconIndex = 82
-        ironPickaxe = ItemPickaxe(self, 1)
-        ironPickaxe.iconIndex = 98
-        ironAxe = ItemAxe(self, 2)
-        ironAxe.iconIndex = 114
+        self.shovel = ItemSpade(self, 0)
+        self.shovel.iconIndex = 82
+        self.pickaxeSteel = ItemPickaxe(self, 1)
+        self.pickaxeSteel.iconIndex = 98
+        self.axeSteel = ItemAxe(self, 2)
+        self.axeSteel.iconIndex = 114
 
-        flint = ItemFlintAndSteel(self, 3)
-        flint.iconIndex = 5
+        self.flintSteel = ItemFlintAndSteel(self, 3)
+        self.flintSteel.iconIndex = 5
 
-        self.apple = ItemFood(self, 4, 4)
-        self.apple.iconIndex = 4
+        apple = ItemFood(self, 4, 4)
+        apple.iconIndex = 4
 
         bow = ItemBow(self, 5)
         bow.iconIndex = 21
@@ -36,39 +36,42 @@ class Items:
         self.coal.iconIndex = 7
         self.diamond = Item(self, 8)
         self.diamond.iconIndex = 55
-        iron = Item(self, 9)
-        iron.iconIndex = 23
-        gold = Item(self, 10)
-        gold.iconIndex = 39
+        self.ingotIron = Item(self, 9)
+        self.ingotIron.iconIndex = 23
+        self.ingotGold = Item(self, 10)
+        self.ingotGold.iconIndex = 39
 
-        ironSword = ItemSword(self, 11)
-        ironSword.iconIndex = 66
-        woodSword = ItemSword(self, 12)
-        woodSword.iconIndex = 64
-        woodShovel = ItemSpade(self, 13)
-        woodShovel.iconIndex = 80
-        woodPickaxe = ItemPickaxe(self, 14)
-        woodPickaxe.iconIndex = 96
-        woodAxe = ItemAxe(self, 15)
-        woodAxe.iconIndex = 112
+        self.swordSteel = ItemSword(self, 11)
+        self.swordSteel.iconIndex = 66
+        self.swordWood = ItemSword(self, 12)
+        self.swordWood.iconIndex = 64
+        self.shovelWood = ItemSpade(self, 13)
+        self.shovelWood.iconIndex = 80
+        self.pickaxeWood = ItemPickaxe(self, 14)
+        self.pickaxeWood.iconIndex = 96
+        self.axeWood = ItemAxe(self, 15)
+        self.axeWood.iconIndex = 112
 
-        stoneSword = ItemSword(self, 16)
-        stoneSword.iconIndex = 65
-        stoneShovel = ItemSpade(self, 17)
-        stoneShovel.iconIndex = 81
-        stonePickaxe = ItemPickaxe(self, 18)
-        stonePickaxe.iconIndex = 97
-        stoneAxe = ItemAxe(self, 19)
-        stoneAxe.iconIndex = 113
+        self.swordStone = ItemSword(self, 16)
+        self.swordStone.iconIndex = 65
+        self.shovelStone = ItemSpade(self, 17)
+        self.shovelStone.iconIndex = 81
+        self.pickaxeStone = ItemPickaxe(self, 18)
+        self.pickaxeStone.iconIndex = 97
+        self.axeStone = ItemAxe(self, 19)
+        self.axeStone.iconIndex = 113
 
-        diamondSword = ItemSword(self, 20)
-        diamondSword.iconIndex = 67
-        diamondShovel = ItemSpade(self, 21)
-        diamondShovel.iconIndex = 83
-        diamondPickaxe = ItemPickaxe(self, 22)
-        diamondPickaxe.iconIndex = 99
-        diamondAxe = ItemAxe(self, 23)
-        diamondAxe.iconIndex = 115
+        self.swordDiamond = ItemSword(self, 20)
+        self.swordDiamond.iconIndex = 67
+        self.shovelDiamond = ItemSpade(self, 21)
+        self.shovelDiamond.iconIndex = 83
+        self.pickaxeDiamond = ItemPickaxe(self, 22)
+        self.pickaxeDiamond.iconIndex = 99
+        self.axeDiamond = ItemAxe(self, 23)
+        self.axeDiamond.iconIndex = 115
+
+        self.stick = Item(self, 24)
+        self.stick.iconIndex = 53
 
         for i in range(256):
             if blocks.blocksList[i]:

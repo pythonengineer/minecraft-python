@@ -1,26 +1,28 @@
+from mc.net.minecraft.game.item.Items import items
+
 from nbtlib.tag import Compound, Short, Byte
 
 class ItemStack:
 
-    def __init__(self, item, stackSize=1):
-        from mc.net.minecraft.game.level.block.Block import Block
+    def __init__(self, obj, stackSize=1):
         self.stackSize = stackSize
         self.animationsToGo = 0
-        if isinstance(item, Block):
-            self.itemID = item.blockID
-        elif isinstance(item, int):
-            self.itemID = item
-        elif isinstance(item, Compound):
-            compound = item
+        if hasattr(obj, 'blockID'):
+            self.itemID = obj.blockID
+        elif isinstance(obj, int):
+            self.itemID = obj
+        elif isinstance(obj, Compound):
+            compound = obj
             self.itemID = compound['id'].real
             self.stackSize = compound['Count'].real
+        elif hasattr(obj, 'shiftedIndex'):
+            self.itemID = obj.shiftedIndex
 
     def splitStack(self, portion):
         self.stackSize -= portion
         return ItemStack(self.itemID, portion)
 
     def getItem(self):
-        from mc.net.minecraft.game.item.Items import items
         return items.itemsList[self.itemID]
 
     def writeToNBT(self, compound):

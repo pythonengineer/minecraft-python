@@ -147,7 +147,7 @@ class Minecraft(window.Window):
             if self.currentScreen or screen:
                 self.screenChanged = True
             if self.currentScreen:
-                self.currentScreen.onGuiClose()
+                self.currentScreen.onGuiClosed()
 
             if not screen and self.thePlayer.health <= 0:
                 screen = GuiGameOver()

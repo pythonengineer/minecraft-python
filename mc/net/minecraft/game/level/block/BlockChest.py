@@ -1,7 +1,5 @@
-from mc.net.minecraft.game.level.block.tileentity.TileEntityChest import TileEntityChest
 from mc.net.minecraft.game.level.block.BlockContainer import BlockContainer
 from mc.net.minecraft.game.InventoryLargeChest import InventoryLargeChest
-from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.JavaUtils import Random
 
 class BlockChest(BlockContainer):
@@ -152,6 +150,7 @@ class BlockChest(BlockContainer):
 
     def onBlockRemoval(self, world, x, y, z):
         from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
+        from mc.net.minecraft.game.item.ItemStack import ItemStack
         entity = world.getBlockTileEntity(x, y, z)
         for i in range(entity.getSizeInventory()):
             stack = entity.getStackInSlot(i)
@@ -211,4 +210,5 @@ class BlockChest(BlockContainer):
             return True
 
     def _getBlockEntity(self):
+        from mc.net.minecraft.game.level.block.tileentity.TileEntityChest import TileEntityChest
         return TileEntityChest()

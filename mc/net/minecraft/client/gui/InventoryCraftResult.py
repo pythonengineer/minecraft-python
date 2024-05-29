@@ -1,7 +1,7 @@
 from mc.net.minecraft.game.Inventory import Inventory
 
 class InventoryCraftResult(Inventory):
-    STACK_LIMIT = 100
+    STACK_LIMIT = 64
 
     def __init__(self, eventHandler):
         self.__stackResult = [None]

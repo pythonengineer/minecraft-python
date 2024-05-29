@@ -159,6 +159,6 @@ class MD3Loader:
 
         for i in range(len(b)):
             if b[i] == 0:
-                return b[:i].decode('utf-8')
+                return b[:i].decode('utf-8', errors='ignore')
 
-        return b.decode('utf-8')
+        return b.decode('utf-8', errors='ignore')

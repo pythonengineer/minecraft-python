@@ -11,4 +11,5 @@ class SlotCrafting(Slot):
 
     def onPickupFromSlot(self):
         for slot in range(9):
-            self.__craftMatrix.inventoryCrafting.setInventorySlotContents(slot, None)
+            if self.__craftMatrix.inventoryCrafting.getStackInSlot(slot):
+                self.__craftMatrix.inventoryCrafting.decrStackSize(slot, 1)

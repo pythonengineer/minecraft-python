@@ -37,6 +37,8 @@ cdef class EntityLiving(Entity):
         self.setPosition(self.posX, self.posY, self.posZ)
         self.rotationYaw = random() * (pi * 2.0)
         self.stepHeight = 0.5
+        self.randVal = random() * 0.9 + 0.1
+        self.mobType = self._rand.nextInt(2)
 
     def canBeCollidedWith(self):
         return not self.isDead

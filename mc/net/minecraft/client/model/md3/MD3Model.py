@@ -8,7 +8,10 @@ class MD3Model:
         self.__vertices = vertices
         self.__displayList = 0
 
-    def renderModelVertices(self):
+    def getFrames(self):
+        return self.__vertices.totalFrames
+
+    def renderModelVertices(self, a, _, ticks):
         if self.__displayList == 0:
             self.__displayList = gl.glGenLists(self.__vertices.totalFrames)
 
@@ -35,4 +38,4 @@ class MD3Model:
                 gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
                 gl.glDisableClientState(gl.GL_NORMAL_ARRAY)
 
-        gl.glCallList(self.__displayList)
+        gl.glCallList(self.__displayList + a)

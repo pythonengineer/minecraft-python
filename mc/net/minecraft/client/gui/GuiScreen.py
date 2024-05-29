@@ -46,5 +46,5 @@ class GuiScreen(Gui):
     def updateScreen(self):
         pass
 
-    def onGuiClose(self):
+    def onGuiClosed(self):
         pass

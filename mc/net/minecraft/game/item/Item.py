@@ -25,3 +25,6 @@ class Item:
 
     def getItemStackLimit(self):
         return self._maxStackSize
+
+    def onPlaced(self, world, x, y, z):
+        return False

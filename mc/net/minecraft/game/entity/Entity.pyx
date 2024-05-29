@@ -286,7 +286,7 @@ cdef class Entity:
         self.__ySize *= 0.4
         inWater = self.handleWaterMovement()
         if self._worldObj.isBoundingBoxBurning(self.boundingBox):
-            self.attackEntityFrom(None, 1)
+            self._hurt(1)
             if not inWater:
                 self.fire += 1
                 if self.fire == 0:
@@ -300,6 +300,9 @@ cdef class Entity:
                 1.6 + (self._rand.nextFloat() - self._rand.nextFloat()) * 0.4
             )
             self.fire = -self.fireResistance
+
+    def _hurt(self, int hp):
+        self.attackEntityFrom(None, 1)
 
     cdef _fall(self, float distance):
         pass

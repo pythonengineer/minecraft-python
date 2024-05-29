@@ -141,7 +141,7 @@ cdef class Block:
                 world, x + xx, y + yy, z + zz,
                 ItemStack(self.idDropped())
             )
-            item.delayBeforeCanPickup = 20
+            item.delayBeforeCanPickup = 10
             world.spawnEntityInWorld(item)
 
     cdef float getExplosionResistance(self):
@@ -232,4 +232,7 @@ cdef class Block:
         return True
 
     def blockActivated(self, World world, int x, int y, int z, player):
+        return False
+
+    def oreDrop(self, World world, float x, float y, float z):
         return False

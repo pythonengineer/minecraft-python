@@ -1,5 +1,4 @@
 from mc.net.minecraft.game.entity.Entity import Entity
-from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.physics.Vec3D import Vec3D
 
 from nbtlib.tag import Short, Byte
@@ -132,6 +131,7 @@ class EntityArrow(Entity):
 
     def onCollideWithPlayer(self, player):
         from mc.net.minecraft.game.item.Items import items
+        from mc.net.minecraft.game.item.ItemStack import ItemStack
         if self.__inGround and self.__owner == player and self.arrowShake <= 0 and \
            player.inventory.storePartialItemStack(ItemStack(items.arrow.shiftedIndex, 1)):
             self.setEntityDead()

@@ -3,7 +3,7 @@ from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.Inventory import Inventory
 
 class InventoryPlayer(Inventory):
-    PLAYER_STACK_LIMIT = 50
+    PLAYER_STACK_LIMIT = 64
 
     def __init__(self):
         self.currentItem = 0
@@ -73,7 +73,7 @@ class InventoryPlayer(Inventory):
             if self.mainInventory[maybeSlot] and self.mainInventory[maybeSlot].itemID == itemId:
                 item = self.mainInventory[maybeSlot]
                 if self.mainInventory[maybeSlot].stackSize < item.getItem().getItemStackLimit() and \
-                   self.mainInventory[maybeSlot].stackSize < 50:
+                   self.mainInventory[maybeSlot].stackSize < InventoryPlayer.PLAYER_STACK_LIMIT:
                     slot = maybeSlot
                     break
 
@@ -92,7 +92,10 @@ class InventoryPlayer(Inventory):
                 item = self.mainInventory[slot]
                 stackExcess = item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize
 
-            stackExcess = min(stackExcess, 50 - self.mainInventory[slot].stackSize)
+            stackExcess = min(
+                stackExcess,
+                InventoryPlayer.PLAYER_STACK_LIMIT - self.mainInventory[slot].stackSize
+            )
             if stackExcess == 0:
                 stackSize = stackSize
             else:
