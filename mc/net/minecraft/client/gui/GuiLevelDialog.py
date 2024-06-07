@@ -18,6 +18,7 @@ class GuiLevelDialog:
             app = wx.App(False)
             with wx.FileDialog(None, title, wildcard='MCLEVEL files (*.mclevel)|*.mclevel',
                                style=style) as fileDialog:
+                fileDialog.SetWindowStyleFlag(wx.STAY_ON_TOP)
                 if fileDialog.ShowModal() == wx.ID_CANCEL:
                     return
 
@@ -25,6 +26,7 @@ class GuiLevelDialog:
             wx.GetApp().ExitMainLoop()
         except NameError:
             root = tk.Tk()
+            root.wm_attributes('-topmost', True)
             root.withdraw()
             try:
                 fileChooser = askopenfilename if isLoad else asksaveasfilename
@@ -33,5 +35,6 @@ class GuiLevelDialog:
                     self.__screen.setFile(file)
             finally:
                 root.quit()
+                root.destroy()
         finally:
             self.__screen.setFrozen(False)

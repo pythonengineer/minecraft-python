@@ -4,6 +4,7 @@ from mc.net.minecraft.game.level.block.BlockFire import BlockFire
 from mc.net.minecraft.game.level.block.BlockFlowing import BlockFlowing
 from mc.net.minecraft.game.level.block.BlockStationary import BlockStationary
 from mc.net.minecraft.game.level.block.BlockBookshelf import BlockBookshelf
+from mc.net.minecraft.game.level.block.BlockWorkbench import BlockWorkbench
 from mc.net.minecraft.game.level.block.BlockSponge import BlockSponge
 from mc.net.minecraft.game.level.block.BlockMushroom import BlockMushroom
 from mc.net.minecraft.game.level.block.BlockChest import BlockChest
@@ -176,5 +177,8 @@ class Blocks:
         self.oreDiamond.stepSound = self.soundStoneFootstep
         self.blockDiamond = BlockOreBlock(self, 57, 104).setHardness(5.0).setResistance(10.0)
         self.blockDiamond.stepSound = self.soundMetalFootstep
+
+        self.workbench = BlockWorkbench(self, 58).setHardness(2.5)
+        self.workbench.stepSound = self.soundWoodFootstep
 
 blocks = Blocks()

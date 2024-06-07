@@ -6,20 +6,20 @@ class MD3Model:
 
     def __init__(self, vertices):
         self.__vertices = vertices
-        self.__displayList = 0
+        self.__frame = 0
 
-    def getFrames(self):
+    def getTotalFrames(self):
         return self.__vertices.totalFrames
 
     def renderModelVertices(self, a, _, ticks):
-        if self.__displayList == 0:
-            self.__displayList = gl.glGenLists(self.__vertices.totalFrames)
+        if self.__frame == 0:
+            self.__frame = gl.glGenLists(self.__vertices.totalFrames)
 
             for frame in range(self.__vertices.totalFrames):
                 gl.glEnableClientState(gl.GL_VERTEX_ARRAY)
                 gl.glEnableClientState(gl.GL_TEXTURE_COORD_ARRAY)
                 gl.glEnableClientState(gl.GL_NORMAL_ARRAY)
-                gl.glNewList(self.__displayList + frame, gl.GL_COMPILE)
+                gl.glNewList(self.__frame + frame, gl.GL_COMPILE)
 
                 for md3 in self.__vertices.buffersMD3:
                     md3.setAndClearBuffers(frame, frame, 0.0)
@@ -38,4 +38,4 @@ class MD3Model:
                 gl.glDisableClientState(gl.GL_TEXTURE_COORD_ARRAY)
                 gl.glDisableClientState(gl.GL_NORMAL_ARRAY)
 
-        gl.glCallList(self.__displayList + a)
+        gl.glCallList(self.__frame + a)

@@ -108,3 +108,6 @@ class EntityPlayer(EntityLiving):
 
     def displayGUIChest(self, inventory):
         pass
+
+    def displayWorkbenchGUI(self):
+        pass

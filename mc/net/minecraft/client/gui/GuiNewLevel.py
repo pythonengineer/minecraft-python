@@ -42,8 +42,8 @@ class GuiNewLevel(GuiScreen):
         if button.id == 5:
             self._mc.displayGuiScreen(self.__prevGui)
         elif button.id == 4:
-            self._mc.generateLevel(self.__selectedWorldSize, self.__selectedWorldShape,
-                                   self.__selectedWorldType, self.__selectedWorldTheme)
+            self._mc.generateNewLevel(self.__selectedWorldSize, self.__selectedWorldShape,
+                                      self.__selectedWorldType, self.__selectedWorldTheme)
             self._mc.displayGuiScreen(None)
             self._mc.grabMouse()
         elif button.id == 0:

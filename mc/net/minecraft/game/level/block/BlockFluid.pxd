@@ -7,7 +7,7 @@ from mc.JavaUtils cimport Random
 cdef class BlockFluid(Block):
 
     cdef:
-        public int _liquidMaterial
+        public int _material
         public int _stillId
         public int _movingId
 

@@ -7,6 +7,7 @@ from libc.math cimport sin, cos, ceil, sqrt, atan2, pi
 from mc.net.minecraft.game.entity.Entity cimport Entity
 from mc.net.minecraft.game.entity.AILiving cimport AILiving
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.item.Items import items
 from mc.JavaUtils cimport random
 from pyglet import gl
 
@@ -38,7 +39,7 @@ cdef class EntityLiving(Entity):
         self.rotationYaw = random() * (pi * 2.0)
         self.stepHeight = 0.5
         self.randVal = random() * 0.9 + 0.1
-        self.mobType = self._rand.nextInt(2)
+        self.mobType = self._rand.nextInt(3)
 
     def canBeCollidedWith(self):
         return not self.isDead
@@ -199,7 +200,17 @@ cdef class EntityLiving(Entity):
             self.onDeath(entity)
 
     def onDeath(self, Entity entity):
-        pass
+        cdef int i
+        cdef int drops = self._rand.nextInt(3)
+        if self.mobType == 0:
+            for i in range(drops):
+                self.entityDropItem(items.silk.shiftedIndex, 1)
+        elif self.mobType == 1:
+            for i in range(drops):
+                self.entityDropItem(items.gunpowder.shiftedIndex, 1)
+        elif self.mobType == 2:
+            for i in range(drops):
+                self.entityDropItem(items.feather.shiftedIndex, 1)
 
     cdef _fall(self, float d):
         cdef int damage = <int>ceil(d - 3.0)

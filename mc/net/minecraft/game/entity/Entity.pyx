@@ -2,6 +2,8 @@
 
 from libc.math cimport sin, cos, sqrt, pi
 
+from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
+from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.physics.AxisAlignedBB cimport AxisAlignedBB
@@ -286,7 +288,7 @@ cdef class Entity:
         self.__ySize *= 0.4
         inWater = self.handleWaterMovement()
         if self._worldObj.isBoundingBoxBurning(self.boundingBox):
-            self._hurt(1)
+            self._dealFireDamage(1)
             if not inWater:
                 self.fire += 1
                 if self.fire == 0:
@@ -301,7 +303,7 @@ cdef class Entity:
             )
             self.fire = -self.fireResistance
 
-    def _hurt(self, int hp):
+    def _dealFireDamage(self, int hp):
         self.attackEntityFrom(None, 1)
 
     cdef _fall(self, float distance):
@@ -454,3 +456,7 @@ cdef class Entity:
 
     def getShadowSize(self):
         return self.height / 2.0
+
+    def entityDropItem(self, item, int amount):
+        self._worldObj.spawnEntityInWorld(EntityItem(self._worldObj, self.posX, self.posY,
+                                                     self.posZ, ItemStack(item, 1)))

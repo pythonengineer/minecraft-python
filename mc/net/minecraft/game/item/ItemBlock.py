@@ -6,6 +6,7 @@ class ItemBlock(Item):
     def __init__(self, items, itemId):
         super().__init__(items, itemId)
         self.__blockID = itemId + 256
+        self.setIconIndex(blocks.blocksList[itemId + 256].getBlockTexture(2))
 
     def onItemUse(self, stack, world, x, y, z, sideHit):
         if sideHit == 0: y -= 1
@@ -42,4 +43,4 @@ class ItemBlock(Item):
         stack.stackSize -= 1
 
     def onPlaced(self, world, x, y, z):
-        return blocks.blocksList[self.__blockID].oreDrop(world, x, y, z)
+        return blocks.blocksList[self.__blockID].onBlockPlaced(world, x, y, z)

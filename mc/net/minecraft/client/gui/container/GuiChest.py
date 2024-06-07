@@ -1,11 +1,11 @@
-from mc.net.minecraft.client.gui.GuiInventory import GuiInventory
-from mc.net.minecraft.client.gui.Slot import Slot
+from mc.net.minecraft.client.gui.container.GuiContainer import GuiContainer
+from mc.net.minecraft.client.gui.container.Slot import Slot
 from pyglet import gl
 
-class GuiChest(GuiInventory):
+class GuiChest(GuiContainer):
 
     def __init__(self, upperChestInventory, lowerChestInventory):
-        super().__init__(None)
+        super().__init__()
         self.__upperChestInventory = upperChestInventory
         self.__lowerChestInventory = lowerChestInventory
         self.allowUserInput = False
@@ -14,16 +14,16 @@ class GuiChest(GuiInventory):
         yOffset = (self.__inventoryRows - 4) * 18
         for row in range(self.__inventoryRows):
             for col in range(9):
-                self._slotsList.append(Slot(self, lowerChestInventory, col + row * 9,
+                self._inventorySlots.append(Slot(self, lowerChestInventory, col + row * 9,
                                             8 + col * 18, 18 + row * 18))
 
         for row in range(3):
             for col in range(9):
-                self._slotsList.append(Slot(self, upperChestInventory, col + (row + 1) * 9,
+                self._inventorySlots.append(Slot(self, upperChestInventory, col + (row + 1) * 9,
                                             8 + col * 18, 103 + row * 18 + yOffset))
 
         for row in range(9):
-            self._slotsList.append(Slot(self, upperChestInventory, row,
+            self._inventorySlots.append(Slot(self, upperChestInventory, row,
                                         8 + row * 18, yOffset + 161))
 
     def _drawGuiContainerForegroundLayer(self):

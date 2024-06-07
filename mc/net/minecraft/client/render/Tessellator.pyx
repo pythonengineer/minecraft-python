@@ -51,6 +51,8 @@ cdef class Tessellator:
         self.__vertexCount = 0
         self.__byteBuffer.clear()
         self.__addedVertices = 0
+        self.__rawBufferIndex = 0
+        self.__colors = 3
 
     cpdef void startDrawingQuads(self):
         if self.__vertexCount > 0:
@@ -88,6 +90,7 @@ cdef class Tessellator:
         self.addVertex(x, y, z)
 
     cpdef void addVertex(self, float x, float y, float z):
+        self.__rawBufferIndex += 1
         if self.__hasTexture:
             self.__rawBuffer[self.__addedVertices] = floatToRawIntBits(self.__textureU)
             self.__addedVertices += 1

@@ -54,14 +54,21 @@ class ItemRenderer:
                                                            int(self.__mc.thePlayer.posY),
                                                            int(self.__mc.thePlayer.posZ))
         gl.glColor4f(brightness, brightness, brightness, 1.0)
-        item = self.__itemToRender
-        if item:
+        if self.__itemToRender:
             gl.glScalef(0.4, 0.4, 0.4)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('terrain.png'))
-            if item.itemID < 256:
-                self.__renderBlocksInstance.renderBlockOnInventory(blocks.blocksList[item.itemID])
+            gl.glBindTexture(gl.GL_TEXTURE_2D,
+                             self.__mc.renderEngine.getTexture('terrain.png'))
+            if self.__itemToRender.itemID < 256 and \
+               blocks.blocksList[self.__itemToRender.itemID].getRenderType() == 0:
+                self.__renderBlocksInstance.renderBlockOnInventory(
+                    blocks.blocksList[self.__itemToRender.itemID]
+                )
             else:
-                gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/items.png'))
+                if self.__itemToRender.itemID < 256:
+                    gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('terrain.png'))
+                else:
+                    gl.glBindTexture(gl.GL_TEXTURE_2D, self.__mc.renderEngine.getTexture('gui/items.png'))
+
                 t = tessellator
                 u0 = (self.__itemToRender.getItem().getIconIndex() % 16 << 4) / 256.0
                 u1 = ((self.__itemToRender.getItem().getIconIndex() % 16 << 4) + 16) / 256.0
@@ -91,8 +98,8 @@ class ItemRenderer:
                 t.startDrawingQuads()
                 for i in range(16):
                     x = i / 16.0
-                    u = u1 + (u0 - u1) * x + 0.001953125
-                    x = x * 1.0 - 1.0 / 16.0
+                    u = u1 + (u0 - u1) * x - 0.001953125
+                    x *= 1.0
                     t.addVertexWithUV(x, 0.0, -(1.0 / 16.0), u, v1)
                     t.addVertexWithUV(x, 0.0, 0.0, u, v1)
                     t.addVertexWithUV(x, 1.0, 0.0, u, v0)
@@ -103,8 +110,8 @@ class ItemRenderer:
                 t.startDrawingQuads()
                 for i in range(16):
                     x = i / 16.0
-                    u = u1 + (u0 - u1) * x + 0.001953125
-                    x *= 1.0
+                    u = u1 + (u0 - u1) * x - 0.001953125
+                    x = x * 1.0 + 1.0 / 16.0
                     t.addVertexWithUV(x, 1.0, -(1.0 / 16.0), u, v0)
                     t.addVertexWithUV(x, 1.0, 0.0, u, v0)
                     t.addVertexWithUV(x, 0.0, 0.0, u, v1)

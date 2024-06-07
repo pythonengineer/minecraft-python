@@ -16,6 +16,21 @@ class TileEntityChest(TileEntity, Inventory):
     def getStackInSlot(self, slot):
         return self.__chestContents[slot]
 
+    def decrStackSize(self, slot, size):
+        if not self.__chestContents[slot]:
+            return None
+
+        if self.__chestContents[slot].stackSize <= size:
+            stack = self.__chestContents[slot]
+            self.__chestContents[slot] = None
+            return stack
+        else:
+            stack = self.__chestContents[slot].splitStack(size)
+            if self.__chestContents[slot].stackSize == 0:
+                self.__chestContents[slot] = None
+
+            return stack
+
     def setInventorySlotContents(self, slot, stack):
         self.__chestContents[slot] = stack
         if stack:

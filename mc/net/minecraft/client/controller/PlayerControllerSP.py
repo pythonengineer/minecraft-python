@@ -17,7 +17,7 @@ class PlayerControllerSP(PlayerController):
         self.__blockHitWait = 0
         self.__mobSpawner = None
 
-    def flipPlayer(self, player):
+    def onRespawn(self, player):
         x = int(player.posX)
         y = int(player.posY)
         z = int(player.posZ)
@@ -36,12 +36,6 @@ class PlayerControllerSP(PlayerController):
 
                     self._mc.theWorld.setBlockWithNotify(xx, yy, zz, blockId)
 
-        self._mc.theWorld.setBlockWithNotify(x - 2, y - 1, z - 2, blocks.chest.blockID)
-        self._mc.theWorld.getBlockTileEntity(x - 2, y - 1, z - 2)
-        self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z - 2, blocks.chest.blockID)
-        self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 2)
-        self._mc.theWorld.setBlockWithNotify(x + 2, y - 1, z - 1, blocks.chest.blockID)
-        self._mc.theWorld.getBlockTileEntity(x + 2, y - 1, z - 1)
         player.inventory.mainInventory[8] = ItemStack(items.flintSteel)
 
     def sendBlockRemoved(self, x, y, z):

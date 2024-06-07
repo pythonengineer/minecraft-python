@@ -28,15 +28,11 @@ pyglet.resource.reindex()
 from mc.net.minecraft.client import MinecraftError
 from mc.net.minecraft.client.Timer import Timer
 from mc.net.minecraft.client.GameSettings import GameSettings
-from mc.net.minecraft.client.RenderHelper import RenderHelper
+from mc.net.minecraft.client.OpenGlCapsChecker import OpenGlCapsChecker
 from mc.net.minecraft.client.LoadingScreenRenderer import LoadingScreenRenderer
-from mc.net.minecraft.game.physics.Vec3D import Vec3D
 from mc.net.minecraft.game.level.World import World
-from mc.net.minecraft.game.level.block.Block import Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
-from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.generator.LevelGenerator import LevelGenerator
-from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.client.model.ModelBiped import ModelBiped
 from mc.net.minecraft.client.player.EntityPlayerSP import EntityPlayerSP
 from mc.net.minecraft.client.player.MovementInputFromOptions import MovementInputFromOptions
@@ -45,20 +41,17 @@ from mc.net.minecraft.client.gui.FontRenderer import FontRenderer
 from mc.net.minecraft.client.gui.GuiErrorScreen import GuiErrorScreen
 from mc.net.minecraft.client.gui.GuiIngameMenu import GuiIngameMenu
 from mc.net.minecraft.client.gui.GuiGameOver import GuiGameOver
-from mc.net.minecraft.client.gui.GuiInventory import GuiInventory
 from mc.net.minecraft.client.gui.GuiIngame import GuiIngame
-from mc.net.minecraft.client.gui.GuiCrafting import GuiCrafting
+from mc.net.minecraft.client.gui.container.GuiInventory import GuiInventory
 from mc.net.minecraft.client.effect.EffectRenderer import EffectRenderer
 from mc.net.minecraft.client.render.texture.TextureFlamesFX import TextureFlamesFX
 from mc.net.minecraft.client.render.texture.TextureWaterFlowFX import TextureWaterFlowFX
 from mc.net.minecraft.client.render.texture.TextureWaterFX import TextureWaterFX
 from mc.net.minecraft.client.render.texture.TextureLavaFX import TextureLavaFX
 from mc.net.minecraft.client.render.texture.TextureGearsFX import TextureGearsFX
-from mc.net.minecraft.client.render.RenderBlocks import RenderBlocks
 from mc.net.minecraft.client.render.RenderGlobal import RenderGlobal
 from mc.net.minecraft.client.render.EntityRenderer import EntityRenderer
 from mc.net.minecraft.client.render.RenderEngine import RenderEngine
-from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.WorldRenderer import WorldRenderer
 from mc.net.minecraft.client.controller.PlayerControllerCreative import PlayerControllerCreative
 from mc.net.minecraft.client.controller.PlayerControllerSP import PlayerControllerSP
@@ -271,8 +264,6 @@ class Minecraft(window.Window):
                     self.renderRain = not self.renderRain
                 elif symbol == self.options.keyBindInventory.keyCode:
                     self.displayGuiScreen(GuiInventory(self.thePlayer.inventory))
-                elif symbol == window.key.B:
-                    self.displayGuiScreen(GuiCrafting(self.thePlayer.inventory))
                 elif symbol == self.options.keyBindDrop.keyCode:
                     self.thePlayer.dropPlayerItemWithRandomChoice(
                         self.thePlayer.inventory.decrStackSize(
@@ -383,6 +374,8 @@ class Minecraft(window.Window):
         gl.glLoadIdentity()
         gl.glMatrixMode(gl.GL_MODELVIEW)
 
+        self.__glCapabilities = OpenGlCapsChecker()
+
         name = 'minecraft'
         home = os.path.expanduser('~') or '.'
         if 'unix' in sys.platform or 'linux' in sys.platform or \
@@ -429,7 +422,7 @@ class Minecraft(window.Window):
             world.setLevel(8, 8, 8, bytearray(512))
             self.setLevel(level)
         elif not self.theWorld:
-            self.generateLevel(1, 0, 1, 0)
+            self.generateNewLevel(1, 0, 1, 0)
 
         self.effectRenderer = EffectRenderer(self.theWorld, self.renderEngine)
 
@@ -477,7 +470,7 @@ class Minecraft(window.Window):
         self.set_mouse_position(self.width // 2, self.height // 2)
 
     def displayInGameMenu(self):
-        if not isinstance(self.currentScreen, GuiIngameMenu):
+        if not self.currentScreen:
             self.displayGuiScreen(GuiIngameMenu())
 
     def __clickMouse(self, editMode):
@@ -489,10 +482,9 @@ class Minecraft(window.Window):
             self.entityRenderer.itemRenderer.swingItem()
             self.entityRenderer.updateRenderer()
         elif editMode == 1 and item:
-            if item.getItem().onItemRightClick(item, self.theWorld, self.thePlayer):
-                if item.stackSize == 0:
-                    self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = None
-
+            stack = item.getItem().onItemRightClick(item, self.theWorld, self.thePlayer)
+            if stack != item or stack and stack.stackSize != item.stackSize:
+                self.thePlayer.inventory.mainInventory[self.thePlayer.inventory.currentItem] = stack
                 self.entityRenderer.itemRenderer.resetEquippedProgress()
 
         if not self.objectMouseOver:
@@ -614,7 +606,7 @@ class Minecraft(window.Window):
                                            int(self.thePlayer.posZ))
         self.effectRenderer.updateEffects()
 
-    def generateLevel(self, size, shape, levelType, theme):
+    def generateNewLevel(self, size, shape, levelType, theme):
         name = self.session.username if self.session else 'anonymous'
         levelGen = LevelGenerator(self.loadingScreen)
         levelGen.islandGen = levelType == 1

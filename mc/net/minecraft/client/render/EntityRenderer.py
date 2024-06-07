@@ -141,18 +141,24 @@ class EntityRenderer:
             x2 = math.sin(-rotationPitch * (math.pi / 180.0))
             xy = y2 * x1
             y1 *= x1
-            d = self.__mc.playerController.getBlockReachDistance()
-            vec2 = rotVec.addVector(xy * d, x2 * d, y1 * d)
+            reach = self.__mc.playerController.getBlockReachDistance()
+            vec2 = rotVec.addVector(xy * reach, x2 * reach, y1 * reach)
             self.__mc.objectMouseOver = self.__mc.theWorld.rayTraceBlocks(rotVec, vec2)
+            vec = self.__orientCamera(alpha)
             if self.__mc.objectMouseOver:
-                self.__mc.objectMouseOver.hitVec.distanceTo(rotVec)
+                reach = self.__mc.objectMouseOver.hitVec.distanceTo(rotVec)
+
+            if isinstance(self.__mc.playerController, PlayerControllerCreative):
+                reach = 32.0
+            else:
+                reach = min(reach, 3.0)
 
             vec = self.__orientCamera(alpha)
-            vec2 = vec.addVector(xy * 32.0, x2 * 32.0, y1 * 32.0)
+            vec2 = vec.addVector(xy * reach, x2 * reach, y1 * reach)
             self.__pointedEntity = None
             entities = self.__mc.theWorld.entityMap.getEntitiesWithinAABBExcludingEntity(
                 self.__mc.thePlayer, self.__mc.thePlayer.boundingBox.addCoord(
-                    xy * 32.0, x2 * 32.0, y1 * 32.0
+                    xy * reach, x2 * reach, y1 * reach
                 )
             )
             d = 0.0
@@ -243,6 +249,8 @@ class EntityRenderer:
 
                 self.__setupFog()
                 gl.glEnable(gl.GL_FOG)
+                gl.glBindTexture(gl.GL_TEXTURE_2D,
+                                 self.__mc.renderEngine.getTexture('terrain.png'))
                 self.__mc.renderGlobal.sortAndRender(self.__mc.thePlayer, 0)
                 if self.__mc.theWorld.isSolid(self.__mc.thePlayer.posX,
                                               self.__mc.thePlayer.posY,

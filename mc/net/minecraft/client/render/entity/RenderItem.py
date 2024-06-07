@@ -14,6 +14,53 @@ class RenderItem(Render):
         self.__renderBlocks = RenderBlocks(tessellator)
         self.__random = Random()
 
+    def renderItemIntoGUI(self, fontRenderer, renderEngine, stack, width, height):
+        if not stack:
+            return
+
+        if stack.itemID < 256 and blocks.blocksList[stack.itemID].getRenderType() == 0:
+            tex = renderEngine.getTexture('terrain.png')
+            gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+            block = blocks.blocksList[stack.itemID]
+            gl.glPushMatrix()
+            gl.glTranslatef(width - 2, height + 3, 0.0)
+            gl.glScalef(10.0, 10.0, 10.0)
+            gl.glTranslatef(1.0, 0.5, 8.0)
+            gl.glRotatef(210.0, 1.0, 0.0, 0.0)
+            gl.glRotatef(45.0, 0.0, 1.0, 0.0)
+            gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+            self.__renderBlocks.renderBlockOnInventory(block)
+            gl.glPopMatrix()
+        elif stack.getItem().getIconIndex() >= 0:
+            gl.glDisable(gl.GL_LIGHTING)
+            if stack.itemID < 256:
+                tex = renderEngine.getTexture('terrain.png')
+                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+            else:
+                tex = renderEngine.getTexture('gui/items.png')
+                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+
+            u = stack.getItem().getIconIndex() % 16 << 4
+            v = stack.getItem().getIconIndex() // 16 << 4
+            t = tessellator
+            t.startDrawingQuads()
+            t.addVertexWithUV(width, height + 16, 0.0, u * 0.00390625, (v + 16) * 0.00390625)
+            t.addVertexWithUV(width + 16, height + 16, 0.0, (u + 16) * 0.00390625, (v + 16) * 0.00390625)
+            t.addVertexWithUV(width + 16, height, 0.0, (u + 16) * 0.00390625, v * 0.00390625)
+            t.addVertexWithUV(width, height, 0.0, u * 0.00390625, v * 0.00390625)
+            t.draw()
+            gl.glEnable(gl.GL_LIGHTING)
+
+        if stack.stackSize > 1:
+            size = str(stack.stackSize)
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glDisable(gl.GL_DEPTH_TEST)
+            fontRenderer.drawStringWithShadow(
+                size, width + 19 - 2 - fontRenderer.getStringWidth(size),
+                height + 6 + 3, 16777215)
+            gl.glEnable(gl.GL_LIGHTING)
+            gl.glEnable(gl.GL_DEPTH_TEST)
+
     def doRender(self, entity, xd, yd, zd, yaw, a):
         self.__random.setSeed(187)
         item = entity.item
@@ -30,7 +77,7 @@ class RenderItem(Render):
 
         gl.glTranslatef(xd, yd + hoverY, zd)
         gl.glEnable(gl.GL_NORMALIZE)
-        if item.itemID < 256:
+        if item.itemID < 256 and blocks.blocksList[item.itemID].getRenderType() == 0:
             gl.glRotatef(rot, 0.0, 1.0, 0.0)
             self._loadTexture('terrain.png')
             scale = 0.25
@@ -52,9 +99,12 @@ class RenderItem(Render):
                 gl.glPopMatrix()
         else:
             gl.glScalef(0.5, 0.5, 0.5)
-            self._loadTexture('gui/items.png')
-            t = tessellator
             iconIndex = item.getItem().getIconIndex()
+            if item.itemID < 256:
+                self._loadTexture('terrain.png')
+            else:
+                self._loadTexture('gui/items.png')
+            t = tessellator
             u0 = (iconIndex % 16 << 4) / 256.0
             u1 = ((iconIndex % 16 << 4) + 16) / 256.0
             v0 = (iconIndex // 16 << 4) / 256.0

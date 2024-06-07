@@ -19,7 +19,7 @@ cdef class World:
         public int length
         public int height
 
-        char* __blocks
+        public char* blocks
         char* __data
 
         public str name

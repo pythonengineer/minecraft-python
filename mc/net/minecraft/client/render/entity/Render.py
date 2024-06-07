@@ -19,6 +19,46 @@ class Render:
         gl.glBindTexture(gl.GL_TEXTURE_2D,
                          self._renderManager.renderEngine.getTexture(tex))
 
+    @staticmethod
+    def renderOffsetAABB(bb):
+        gl.glDisable(gl.GL_TEXTURE_2D)
+        t = tessellator
+        gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+        t.startDrawingQuads()
+        t.setNormal(0.0, 0.0, -1.0)
+        t.addVertex(bb.minX, bb.maxY, bb.minZ)
+        t.addVertex(bb.maxX, bb.maxY, bb.minZ)
+        t.addVertex(bb.maxX, bb.minY, bb.minZ)
+        t.addVertex(bb.minX, bb.minY, bb.minZ)
+        t.setNormal(0.0, 0.0, 1.0)
+        t.addVertex(bb.minX, bb.minY, bb.maxZ)
+        t.addVertex(bb.maxX, bb.minY, bb.maxZ)
+        t.addVertex(bb.maxX, bb.maxY, bb.maxZ)
+        t.addVertex(bb.minX, bb.maxY, bb.maxZ)
+        t.setNormal(0.0, -1.0, 0.0)
+        t.addVertex(bb.minX, bb.minY, bb.minZ)
+        t.addVertex(bb.maxX, bb.minY, bb.minZ)
+        t.addVertex(bb.maxX, bb.minY, bb.maxZ)
+        t.addVertex(bb.minX, bb.minY, bb.maxZ)
+        t.setNormal(0.0, 1.0, 0.0)
+        t.addVertex(bb.minX, bb.maxY, bb.maxZ)
+        t.addVertex(bb.maxX, bb.maxY, bb.maxZ)
+        t.addVertex(bb.maxX, bb.maxY, bb.minZ)
+        t.addVertex(bb.minX, bb.maxY, bb.minZ)
+        t.setNormal(-1.0, 0.0, 0.0)
+        t.addVertex(bb.minX, bb.minY, bb.maxZ)
+        t.addVertex(bb.minX, bb.maxY, bb.maxZ)
+        t.addVertex(bb.minX, bb.maxY, bb.minZ)
+        t.addVertex(bb.minX, bb.minY, bb.minZ)
+        t.setNormal(1.0, 0.0, 0.0)
+        t.addVertex(bb.maxX, bb.minY, bb.minZ)
+        t.addVertex(bb.maxX, bb.maxY, bb.minZ)
+        t.addVertex(bb.maxX, bb.maxY, bb.maxZ)
+        t.addVertex(bb.maxX, bb.minY, bb.maxZ)
+        t.draw()
+        gl.glEnable(gl.GL_TEXTURE_2D)
+        gl.glPopMatrix()
+
     def setRenderManager(self, renderManager):
         self._renderManager = renderManager
 

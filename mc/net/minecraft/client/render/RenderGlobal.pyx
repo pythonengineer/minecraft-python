@@ -28,7 +28,7 @@ from functools import cmp_to_key
 
 @cython.final
 cdef class RenderGlobal:
-    CHUNK_SIZE = 16
+    CHUNK_SIZE = 8
 
     def __init__(self, minecraft, renderEngine):
         self.__mc = minecraft
@@ -47,7 +47,7 @@ cdef class RenderGlobal:
         self.__prevSortZ = -9999.0
         self.damagePartialTime = 0.0
         self.__glGenList = gl.glGenLists(2)
-        self.__glRenderListBase = gl.glGenLists(524288)
+        self.__glRenderListBase = gl.glGenLists(6291456)
 
     def changeWorld(self, World world):
         if self.__worldObj:
@@ -80,11 +80,11 @@ cdef class RenderGlobal:
             for y in range(self.__renderChunksTall):
                 for z in range(self.__renderChunksDeep):
                     i = (z * self.__renderChunksTall + y) * self.__renderChunksWide + x
-                    self.__worldRenderers[i] = WorldRenderer(self.__worldObj, x << 4, y << 4,
-                                                             z << 4, RenderGlobal.CHUNK_SIZE,
+                    self.__worldRenderers[i] = WorldRenderer(self.__worldObj, x << 3, y << 3,
+                                                             z << 3, RenderGlobal.CHUNK_SIZE,
                                                              self.__glRenderListBase + lists)
                     self.__sortedWorldRenderers[i] = self.__worldRenderers[i]
-                    lists += 2
+                    lists += 3
 
         for chunk in self.__worldRenderersToUpdate:
             chunk.needsUpdate = False
@@ -190,7 +190,7 @@ cdef class RenderGlobal:
         xd = player.posX - self.__prevSortX
         yd = player.posY - self.__prevSortY
         zd = player.posZ - self.__prevSortZ
-        if xd * xd + yd * yd + zd * zd > 64.0:
+        if xd * xd + yd * yd + zd * zd > 16.0:
             self.__prevSortX = player.posX
             self.__prevSortY = player.posY
             self.__prevSortZ = player.posZ
@@ -201,13 +201,13 @@ cdef class RenderGlobal:
 
         startingIndex = 0
         for chunk in self.__sortedWorldRenderers:
-            startingIndex = chunk.getGLCallListForPass(self.__chunkBuffer, startingIndex, layer)
+            if chunk.isInFrustum:
+                startingIndex = chunk.getGLCallListForPass(self.__chunkBuffer, startingIndex, layer)
 
         self.__renderIntBuffer.clear()
         self.__renderIntBuffer.putInts(self.__chunkBuffer, 0, startingIndex)
         self.__renderIntBuffer.flip()
         if self.__renderIntBuffer.remaining() > 0:
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.__renderEngine.getTexture('terrain.png'))
             self.__renderIntBuffer.glCallLists(self.__renderIntBuffer.remaining(), gl.GL_INT)
 
         return self.__renderIntBuffer.remaining()

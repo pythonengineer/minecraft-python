@@ -234,5 +234,5 @@ cdef class Block:
     def blockActivated(self, World world, int x, int y, int z, player):
         return False
 
-    def oreDrop(self, World world, float x, float y, float z):
+    def onBlockPlaced(self, World world, float x, float y, float z):
         return False
