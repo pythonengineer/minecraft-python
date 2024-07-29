@@ -23,8 +23,5 @@ class Slot:
     def isItemValid(self):
         return True
 
-    def getCurrentItemStack(self):
-        return self.inventory.getStackInSlot(self.slotIndex)
-
     def putStack(self, stack):
         self.inventory.setInventorySlotContents(self.slotIndex, stack)

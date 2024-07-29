@@ -6,9 +6,11 @@ from mc.net.minecraft.client.render.Frustum cimport Frustum
 from mc.net.minecraft.client.render.Tessellator cimport Tessellator
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.RenderBlocks cimport RenderBlocks
+from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.World cimport World
+from mc.net.minecraft.game.physics.AxisAlignedBB cimport AxisAlignedBB
 from pyglet import gl
 
 cdef int WorldRenderer_chunksUpdates = 0
@@ -41,14 +43,27 @@ cdef class WorldRenderer:
         self.__posX = posX
         self.__posY = posY
         self.__posZ = posZ
-        self.__sizeWidth = 16
-        self.__sizeHeight = 16
-        self.__sizeDepth = 16
+        self.__sizeWidth = self.__sizeHeight = self.__sizeDepth = 8
+        self.__posXPlus = posX + self.__sizeWidth // 2
+        self.__posYPlus = posY + self.__sizeHeight // 2
+        self.__posZPlus = posZ + self.__sizeDepth // 2
+
+        self.__rendererBoundingBox = AxisAlignedBB(
+            posX, posY, posZ, posX + self.__sizeWidth, posY + self.__sizeHeight,
+            posZ + self.__sizeDepth
+        ).expand(2.0, 2.0, 2.0)
+
         self.__glRenderList = lists
         self.__setDontDraw()
 
+        gl.glDisable(gl.GL_TEXTURE_2D)
+        gl.glNewList(lists + 2, gl.GL_COMPILE)
+        RenderItem.renderOffsetAABB(self.__rendererBoundingBox)
+        gl.glEndList()
+        gl.glEnable(gl.GL_TEXTURE_2D)
+
     cdef updateRenderer(self):
-        cdef int layer, x0, y0, z0, xx, yy, zz, x, y, z, blockId
+        cdef int layer, x0, y0, z0, xx, yy, zz, x, y, z, blockIdx, blockId
         cdef bint nextLayer, renderPass
         cdef Block block
 
@@ -71,10 +86,12 @@ cdef class WorldRenderer:
             self.__t.startDrawingQuads()
             gl.glNewList(self.__glRenderList + layer, gl.GL_COMPILE)
 
-            for x in range(x0, xx):
-                for y in range(y0, yy):
-                    for z in range(z0, zz):
-                        blockId = self.__worldObj.getBlockId(x, y, z)
+            for y in range(y0, yy):
+                for z in range(z0, zz):
+                    blockIdx = (y * self.__worldObj.length + z) * self.__worldObj.width + x0
+                    for x in range(x0, xx):
+                        blockId = self.__worldObj.blocks[blockIdx] & 255
+                        blockIdx += 1
                         if blockId > 0:
                             block = blocks.blocksList[blockId]
                             if block.getRenderBlockPass() != layer:
@@ -91,9 +108,9 @@ cdef class WorldRenderer:
                 break
 
     cpdef float distanceToEntitySquared(self, player):
-        cdef float xd = player.posX - self.__posX
-        cdef float yd = player.posY - self.__posY
-        cdef float zd = player.posZ - self.__posZ
+        cdef float xd = player.posX - self.__posXPlus
+        cdef float yd = player.posY - self.__posYPlus
+        cdef float zd = player.posZ - self.__posZPlus
         return xd * xd + yd * yd + zd * zd
 
     cdef __setDontDraw(self):
@@ -116,7 +133,4 @@ cdef class WorldRenderer:
         return startingIndex
 
     cdef updateInFrustum(self, Frustum frustum):
-        self.isInFrustum = frustum.isBoundingBoxInFrustum(
-            self.__posX, self.__posY, self.__posZ, self.__posX + self.__sizeWidth,
-            self.__posY + self.__sizeHeight, self.__posZ + self.__sizeDepth
-        )
+        self.isInFrustum = frustum.isVisible(self.__rendererBoundingBox)

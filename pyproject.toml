@@ -8,5 +8,4 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
-# PyPy 3.10 doesn't get along with NumPy for some reason
-skip = "pp310*"
+skip = "pp*"

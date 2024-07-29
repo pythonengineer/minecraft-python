@@ -83,12 +83,12 @@ cdef class World:
         self.skyBrightness = 1.0
 
     def __dealloc__(self):
-        free(self.__blocks)
+        free(self.blocks)
         free(self.__data)
         free(self.__heightMap)
 
     def load(self):
-        if not self.__blocks:
+        if not self.blocks:
             raise RuntimeError('The level is corrupt!')
 
         self.__worldAccesses = set()
@@ -110,7 +110,7 @@ cdef class World:
         self.width = w
         self.height = h
         self.length = d
-        self.__blocks = <char*>malloc(sizeof(char) * len(b))
+        self.blocks = <char*>malloc(sizeof(char) * len(b))
         self.__data = <char*>malloc(sizeof(char) * len(b))
         self.__size = len(b)
 
@@ -123,7 +123,9 @@ cdef class World:
                 y = 0
                 while y < self.height:
                     blockId = 0
-                    if y < self.groundLevel - 1:
+                    if y == 0 and y < self.groundLevel - 1:
+                        blockId = blocks.lavaStill.blockID
+                    elif y < self.groundLevel - 1:
                         blockId = blocks.bedrock.blockID
                     elif y < self.groundLevel:
                         if self.groundLevel > self.waterLevel and self.defaultFluid == blocks.waterMoving.blockID:
@@ -140,7 +142,7 @@ cdef class World:
                     y += 1
 
         for i in range(len(b)):
-            self.__blocks[i] = b[i]
+            self.blocks[i] = b[i]
             self.__data[i] = 0
 
         self.__heightMap = <int*>malloc(sizeof(int) * (w * d))
@@ -159,7 +161,7 @@ cdef class World:
                 for y in range(self.height):
                     br = self.__heightMap[x + z * self.width]
                     br = skyBrightness if y >= br else 0
-                    blockId = self.__blocks[(y * self.length + z) * self.width + x]
+                    blockId = self.blocks[(y * self.length + z) * self.width + x]
                     if br < self.__lightValue[blockId]:
                         br = self.__lightValue[blockId]
 
@@ -266,7 +268,7 @@ cdef class World:
             z = counter & 1023
             depth = self.__heightMap[x + z * self.width]
             depth = br if y >= depth else 0
-            block = self.__blocks[(y * self.length + z) * self.width + x]
+            block = self.blocks[(y * self.length + z) * self.width + x]
             opacity = self.__lightOpacity[block]
             if opacity > 100:
                 depth = 0
@@ -399,7 +401,7 @@ cdef class World:
         if x <= 0 or y <= 0 or z <= 0 or x >= self.width - 1 or y >= self.height - 1 or z >= self.length - 1:
             return False
 
-        oldBlock = self.__blocks[(y * self.length + z) * self.width + x]
+        oldBlock = self.blocks[(y * self.length + z) * self.width + x]
         if blockType == oldBlock:
             return False
 
@@ -407,7 +409,7 @@ cdef class World:
             z == self.length - 1) and y >= self.groundLevel and y < self.waterLevel:
             blockType = blocks.waterMoving.blockID
 
-        self.__blocks[(y * self.length + z) * self.width + x] = <char>blockType
+        self.blocks[(y * self.length + z) * self.width + x] = <char>blockType
         if oldBlock != 0:
             blocks.blocksList[oldBlock].onBlockRemoval(self, x, y, z)
 
@@ -457,10 +459,10 @@ cdef class World:
     cpdef bint setTileNoUpdate(self, int x, int y, int z, int blockType):
         if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.height or z >= self.length:
             return False
-        if blockType == self.__blocks[(y * self.length + z) * self.width + x]:
+        if blockType == self.blocks[(y * self.length + z) * self.width + x]:
             return False
 
-        self.__blocks[(y * self.length + z) * self.width + x] = <char>blockType
+        self.blocks[(y * self.length + z) * self.width + x] = <char>blockType
         self.__updateLight(x, y, z, x + 1, y + 1, z + 1)
         return True
 
@@ -468,7 +470,7 @@ cdef class World:
         if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.height or z >= self.length:
             return
 
-        cdef Block block = blocks.blocksList[self.__blocks[(y * self.length + z) * self.width + x]]
+        cdef Block block = blocks.blocksList[self.blocks[(y * self.length + z) * self.width + x]]
         if block:
             block.onNeighborBlockChange(self, x, y, z, blockType)
 
@@ -518,7 +520,7 @@ cdef class World:
         elif z >= self.length:
             z = self.length - 1
 
-        return self.__blocks[(y * self.length + z) * self.width + x] & 255
+        return self.blocks[(y * self.length + z) * self.width + x] & 255
 
     cpdef inline bint isBlockNormalCube(self, int x, int y, int z):
         return self.__isBlockNormal[self.getBlockId(x, y, z)]
@@ -555,7 +557,7 @@ cdef class World:
                 posType.scheduledTime -= 1
                 self.__tickList.add(posType)
             else:
-                b = self.__blocks[(posType.yCoord * self.length + posType.zCoord) * self.width + posType.xCoord]
+                b = self.blocks[(posType.yCoord * self.length + posType.zCoord) * self.width + posType.xCoord]
                 if self.__isInLevelBounds(posType.xCoord, posType.yCoord, posType.zCoord) and \
                    b == posType.blockID and b > 0:
                     blocks.blocksList[b].updateTick(
@@ -572,7 +574,7 @@ cdef class World:
             x = randValue & w
             y = randValue >> wShift + lShift & h
             z = randValue >> wShift & l
-            blockId = self.__blocks[(y * self.length + z) * self.width + x]
+            blockId = self.blocks[(y * self.length + z) * self.width + x]
             if self.__isTickOnLoad[blockId]:
                 blocks.blocksList[blockId].updateTick(self, x, y, z, self.rand)
 
@@ -932,7 +934,7 @@ cdef class World:
                         break
 
                     if xx >= 0 and yy >= 0 and zz >= 0 and xx < self.width and yy < self.height and zz < self.length:
-                        block = self.__blocks[(yy * self.length + zz) * self.width + xx] & 0xFF
+                        block = self.blocks[(yy * self.length + zz) * self.width + xx] & 0xFF
                         if block != 0:
                             willGrow = False
                     else:
@@ -941,7 +943,7 @@ cdef class World:
         if not willGrow:
             return False
 
-        block = self.__blocks[((y - 1) * self.length + z) * self.width + x] & 0xFF
+        block = self.blocks[((y - 1) * self.length + z) * self.width + x] & 0xFF
         if (block != blocks.grass.blockID and block != blocks.dirt.blockID) or y >= self.height - logs - 1:
             return False
 
@@ -1165,22 +1167,22 @@ cdef class World:
                 zd *= zd
 
                 while x > 0 and self.__floodFillCounters[coord - 1] != floodFillCounter and \
-                     (self.__blocks[(y * self.length + z) * self.width + x - 1] == source or \
-                      self.__blocks[(y * self.length + z) * self.width + x - 1] == tt):
+                     (self.blocks[(y * self.length + z) * self.width + x - 1] == source or \
+                      self.blocks[(y * self.length + z) * self.width + x - 1] == tt):
                     coord -= 1
                     x -= 1
 
-                if x > 0 and self.__blocks[(y * self.length + z) * self.width + x - 1] == sourceBlock:
+                if x > 0 and self.blocks[(y * self.length + z) * self.width + x - 1] == sourceBlock:
                     sourceFlow = True
 
                 lastNorth = False
                 lastSouth = False
                 lastBelow = False
                 while x < self.width and self.__floodFillCounters[coord] != floodFillCounter and \
-                     (self.__blocks[(y * self.length + z) * self.width + x] == source or \
-                      self.__blocks[(y * self.length + z) * self.width + x] == tt):
+                     (self.blocks[(y * self.length + z) * self.width + x] == source or \
+                      self.blocks[(y * self.length + z) * self.width + x] == tt):
                     if z > 0:
-                        blockId = self.__blocks[(y * self.length + z - 1) * self.width + x]
+                        blockId = self.blocks[(y * self.length + z - 1) * self.width + x]
                         if blockId == sourceBlock:
                             sourceFlow = True
 
@@ -1193,7 +1195,7 @@ cdef class World:
                         lastNorth = north
 
                     if z < self.length - 1:
-                        blockId = self.__blocks[(y * self.length + z + 1) * self.width + x]
+                        blockId = self.blocks[(y * self.length + z + 1) * self.width + x]
                         if blockId == sourceBlock:
                             sourceFlow = True
 
@@ -1206,7 +1208,7 @@ cdef class World:
                         lastSouth = south
 
                     if y < self.height - 1:
-                        blockId = self.__blocks[((y + 1) * self.length + z) * self.width + x]
+                        blockId = self.blocks[((y + 1) * self.length + z) * self.width + x]
                         below = blockId == source or blockId == tt
                         if below and not lastBelow:
                             self.__floodedBlocks[floodedBlocks] = coord
@@ -1225,7 +1227,7 @@ cdef class World:
                     coord += 1
                     x += 1
 
-                if x < self.width and self.__blocks[(y * self.length + z) * self.width + x] == sourceBlock:
+                if x < self.width and self.blocks[(y * self.length + z) * self.width + x] == sourceBlock:
                     sourceFlow = True
 
             if floodedBlocks <= 0:
@@ -1271,24 +1273,24 @@ cdef class World:
                 return False
 
             while x > 0 and self.__floodFillCounters[coord - 1] != floodFillCounter and \
-                  (self.__blocks[(y * self.length + z) * self.width + x - 1] == source or \
-                   self.__blocks[(y * self.length + z) * self.width + x - 1] == tt):
+                  (self.blocks[(y * self.length + z) * self.width + x - 1] == source or \
+                   self.blocks[(y * self.length + z) * self.width + x - 1] == tt):
                 x -= 1
                 coord -= 1
 
-            if x > 0 and self.__blocks[(y * self.length + z) * self.width + x - 1] == 0:
+            if x > 0 and self.blocks[(y * self.length + z) * self.width + x - 1] == 0:
                 return False
 
             lastNorth = False
             lastSouth = False
             while x < self.width and self.__floodFillCounters[coord] != floodFillCounter and \
-                 (self.__blocks[(y * self.length + z) * self.width + x] == source or \
-                  self.__blocks[(y * self.length + z) * self.width + x] == tt):
+                 (self.blocks[(y * self.length + z) * self.width + x] == source or \
+                  self.blocks[(y * self.length + z) * self.width + x] == tt):
                 if x == 0 or x == self.width - 1:
                     return False
 
                 if z > 0:
-                    blockId = self.__blocks[(y * self.length + z - 1) * self.width + x]
+                    blockId = self.blocks[(y * self.length + z - 1) * self.width + x]
                     if blockId == 0:
                         return False
 
@@ -1301,7 +1303,7 @@ cdef class World:
                     lastNorth = north
 
                 if z < self.length - 1:
-                    blockId = self.__blocks[(y * self.length + z + 1) * self.width + x]
+                    blockId = self.blocks[(y * self.length + z + 1) * self.width + x]
                     if blockId == 0:
                         return False
 
@@ -1317,7 +1319,7 @@ cdef class World:
                 coord += 1
                 x += 1
 
-            if x < self.width and self.__blocks[(y * self.length + z) * self.width + x] == 0:
+            if x < self.width and self.blocks[(y * self.length + z) * self.width + x] == 0:
                 break
 
         return False
@@ -1402,7 +1404,7 @@ cdef class World:
         cdef int i
         blocks = bytearray(self.__size)
         for i in range(self.__size):
-            blocks[i] = self.__blocks[i]
+            blocks[i] = self.blocks[i]
 
         return blocks
 

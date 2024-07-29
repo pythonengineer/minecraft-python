@@ -25,6 +25,7 @@ cdef class Tessellator:
 
         int __colors
         int __addedVertices
+        int __rawBufferIndex
 
         bint __drawMode
 

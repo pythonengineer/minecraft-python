@@ -2,8 +2,15 @@ from mc.net.minecraft.game.item.Item import Item
 from mc.net.minecraft.game.item.Items import items
 from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.item.recipe.ShapedRecipes import ShapedRecipes
+from mc.net.minecraft.game.item.recipe.RecipesTools import RecipesTools
+from mc.net.minecraft.game.item.recipe.RecipesWeapons import RecipesWeapons
+from mc.net.minecraft.game.item.recipe.RecipesIngots import RecipesIngots
+from mc.net.minecraft.game.item.recipe.RecipesBowl import RecipesBowl
+from mc.net.minecraft.game.item.recipe.RecipesBlocks import RecipesBlocks
+from mc.net.minecraft.game.item.recipe.RecipeSorter import RecipeSorter
 from mc.net.minecraft.game.level.block.Block import Block
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from functools import cmp_to_key
 
 class CraftingManager:
     instance = None
@@ -18,67 +25,46 @@ class CraftingManager:
 
     def __init__(self):
         self.__recipes = []
-        for i in range(4):
-            if i == 0:
-                madeOf = blocks.planks
-                pickaxe = items.pickaxeWood
-                shovel = items.shovelWood
-                axe = items.axeWood
-                sword = items.swordWood
-            elif i == 1:
-                madeOf = blocks.cobblestone
-                pickaxe = items.pickaxeStone
-                shovel = items.shovelStone
-                axe = items.axeStone
-                sword = items.swordStone
-            elif i == 2:
-                madeOf = items.ingotIron
-                pickaxe = items.pickaxeSteel
-                shovel = items.shovel
-                axe = items.axeSteel
-                sword = items.swordSteel
-            else:
-                madeOf = items.diamond
-                pickaxe = items.pickaxeDiamond
-                shovel = items.shovelDiamond
-                axe = items.axeDiamond
-                sword = items.swordDiamond
 
-            self.__addRecipe(
-                ItemStack(pickaxe),
-                ('XXX', ' # ', ' # ', ord('#'), items.stick, ord('X'), madeOf)
-            )
-            self.__addRecipe(
-                ItemStack(shovel),
-                ('X', '#', '#', ord('#'), items.stick, ord('X'), madeOf)
-            )
-            self.__addRecipe(
-                ItemStack(axe),
-                ('XX', 'X#', ' #', ord('#'), items.stick, ord('X'), madeOf)
-            )
-            self.__addRecipe(
-                ItemStack(sword),
-                ('X', 'X', '#', ord('#'), items.stick, ord('X'), madeOf)
-            )
-
-        self.__addRecipe(
-            ItemStack(items.stick, 4), ('#', '#', ord('#'), blocks.planks)
-        )
-        self.__addRecipe(
-            ItemStack(blocks.blockGold), ('##', '##', ord('#'), items.ingotGold)
-        )
-        self.__addRecipe(
-            ItemStack(blocks.blockSteel), ('##', '##', ord('#'), items.ingotIron)
-        )
-        self.__addRecipe(
-            ItemStack(blocks.blockDiamond), ('##', '##', ord('#'), items.diamond)
-        )
-        self.__addRecipe(
-            ItemStack(blocks.torch, 4),
-            ('X', '#', ord('X'), items.coal, ord('#'), items.stick)
+        RecipesTools().addRecipes(self)
+        RecipesWeapons()
+        RecipesWeapons.addRecipes(self)
+        RecipesIngots().addRecipes(self)
+        RecipesBowl()
+        self.addRecipe(ItemStack(items.bowlSoup),
+                       ('Y', 'X', '#', ord('X'), blocks.mushroomBrown, ord('Y'),
+                        blocks.mushroomRed, ord('#'), items.bowlEmpty))
+        self.addRecipe(ItemStack(items.bowlSoup),
+                       ('Y', 'X', '#', ord('X'), blocks.mushroomRed, ord('Y'),
+                        blocks.mushroomBrown, ord('#'), items.bowlEmpty))
+        RecipesBlocks()
+        self.addRecipe(ItemStack(blocks.chest),
+                       ('###', '# #', '###', ord('#'), blocks.planks))
+        self.addRecipe(ItemStack(blocks.workbench),
+                       ('##', '##', ord('#'), blocks.planks))
+        self.addRecipe(ItemStack(blocks.tnt, 1),
+                       ('X#X', '#X#', 'X#X', ord('X'),
+                       items.gunpowder, ord('#'), blocks.sand))
+        self.addRecipe(ItemStack(items.bow, 1),
+                       (' #X', '# X', ' #X', ord('X'),
+                       items.silk, ord('#'), items.stick))
+        self.addRecipe(ItemStack(blocks.stairSingle, 3),
+                       ('###', ord('#'), blocks.cobblestone))
+        self.addRecipe(ItemStack(items.arrow, 4),
+                       ('X', '#', 'Y', ord('Y'), items.feather, ord('X'),
+                       items.ingotIron, ord('#'), items.stick))
+        self.addRecipe(ItemStack(items.stick, 4),
+                       ('#', '#', ord('#'), blocks.planks))
+        self.addRecipe(ItemStack(blocks.torch, 4),
+                       ('X', '#', ord('X'), items.coal, ord('#'), items.stick))
+        self.addRecipe(ItemStack(items.bowlEmpty, 4),
+                       ('# #', ' # ', ord('#'), blocks.planks))
+        self.__recipes = sorted(
+            self.__recipes,
+            key=cmp_to_key(RecipeSorter(self).compare)
         )
 
-    def __addRecipe(self, stack, solution):
+    def addRecipe(self, stack, solution):
         slotLocations = ''
         slot = 0
         recipeWidth = 0
@@ -114,7 +100,7 @@ class CraftingManager:
             ShapedRecipes(recipeWidth, recipeHeight, recipeItems, stack)
         )
 
-    def addRecipe(self, craftItems):
+    def findMatchingRecipe(self, craftItems):
         for recipe in self.__recipes:
             if recipe.matches(craftItems):
                 return recipe.getCraftingResult()

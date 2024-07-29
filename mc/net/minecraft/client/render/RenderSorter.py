@@ -3,12 +3,11 @@ class RenderSorter:
     def __init__(self, player):
         self.__player = player
 
-    def compare(self, c0, c1):
-        z3 = c0.isInFrustum
-        z4 = c1.isInFrustum
-        if z3 and not z4:
+    def compare(self, chunk1, chunk2):
+        if chunk1.isInFrustum and not chunk2.isInFrustum:
             return 1
-        elif (not z4 or z3) and c0.distanceToEntitySquared(self.__player) < c1.distanceToEntitySquared(self.__player):
+        elif (not chunk2.isInFrustum or chunk1.isInFrustum) and \
+             chunk1.distanceToEntitySquared(self.__player) < chunk2.distanceToEntitySquared(self.__player):
             return 1
         else:
             return -1

@@ -19,7 +19,7 @@ class BlockOre(Block):
     def quantityDropped(self, random):
         return 1 if self.idDropped() == self.blockID else random.nextInt(3) + 1
 
-    def oreDrop(self, world, x, y, z):
+    def onBlockPlaced(self, world, x, y, z):
         from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
         from mc.net.minecraft.game.item.Items import items
         from mc.net.minecraft.game.item.ItemStack import ItemStack

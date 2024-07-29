@@ -7,10 +7,10 @@ from mc.JavaUtils cimport Random
 cdef class BlockFlowing(BlockFluid):
 
     cdef:
-        int __liquidMaterial
+        int __material
         int __stillId
         int __movingId
-        Random __rand
+        Random __random
         int[4] __flowArray
 
     cpdef void updateTick(self, World world, int x, int y, int z, Random random) except *

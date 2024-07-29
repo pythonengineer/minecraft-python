@@ -133,7 +133,7 @@ class EntityArrow(Entity):
         from mc.net.minecraft.game.item.Items import items
         from mc.net.minecraft.game.item.ItemStack import ItemStack
         if self.__inGround and self.__owner == player and self.arrowShake <= 0 and \
-           player.inventory.storePartialItemStack(ItemStack(items.arrow.shiftedIndex, 1)):
+           player.inventory.addItemStackToInventory(ItemStack(items.arrow.shiftedIndex, 1)):
             self.setEntityDead()
 
     def getShadowSize(self):

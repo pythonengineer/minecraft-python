@@ -26,7 +26,7 @@ class BlockStep(Block):
             world.setBlockWithNotify(x, y, z, 0)
             world.setBlockWithNotify(x, y - 1, z, self.blocks.stairDouble.blockID)
 
-    def isDropped(self):
+    def idDropped(self):
         return self.blocks.stairSingle.blockID
 
     def renderAsNormalBlock(self):

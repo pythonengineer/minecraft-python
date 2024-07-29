@@ -12,7 +12,7 @@ class RenderMD3(Render):
 
         try:
             self.__model[0] = MD3Model((MD3Loader()).loadModel('mcexport01.MD3'))
-            print('Animation frames:', self.__model[0].getFrames())
+            print('Animation frames:', self.__model[0].getTotalFrames())
         except IOError as e:
             print(e)
 
@@ -23,16 +23,18 @@ class RenderMD3(Render):
             zo = entity.prevRenderYawOffset + (entity.renderYawOffset - entity.prevRenderYawOffset) * a
             gl.glTranslatef(xd, yd, zd)
             if entity.mobType == 0:
-                self._loadTexture('mcexport2.png')
-            elif entity.mobType == 1:
                 self._loadTexture('mcexport.png')
+            elif entity.mobType == 1:
+                self._loadTexture('mcexport2.png')
+            elif entity.mobType == 2:
+                self._loadTexture('mcexport3.png')
 
             gl.glRotatef(-zo + 180.0, 0.0, 1.0, 0.0)
             gl.glRotatef(-90.0, 1.0, 0.0, 0.0)
             gl.glScalef(0.02, -0.02, 0.02)
             ticks = (entity.ticksExisted + a) * entity.randVal
-            a = int(ticks) % self.__model[0].getFrames()
-            _ = (a + 1) % self.__model[0].getFrames()
+            a = int(ticks) % self.__model[0].getTotalFrames()
+            _ = (a + 1) % self.__model[0].getTotalFrames()
             ticks -= int(ticks)
             gl.glEnable(gl.GL_NORMALIZE)
             self.__model[0].renderModelVertices(a, _, ticks)

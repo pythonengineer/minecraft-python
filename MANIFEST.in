@@ -4,11 +4,15 @@ include setup.py
 include Makefile
 include requirements.txt
 include screenshot.png
+include mc/resources/icon/minecraft.png
+graft mc/resources/icon
 include LICENSE
 include README.md
 
-recursive-include mc *.pyx *.pxd *.ogg *.png *.md3 *.MD3 *.dll
+recursive-include mc *.pyx *.pxd *.ogg *.md3 *.MD3 *.dll
+recursive-exclude mc/resources/texture *
 recursive-exclude * *.pyc
 recursive-exclude * *.pyd
+recursive-exclude * *.gif
 recursive-exclude * *.html
 recursive-exclude * *.c

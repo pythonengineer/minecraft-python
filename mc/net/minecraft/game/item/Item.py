@@ -9,10 +9,13 @@ class Item:
         self.shiftedIndex = itemId + 256
         items.itemsList[itemId + 256] = self
         self._maxStackSize = Item.TOTAL_STACK_SIZE
-        print(f'Setting items[{(itemId + 256)}] to {self}')
+
+    def setIconIndex(self, iconIndex):
+        self._iconIndex = iconIndex
+        return self
 
     def getIconIndex(self):
-        return self.iconIndex
+        return self._iconIndex
 
     def onItemUse(self, stack, world, x, y, z, sideHit):
         pass
@@ -21,7 +24,7 @@ class Item:
         return 1.0
 
     def onItemRightClick(self, stack, world, player):
-        return False
+        return stack
 
     def getItemStackLimit(self):
         return self._maxStackSize

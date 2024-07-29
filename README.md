@@ -5,17 +5,16 @@
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
 The project is currently working on the Indev versions of Minecraft.
-The latest version is **Indev 0.31 20100129** as released on _**January 29, 2010**_.
+The latest version is **Indev 0.31 20100130** as released on _**January 30, 2010**_.
 
-This version adds functional crafting, sticks, the "Steve" and "Black Steve" MD3 mobs, and rudimentary smelting to the game.
-This is the first version where items must be gathered and crafted yourself, as opposed to them being provided in the chests at spawn.
+This version adds workbench crafting, gold tools, the "Beast Boy" MD3 mob, mob item drops, and soup to the game.
 
 Features from previous Indev versions include the Indev mossy cobblestone spawn house, NBT level file saving,
-most tools, torches, advanced liquid spread, TNT explosives, and passive MD3 mobs.
+tools, torches, advanced liquid spread, TNT explosives, chests, and passive MD3 mobs.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20100129`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20100130`.
 
-You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20100129)
+You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20100130)
 
 ### Organization
 
@@ -43,8 +42,7 @@ The argument `-creative` will force the game to be in creative mode.
 ### Gameplay
 
 All controls are as you would expect for the game and they can be configured in the options menu.
-Press I to open your inventory, B to craft (I to exit the crafting screen),
-F5 to toggle rain and F7 to take a cool isometric screenshot.
+Press I to open your inventory, F5 to toggle rain and F7 to take a cool isometric screenshot.
 
 Smelting is unique in early Indev: to get iron or gold ingots, light the dropped ores on fire or throw them in lava.
 
@@ -53,8 +51,9 @@ You can specify the world theme as *Normal* or *Hell* (lava and dirt instead of 
 
 Levels can be saved to a single *.mclevel* NBT file in the pause menu. The level files are perfectly compatible with Java and vice versa.
 
-The only mobs around are the Steves and Black Steves, which don't drop anything when killed.
-Apples will restore health.
+MD3 Steves may drop string on death, Black Steves may drop gunpowder, and Beast Boys may drop feathers.
+
+Crafted mushroom bowl soup will restore health. Check the Wiki for crafting recipes added in this version.
 
 ![Isometric screenshot](/map.png?raw=true)
 

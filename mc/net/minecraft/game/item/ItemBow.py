@@ -14,6 +14,4 @@ class ItemBow(Item):
                 1.0 / (self._rand.nextFloat() * 0.4 + 0.8)
             )
             world.spawnEntityInWorld(EntityArrow(world, player))
-            return True
-        else:
-            return False
+            return stack

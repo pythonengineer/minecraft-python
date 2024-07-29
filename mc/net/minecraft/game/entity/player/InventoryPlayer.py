@@ -60,7 +60,7 @@ class InventoryPlayer(Inventory):
 
         return True
 
-    def storePartialItemStack(self, stack):
+    def addItemStackToInventory(self, stack):
         stackSize = stack.stackSize
         itemId = stack.itemID
         maybeSlot = 0
@@ -124,7 +124,7 @@ class InventoryPlayer(Inventory):
             self.mainInventory[slot] = None
             return stack
         else:
-            stack = self.mainInventory[slot].splitStack(1)
+            stack = self.mainInventory[slot].splitStack(size)
             if self.mainInventory[slot].stackSize == 0:
                 self.mainInventory[slot] = None
 

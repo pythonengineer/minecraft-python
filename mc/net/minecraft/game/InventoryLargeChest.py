@@ -22,6 +22,12 @@ class InventoryLargeChest(Inventory):
         else:
             return self.__upperChest.getStackInSlot(slot)
 
+    def decrStackSize(self, slot, size):
+        if slot >= self.__upperChest.getSizeInventory():
+            return self.__lowerChest.decrStackSize(slot - self.__upperChest.getSizeInventory(), size)
+        else:
+            return self.__upperChest.decrStackSize(slot, size)
+
     def setInventorySlotContents(self, slot, stack):
         if slot >= self.__upperChest.getSizeInventory():
             self.__lowerChest.setInventorySlotContents(
