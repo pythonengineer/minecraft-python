@@ -28,7 +28,7 @@ from functools import cmp_to_key
 
 @cython.final
 cdef class RenderGlobal:
-    CHUNK_SIZE = 8
+    CHUNK_SIZE = 16
 
     def __init__(self, minecraft, renderEngine):
         self.__mc = minecraft
@@ -47,7 +47,7 @@ cdef class RenderGlobal:
         self.__prevSortZ = -9999.0
         self.damagePartialTime = 0.0
         self.__glGenList = gl.glGenLists(2)
-        self.__glRenderListBase = gl.glGenLists(6291456)
+        self.__glRenderListBase = gl.glGenLists(786432)
 
     def changeWorld(self, World world):
         if self.__worldObj:
@@ -80,8 +80,8 @@ cdef class RenderGlobal:
             for y in range(self.__renderChunksTall):
                 for z in range(self.__renderChunksDeep):
                     i = (z * self.__renderChunksTall + y) * self.__renderChunksWide + x
-                    self.__worldRenderers[i] = WorldRenderer(self.__worldObj, x << 3, y << 3,
-                                                             z << 3, RenderGlobal.CHUNK_SIZE,
+                    self.__worldRenderers[i] = WorldRenderer(self.__worldObj, x << 4, y << 4,
+                                                             z << 4, RenderGlobal.CHUNK_SIZE,
                                                              self.__glRenderListBase + lists)
                     self.__sortedWorldRenderers[i] = self.__worldRenderers[i]
                     lists += 3

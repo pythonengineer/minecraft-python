@@ -23,12 +23,18 @@ class RenderHelper:
         y = 0.6
         z = 0.8
         gl.glLightModelf(gl.GL_LIGHT_MODEL_LOCAL_VIEWER, 1.0)
-        vec = Vec3D(-0.4, 1.0, 1.0)
+        vec = Vec3D(0.4, 1.0, -0.2)
         RenderHelper.__setColorBuffer(vec.xCoord, vec.yCoord, vec.zCoord,
                                       0.0).glLightfv(gl.GL_LIGHT0, gl.GL_POSITION)
         RenderHelper.__setColorBuffer(y, y, y, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_DIFFUSE)
         RenderHelper.__setColorBuffer(0.0, 0.0, 0.0, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_AMBIENT)
         RenderHelper.__setColorBuffer(z, z, z, 1.0).glLightfv(gl.GL_LIGHT0, gl.GL_SPECULAR)
+        vec = Vec3D(-0.4, 1.0, 0.2)
+        RenderHelper.__setColorBuffer(vec.xCoord, vec.yCoord, vec.zCoord,
+                                      0.0).glLightfv(gl.GL_LIGHT1, gl.GL_POSITION)
+        RenderHelper.__setColorBuffer(0.6, 0.6, 0.6, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_DIFFUSE)
+        RenderHelper.__setColorBuffer(0.0, 0.0, 0.0, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_AMBIENT)
+        RenderHelper.__setColorBuffer(0.8, 0.8, 0.8, 1.0).glLightfv(gl.GL_LIGHT1, gl.GL_SPECULAR)
         gl.glShadeModel(gl.GL_SMOOTH)
         RenderHelper.__setColorBuffer(x, x, x, 1.0).glLightModelfv(gl.GL_LIGHT_MODEL_AMBIENT)
 

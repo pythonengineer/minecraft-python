@@ -87,21 +87,16 @@ class GuiIngame(Gui):
                     gl.glTranslatef(-(width + 8), -(height + 12), 0.0)
 
                 self.__itemRenderer.renderItemIntoGUI(
-                    self.__mc.fontRenderer, self.__mc.renderEngine,
+                    self.__mc.renderEngine,
                     stack, width, height
                 )
                 if anim > 0.0:
                     gl.glPopMatrix()
 
-                if stack.stackSize > 1:
-                    size = str(stack.stackSize)
-                    gl.glDisable(gl.GL_LIGHTING)
-                    gl.glDisable(gl.GL_DEPTH_TEST)
-                    self.__mc.fontRenderer.drawStringWithShadow(
-                        size, width + 19 - 2 - self.__mc.fontRenderer.getStringWidth(size),
-                        height + 6 + 3, 16777215)
-                    gl.glEnable(gl.GL_LIGHTING)
-                    gl.glEnable(gl.GL_DEPTH_TEST)
+                self.__itemRenderer.renderItemDamage(
+                    self.__mc.fontRenderer,
+                    stack, width, height
+                )
 
         RenderHelper.disableStandardItemLighting()
         gl.glDisable(gl.GL_NORMALIZE)

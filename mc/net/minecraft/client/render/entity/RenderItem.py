@@ -14,7 +14,7 @@ class RenderItem(Render):
         self.__renderBlocks = RenderBlocks(tessellator)
         self.__random = Random()
 
-    def renderItemIntoGUI(self, fontRenderer, renderEngine, stack, width, height):
+    def renderItemIntoGUI(self, renderEngine, stack, width, height):
         if not stack:
             return
 
@@ -51,6 +51,10 @@ class RenderItem(Render):
             t.draw()
             gl.glEnable(gl.GL_LIGHTING)
 
+    def renderItemDamage(self, fontRenderer, stack, width, height):
+        if not stack:
+            return
+
         if stack.stackSize > 1:
             size = str(stack.stackSize)
             gl.glDisable(gl.GL_LIGHTING)
@@ -60,6 +64,31 @@ class RenderItem(Render):
                 height + 6 + 3, 16777215)
             gl.glEnable(gl.GL_LIGHTING)
             gl.glEnable(gl.GL_DEPTH_TEST)
+        if stack.itemDamage > 0:
+            x = 13 - stack.itemDamage * 13 // stack.isItemStackDamageable()
+            z1 = 255 - stack.itemDamage * 255 // stack.isItemStackDamageable()
+            gl.glDisable(gl.GL_LIGHTING)
+            gl.glDisable(gl.GL_DEPTH_TEST)
+            gl.glDisable(gl.GL_TEXTURE_2D)
+            t = tessellator
+            z0 = 255 - z1 << 16 | z1 << 8
+            z1 = (255 - z1) // 4 << 16 | 16128
+            self.__drawToolDamage(t, width + 2, height + 13, 13, 2, 0)
+            self.__drawToolDamage(t, width + 2, height + 13, 12, 1, z1)
+            self.__drawToolDamage(t, width + 2, height + 13, x, 1, z0)
+            gl.glEnable(gl.GL_LIGHTING)
+            gl.glEnable(gl.GL_DEPTH_TEST)
+            gl.glEnable(gl.GL_TEXTURE_2D)
+
+    @staticmethod
+    def __drawToolDamage(t, width, height, x, y, z):
+        t.startDrawingQuads()
+        t.setColorOpaque_I(z)
+        t.addVertex(width, height, 0.0)
+        t.addVertex(width, height + y, 0.0)
+        t.addVertex(width + x, height + y, 0.0)
+        t.addVertex(width + x, height, 0.0)
+        t.draw()
 
     def doRender(self, entity, xd, yd, zd, yaw, a):
         self.__random.setSeed(187)

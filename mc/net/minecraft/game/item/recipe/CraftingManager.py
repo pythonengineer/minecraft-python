@@ -27,8 +27,7 @@ class CraftingManager:
         self.__recipes = []
 
         RecipesTools().addRecipes(self)
-        RecipesWeapons()
-        RecipesWeapons.addRecipes(self)
+        RecipesWeapons().addRecipes(self)
         RecipesIngots().addRecipes(self)
         RecipesBowl()
         self.addRecipe(ItemStack(items.bowlSoup),
@@ -63,6 +62,7 @@ class CraftingManager:
             self.__recipes,
             key=cmp_to_key(RecipeSorter(self).compare)
         )
+        print(len(self.__recipes), 'recipes')
 
     def addRecipe(self, stack, solution):
         slotLocations = ''

@@ -6,6 +6,7 @@ class ItemFlintAndSteel(Item):
     def __init__(self, items, itemId):
         super().__init__(items, 3)
         self._maxStackSize = 1
+        self._maxDamage = 64
 
     def onItemUse(self, stack, world, x, y, z, sideHit):
         if sideHit == 0: y -= 1
@@ -21,3 +22,5 @@ class ItemFlintAndSteel(Item):
         blockId = world.getBlockId(x, y, z)
         if blockId == 0:
             world.setBlockWithNotify(x, y, z, blocks.fire.blockID)
+
+        stack.damageItem(1)

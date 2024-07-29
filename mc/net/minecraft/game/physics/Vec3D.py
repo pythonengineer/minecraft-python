@@ -7,6 +7,17 @@ class Vec3D:
         self.yCoord = y
         self.zCoord = z
 
+    def subtract(self, vec):
+        return Vec3D(self.xCoord - vec.xCoord, self.yCoord - vec.yCoord,
+                     self.zCoord - vec.zCoord)
+
+    def normalize(self):
+        length = math.sqrt(self.xCoord * self.xCoord + \
+                           self.yCoord * self.yCoord + \
+                           self.zCoord * self.zCoord)
+        return Vec3D(self.xCoord / length, self.yCoord / length,
+                     self.zCoord / length)
+
     def addVector(self, x, y, z):
         return Vec3D(self.xCoord + x, self.yCoord + y, self.zCoord + z)
 

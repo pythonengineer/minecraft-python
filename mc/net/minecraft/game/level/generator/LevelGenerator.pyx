@@ -221,10 +221,10 @@ cdef class LevelGenerator:
                                             if self.__blocksByteArray[blockId] == stone:
                                                 self.__blocksByteArray[blockId] = 0
 
-                self.__populateOre(blocks.oreCoal.blockID, 90, 1, 5)
-                self.__populateOre(blocks.oreIron.blockID, 70, 2, 5)
-                self.__populateOre(blocks.oreGold.blockID, 30, 3, 5)
-                self.__populateOre(blocks.oreDiamond.blockID, 20, 4, 5)
+                self.__populateOre(blocks.oreCoal.blockID, 90, 1, 5, (h << 2) // 4)
+                self.__populateOre(blocks.oreIron.blockID, 70, 2, 5, h * 3 // 4)
+                self.__populateOre(blocks.oreGold.blockID, 30, 3, 5, (h << 1) // 4)
+                self.__populateOre(blocks.oreDiamond.blockID, 20, 4, 5, h // 4)
 
             self.__guiLoading.displayLoadingString('Watering..')
 
@@ -433,7 +433,7 @@ cdef class LevelGenerator:
                     elif kind == 1:
                         self.__blocksByteArray[block] = blocks.mushroomRed.blockID
 
-    cdef __populateOre(self, int face, int freq, int _, int __):
+    cdef __populateOre(self, int face, int freq, int _, int __, int maxHeight):
         cdef int w, d, h, size, i, steps, step, x, y, z, block
         cdef float x0, y0, z0, xChange, xDecay, yChange, yDecay, pop, xd, yd, zd
 
@@ -445,6 +445,9 @@ cdef class LevelGenerator:
             x0 = self.__rand.nextFloat() * w
             y0 = self.__rand.nextFloat() * h
             z0 = self.__rand.nextFloat() * d
+            if y0 > maxHeight:
+                continue
+
             steps = <int>((self.__rand.nextFloat() + self.__rand.nextFloat()) * 75.0 * freq / 100.0)
             xChange = self.__rand.nextFloat() * pi * 2.0
             xDecay = 0.0

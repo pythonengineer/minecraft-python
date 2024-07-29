@@ -11,6 +11,7 @@ cdef class EntityLiving(Entity):
         public float prevRenderYawOffset
         float __prevRotationYawHead
         float __rotationYawHead
+        public str texture
         public int health
         public int prevHealth
         public int hurtTime
@@ -21,8 +22,9 @@ cdef class EntityLiving(Entity):
         public float prevCameraPitch
         public float cameraPitch
         public AILiving _entityAI
-        public float randVal
-        public int mobType
+        public float moveStrafing
+        public float moveForward
+        public float randomYawVelocity
 
     cdef _fall(self, float d)
     cdef travel(self, float x, float z)

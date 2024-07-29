@@ -9,7 +9,7 @@ graft mc/resources/icon
 include LICENSE
 include README.md
 
-recursive-include mc *.pyx *.pxd *.ogg *.md3 *.MD3 *.dll
+recursive-include mc *.pyx *.pxd *.ogg *.dll
 recursive-exclude mc/resources/texture *
 recursive-exclude * *.pyc
 recursive-exclude * *.pyd

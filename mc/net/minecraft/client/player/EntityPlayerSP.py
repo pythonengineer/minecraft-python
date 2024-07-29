@@ -43,3 +43,6 @@ class EntityPlayerSP(EntityPlayer):
 
     def displayWorkbenchGUI(self):
         self.__mc.displayGuiScreen(GuiCrafting(self.inventory))
+
+    def displayGUIInventory(self):
+        self.inventory.setInventorySlotContents(self.inventory.currentItem, None)

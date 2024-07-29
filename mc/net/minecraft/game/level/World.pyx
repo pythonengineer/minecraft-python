@@ -123,12 +123,14 @@ cdef class World:
                 y = 0
                 while y < self.height:
                     blockId = 0
-                    if y == 0 and y < self.groundLevel - 1:
+                    if y <= 1 and y < self.groundLevel - 1 and \
+                       b[((y + 1) * self.length + z) * self.width + x]:
                         blockId = blocks.lavaStill.blockID
                     elif y < self.groundLevel - 1:
                         blockId = blocks.bedrock.blockID
                     elif y < self.groundLevel:
-                        if self.groundLevel > self.waterLevel and self.defaultFluid == blocks.waterMoving.blockID:
+                        if self.groundLevel > self.waterLevel and \
+                           self.defaultFluid == blocks.waterMoving.blockID:
                             blockId = blocks.grass.blockID
                         else:
                             blockId = blocks.dirt.blockID
@@ -136,7 +138,7 @@ cdef class World:
                         blockId = self.defaultFluid
 
                     b[(y * self.length + z) * self.width + x] = blockId
-                    if y == 0 and x != 0 and z != 0 and x != self.width - 1 and z != self.length - 1:
+                    if y == 1 and x != 0 and z != 0 and x != self.width - 1 and z != self.length - 1:
                         y = self.height - 2
 
                     y += 1

@@ -164,7 +164,7 @@ class BlockChest(BlockContainer):
                     stack.stackSize -= stackSize
 
                     item = EntityItem(world, x + itemX, y + itemY, z + itemZ,
-                                      ItemStack(stack.itemID, stackSize))
+                                      ItemStack(stack.itemID, stackSize, stack.itemDamage))
                     item.motionX = self.__random.nextGaussian() * 0.05
                     item.motionY = self.__random.nextGaussian() * 0.05 + 0.2
                     item.motionZ = self.__random.nextGaussian() * 0.05

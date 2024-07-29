@@ -6,9 +6,6 @@ class GuiErrorScreen(GuiScreen):
         self.__title = title
         self.__text = text
 
-    def setWorldAndResolution(self, minecraft, width, height):
-        super().setWorldAndResolution(minecraft, width, height)
-
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, -12574688, -11530224)
         self.drawCenteredString(self._fontRenderer, self.__title, self.width // 2, 90, 0xFFFFFF)

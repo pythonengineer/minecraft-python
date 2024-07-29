@@ -117,6 +117,9 @@ cdef class Entity:
             self.rotationPitch = 90.0
 
     def onEntityUpdate(self):
+        cdef int i
+        cdef float volume, x, z
+
         self.prevDistanceWalkedModified = self.distanceWalkedModified
         self.prevPosX = self.posX
         self.prevPosY = self.posY
@@ -134,6 +137,14 @@ cdef class Entity:
                     self, 'random.splash', volume,
                     1.0 + (self._rand.nextFloat() - self._rand.nextFloat()) * 0.4
                 )
+                for i in range(<int>(1.0 + self.width * 20.0)):
+                    x = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
+                    z = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
+                    self._worldObj.spawnParticle(
+                        'bubble', self.posX + x,
+                        self.boundingBox.minY - self._rand.nextFloat() * 0.2,
+                        self.posZ + z, self.motionX, self.motionY, self.motionZ
+                    )
 
             self.__fallDistance = 0.0
             self.__inWater = True

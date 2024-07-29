@@ -126,7 +126,7 @@ class Blocks:
         self.plantYellow.stepSound = self.soundGrassFootstep
         self.plantRed = BlockFlower(self, 38, 12).setHardness(0.0)
         self.plantRed.stepSound = self.soundGrassFootstep
-        self.mushroomBrown = BlockMushroom(self, 39, 29).setHardness(0.0)
+        self.mushroomBrown = BlockMushroom(self, 39, 29).setHardness(0.0).setLightValue(2.0 / 16.0)
         self.mushroomBrown.stepSound = self.soundGrassFootstep
         self.mushroomRed = BlockMushroom(self, 40, 28).setHardness(0.0)
         self.mushroomRed.stepSound = self.soundGrassFootstep

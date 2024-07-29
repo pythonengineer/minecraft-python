@@ -10,8 +10,7 @@ class GuiOptions(GuiScreen):
         self.__parentScreen = screen
         self.__options = options
 
-    def setWorldAndResolution(self, minecraft, width, height):
-        super().setWorldAndResolution(minecraft, width, height)
+    def initGui(self):
         for i in range(self.__options.numberOfOptions):
             self._controlList.append(GuiSmallButton(i, self.width // 2 - 155 + i % 2 * 160,
                                                     self.height // 6 + 24 * (i >> 1),
@@ -28,9 +27,9 @@ class GuiOptions(GuiScreen):
                 self.__options.setOptionValue(button.id, 1)
                 button.displayString = self.__options.getOptionDisplayString(button.id)
             elif button.id == 100:
-                self._mc.displayGuiScreen(GuiControls(self, self.__options))
+                self.mc.displayGuiScreen(GuiControls(self, self.__options))
             elif button.id == 200:
-                self._mc.displayGuiScreen(self.__parentScreen)
+                self.mc.displayGuiScreen(self.__parentScreen)
 
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)

@@ -25,6 +25,7 @@ cdef class EntityLiving(Entity):
         self.prevRenderYawOffset = 0.0
         self.__prevRotationYawHead = 0.0
         self.__rotationYawHead = 0.0
+        self.texture = 'char.png'
         self.health = EntityLiving.HEALTH
         self.prevHealth = 0
         self.hurtTime = 0
@@ -38,8 +39,9 @@ cdef class EntityLiving(Entity):
         self.setPosition(self.posX, self.posY, self.posZ)
         self.rotationYaw = random() * (pi * 2.0)
         self.stepHeight = 0.5
-        self.randVal = random() * 0.9 + 0.1
-        self.mobType = self._rand.nextInt(3)
+        self.moveStrafing = 0.0
+        self.moveForward = 0.0
+        self.randomYawVelocity = 0.0
 
     def canBeCollidedWith(self):
         return not self.isDead
@@ -164,6 +166,7 @@ cdef class EntityLiving(Entity):
         if self.health <= 0:
             return
 
+        self.moveForward = 1.5
         if self.heartsLife > self.heartsHalvesLife // 2.0:
             if self.prevHealth - damage >= self.health:
                 return
@@ -202,13 +205,14 @@ cdef class EntityLiving(Entity):
     def onDeath(self, Entity entity):
         cdef int i
         cdef int drops = self._rand.nextInt(3)
-        if self.mobType == 0:
+        cdef int drop = self._rand.nextInt(3)
+        if drop == 0:
             for i in range(drops):
                 self.entityDropItem(items.silk.shiftedIndex, 1)
-        elif self.mobType == 1:
+        elif drop == 1:
             for i in range(drops):
                 self.entityDropItem(items.gunpowder.shiftedIndex, 1)
-        elif self.mobType == 2:
+        elif drop == 2:
             for i in range(drops):
                 self.entityDropItem(items.feather.shiftedIndex, 1)
 
@@ -261,6 +265,15 @@ cdef class EntityLiving(Entity):
             if self.onGround:
                 self.motionX *= 0.6
                 self.motionZ *= 0.6
+
+        self.moveStrafing = self.moveForward
+        xd = self.posX - self.prevPosX
+        zd = self.posZ - self.prevPosZ
+        d = sqrt(xd * xd + zd * zd) * 4.0
+        d = min(d, 1.0)
+
+        self.moveForward += (d - self.moveForward) * 0.4
+        self.randomYawVelocity += self.moveForward
 
     def _writeEntityToNBT(self, compound):
         compound['Health'] = Short(self.health)

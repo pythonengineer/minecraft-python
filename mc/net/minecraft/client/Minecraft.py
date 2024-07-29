@@ -27,12 +27,15 @@ pyglet.resource.reindex()
 
 from mc.net.minecraft.client import MinecraftError
 from mc.net.minecraft.client.Timer import Timer
+from mc.net.minecraft.client.GuiMainTitle import GuiMainTitle
 from mc.net.minecraft.client.GameSettings import GameSettings
 from mc.net.minecraft.client.OpenGlCapsChecker import OpenGlCapsChecker
 from mc.net.minecraft.client.LoadingScreenRenderer import LoadingScreenRenderer
 from mc.net.minecraft.game.level.World import World
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.item.Items import items
 from mc.net.minecraft.game.level.generator.LevelGenerator import LevelGenerator
+from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.client.model.ModelBiped import ModelBiped
 from mc.net.minecraft.client.player.EntityPlayerSP import EntityPlayerSP
 from mc.net.minecraft.client.player.MovementInputFromOptions import MovementInputFromOptions
@@ -118,6 +121,7 @@ class Minecraft(window.Window):
         self.objectMouseOver = None
         self.sndManager = SoundManager()
         self.__leftClickCounter = 0
+        self.mcDataDir = ''
 
         self.__serverIp = ''
 
@@ -142,7 +146,9 @@ class Minecraft(window.Window):
             if self.currentScreen:
                 self.currentScreen.onGuiClosed()
 
-            if not screen and self.thePlayer.health <= 0:
+            if not screen and not self.theWorld:
+                screen = GuiMainTitle()
+            elif not screen and self.thePlayer.health <= 0:
                 screen = GuiGameOver()
 
             self.currentScreen = screen
@@ -397,7 +403,8 @@ class Minecraft(window.Window):
         if not os.path.isdir(file):
             raise RuntimeError(f'The working directory could not be created: {file}')
 
-        self.options = GameSettings(self, file)
+        self.mcDataDir = file
+        self.options = GameSettings(self, self.mcDataDir)
         self.sndManager.loadSoundSettings(self.options)
 
         self.renderEngine = RenderEngine(self.options)
@@ -422,7 +429,7 @@ class Minecraft(window.Window):
             world.setLevel(8, 8, 8, bytearray(512))
             self.setLevel(level)
         elif not self.theWorld:
-            self.generateNewLevel(1, 0, 1, 0)
+            self.displayGuiScreen(GuiMainTitle())
 
         self.effectRenderer = EffectRenderer(self.theWorld, self.renderEngine)
 
@@ -464,7 +471,9 @@ class Minecraft(window.Window):
         if not self.ingameFocus:
             return
 
-        self.thePlayer.movementInput.resetKeyState()
+        if self.thePlayer:
+            self.thePlayer.movementInput.resetKeyState()
+
         self.ingameFocus = False
         self.set_exclusive_mouse(False)
         self.set_mouse_position(self.width // 2, self.height // 2)
@@ -494,7 +503,16 @@ class Minecraft(window.Window):
             return
         elif self.objectMouseOver.typeOfHit == 1:
             if editMode == 0:
-                self.objectMouseOver.entityHit.attackEntityFrom(self.thePlayer, 4)
+                stack = self.thePlayer.inventory.getStackInSlot(self.thePlayer.inventory.currentItem)
+                damage = items.itemsList[stack.itemID].getItemDamage() if stack else 1
+                if damage > 0:
+                    self.objectMouseOver.entityHit.attackEntityFrom(self.thePlayer,
+                                                                    damage)
+                    item = self.thePlayer.inventory.getCurrentItem()
+                    if item and isinstance(self.objectMouseOver.entityHit, EntityLiving):
+                        items.itemsList[item.itemID].hitEntity(item)
+                        if item.stackSize <= 0:
+                            self.thePlayer.displayGUIInventory()
 
             return
         elif self.objectMouseOver.typeOfHit != 0:
@@ -554,10 +572,9 @@ class Minecraft(window.Window):
             screen.setWorldAndResolution(self, screenWidth, screenHeight)
 
     def __runTick(self):
-        if not self.isGamePaused:
-            self.playerController.onUpdate()
-
         self.ingameGUI.addChatMessage()
+        if not self.isGamePaused and self.theWorld:
+            self.playerController.onUpdate()
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.renderEngine.getTexture('terrain.png'))
         self.renderEngine.updateDynamicTextures()

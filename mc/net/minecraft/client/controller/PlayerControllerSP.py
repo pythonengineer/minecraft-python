@@ -36,11 +36,14 @@ class PlayerControllerSP(PlayerController):
 
                     self._mc.theWorld.setBlockWithNotify(xx, yy, zz, blockId)
 
-        player.inventory.mainInventory[8] = ItemStack(items.flintSteel)
-
     def sendBlockRemoved(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
         change = super().sendBlockRemoved(x, y, z)
+        stack = self._mc.thePlayer.inventory.getCurrentItem()
+        if stack:
+            items.itemsList[stack.itemID].onBlockDestroyed(stack)
+            if stack.stackSize == 0:
+                self._mc.thePlayer.displayGUIInventory()
         if change:
             blocks.blocksList[block].dropBlockAsItem(self._mc.theWorld, x, y, z)
 

@@ -1,7 +1,7 @@
 from mc.net.minecraft.client.render.Tessellator import tessellator
 from mc.net.minecraft.client.render.entity.RenderEntity import RenderEntity
 from mc.net.minecraft.client.render.entity.RenderArrow import RenderArrow
-from mc.net.minecraft.client.render.entity.RenderMD3 import RenderMD3
+from mc.net.minecraft.client.render.entity.RenderLiving import RenderLiving
 from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
 from mc.net.minecraft.client.render.entity.RenderTNTPrimed import RenderTNTPrimed
 from mc.net.minecraft.game.entity.Entity import Entity
@@ -21,7 +21,7 @@ class RenderManager:
         self.__entityRenderMap = {}
         self.__entityRenderMap[Entity] = RenderEntity()
         self.__entityRenderMap[EntityArrow] = RenderArrow()
-        self.__entityRenderMap[EntityLiving] = RenderMD3()
+        self.__entityRenderMap[EntityLiving] = RenderLiving()
         self.__entityRenderMap[EntityItem] = RenderItem()
         self.__entityRenderMap[EntityTNTPrimed] = RenderTNTPrimed()
         for render in self.__entityRenderMap.values():

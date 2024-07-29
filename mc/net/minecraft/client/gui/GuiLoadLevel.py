@@ -24,6 +24,7 @@ class GuiLoadLevel(GuiScreen):
 
             self._openFile(self.__selectedFile)
             self.__selectedFile = ''
+            self.mc.displayGuiScreen(None)
 
     def _setLevels(self, levels):
         for i in range(5):
@@ -33,9 +34,7 @@ class GuiLoadLevel(GuiScreen):
 
         self._controlList[5].visible = True
 
-    def setWorldAndResolution(self, minecraft, width, height):
-        super().setWorldAndResolution(minecraft, width, height)
-
+    def initGui(self):
         for i in range(5):
             self._controlList.append(GuiButton(i, self.width // 2 - 100,
                                                self.height // 6 + i * 24, '---'))
@@ -60,11 +59,11 @@ class GuiLoadLevel(GuiScreen):
             self.__frozen = True
             GuiLevelDialog(self).run()
         elif self.__finished or self.__loaded and button.id == 6:
-            self._mc.displayGuiScreen(self.__parent)
+            self.mc.displayGuiScreen(self.__parent)
 
     def _openLevel(self, id_):
-        self._mc.displayGuiScreen(None)
-        self._mc.grabMouse()
+        self.mc.displayGuiScreen(None)
+        self.mc.grabMouse()
 
     def drawScreen(self, xm, ym):
         self._drawGradientRect(0, 0, self.width, self.height, 1610941696, -1607454624)
@@ -76,8 +75,8 @@ class GuiLoadLevel(GuiScreen):
 
     def _openFile(self, file):
         try:
-            world = PlayerLoader(self._mc, self._mc.loadingScreen).load(file)
-            self._mc.setLevel(world)
+            world = PlayerLoader(self.mc, self.mc.loadingScreen).load(file)
+            self.mc.setLevel(world)
         except Exception as e:
             print(traceback.format_exc())
 

@@ -15,8 +15,7 @@ class GuiNewLevel(GuiScreen):
         self.__selectedWorldSize = 1
         self.__selectedWorldTheme = 0
 
-    def setWorldAndResolution(self, minecraft, width, height):
-        super().setWorldAndResolution(minecraft, width, height)
+    def initGui(self):
         self._controlList.clear()
         self._controlList.append(GuiButton(0, self.width // 2 - 100,
                                            self.height // 4, 'Type: '))
@@ -40,12 +39,12 @@ class GuiNewLevel(GuiScreen):
 
     def _actionPerformed(self, button):
         if button.id == 5:
-            self._mc.displayGuiScreen(self.__prevGui)
+            self.mc.displayGuiScreen(self.__prevGui)
         elif button.id == 4:
-            self._mc.generateNewLevel(self.__selectedWorldSize, self.__selectedWorldShape,
+            self.mc.generateNewLevel(self.__selectedWorldSize, self.__selectedWorldShape,
                                       self.__selectedWorldType, self.__selectedWorldTheme)
-            self._mc.displayGuiScreen(None)
-            self._mc.grabMouse()
+            self.mc.displayGuiScreen(None)
+            self.mc.grabMouse()
         elif button.id == 0:
             self.__selectedWorldType = (self.__selectedWorldType + 1) % len(self.__worldType)
         elif button.id == 1:

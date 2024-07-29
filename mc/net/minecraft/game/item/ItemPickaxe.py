@@ -7,5 +7,5 @@ class ItemPickaxe(ItemTool):
                                 blocks.blockSteel, blocks.oreCoal, blocks.blockGold,
                                 blocks.oreGold, blocks.oreDiamond, blocks.blockDiamond)
 
-    def __init__(self, items, itemId):
-        super().__init__(items, itemId, self.__blocksEffectiveAgainst)
+    def __init__(self, items, itemId, damage):
+        super().__init__(items, itemId, damage, self.__blocksEffectiveAgainst)

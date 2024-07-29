@@ -31,8 +31,8 @@ class GuiContainer(GuiScreen):
         gl.glRotatef(10.0, 0.0, 1.0, 0.0)
         gl.glRotatef(10.0, 1.0, 0.0, 0.0)
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        self._mc.renderGlobal.renderManager.renderEntityWithPosYaw(
-            self._mc.thePlayer, 0.0, 0.0, 0.0, 0.0, 0.0
+        self.mc.renderGlobal.renderManager.renderEntityWithPosYaw(
+            self.mc.thePlayer, 0.0, 0.0, 0.0, 0.0, 0.0
         )
         gl.glPopMatrix()
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
@@ -41,7 +41,11 @@ class GuiContainer(GuiScreen):
         for slot in self._inventorySlots:
             stack = slot.inventory.getStackInSlot(slot.slotIndex)
             self.__itemRenderer.renderItemIntoGUI(
-                self._fontRenderer, self._mc.renderEngine, stack,
+                self.mc.renderEngine, stack,
+                slot.xDisplayPosition, slot.yDisplayPosition
+            )
+            self.__itemRenderer.renderItemDamage(
+                self._fontRenderer, stack,
                 slot.xDisplayPosition, slot.yDisplayPosition
             )
             if slot.getIsMouseOverSlot(xm, ym):
@@ -56,7 +60,11 @@ class GuiContainer(GuiScreen):
         if self.__itemStack:
             gl.glTranslatef(0.0, 0.0, 32.0)
             self.__itemRenderer.renderItemIntoGUI(
-                self._fontRenderer, self._mc.renderEngine, self.__itemStack,
+                self.mc.renderEngine, self.__itemStack,
+                xm - w - 8, ym - h - 8
+            )
+            self.__itemRenderer.renderItemDamage(
+                self._fontRenderer, self.__itemStack,
                 xm - w - 8, ym - h - 8
             )
 
@@ -142,20 +150,20 @@ class GuiContainer(GuiScreen):
             h = (self.height - self.ySize) // 2
             if xm < w or ym < h or xm >= w + self.xSize or ym >= h + self.xSize:
                 if button == window.mouse.LEFT:
-                    self._mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack)
+                    self.mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack)
                     self.__itemStack = None
                 elif button == window.mouse.RIGHT:
-                    self._mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack.splitStack(1))
+                    self.mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack.splitStack(1))
                     if self.__itemStack.stackSize == 0:
                         self.__itemStack = None
 
     def _keyTyped(self, key, char, motion):
-        if key == window.key.ESCAPE or key == self._mc.options.keyBindInventory.keyCode:
-            self._mc.displayGuiScreen(None)
+        if key == window.key.ESCAPE or key == self.mc.options.keyBindInventory.keyCode:
+            self.mc.displayGuiScreen(None)
 
     def onGuiClosed(self):
         if self.__itemStack:
-            self._mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack)
+            self.mc.thePlayer.dropPlayerItemWithRandomChoice(self.__itemStack)
 
     def guiCraftingItemsCheck(self):
         pass

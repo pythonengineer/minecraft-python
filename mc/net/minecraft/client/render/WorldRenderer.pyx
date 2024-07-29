@@ -43,7 +43,7 @@ cdef class WorldRenderer:
         self.__posX = posX
         self.__posY = posY
         self.__posZ = posZ
-        self.__sizeWidth = self.__sizeHeight = self.__sizeDepth = 8
+        self.__sizeWidth = self.__sizeHeight = self.__sizeDepth = 16
         self.__posXPlus = posX + self.__sizeWidth // 2
         self.__posYPlus = posY + self.__sizeHeight // 2
         self.__posZPlus = posZ + self.__sizeDepth // 2

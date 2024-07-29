@@ -33,7 +33,7 @@ class GuiChest(GuiContainer):
                                       8, self.ySize - 96 + 2, 4210752)
 
     def _drawGuiContainerBackgroundLayer(self):
-        tex = self._mc.renderEngine.getTexture('gui/container.png')
+        tex = self.mc.renderEngine.getTexture('gui/container.png')
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
         x = (self.width - self.xSize) // 2

@@ -26,6 +26,7 @@ class EntityItem(Entity):
         self.hoverStart = random() * math.pi * 2.0
 
     def onEntityUpdate(self):
+        super().onEntityUpdate()
         if self.delayBeforeCanPickup > 0:
             self.delayBeforeCanPickup -= 1
 

@@ -33,7 +33,7 @@ class GuiCrafting(GuiContainer):
         for slot in range(9):
             stack = self.__inventoryCrafting.getStackInSlot(slot)
             if stack:
-                self._mc.thePlayer.dropPlayerItemWithRandomChoice(stack)
+                self.mc.thePlayer.dropPlayerItemWithRandomChoice(stack)
 
     def guiCraftingItemsCheck(self):
         items = [0] * 9
@@ -53,7 +53,7 @@ class GuiCrafting(GuiContainer):
         self._fontRenderer.drawString('Inventory', 8, self.ySize - 96 + 2, 4210752)
 
     def _drawGuiContainerBackgroundLayer(self):
-        tex = self._mc.renderEngine.getTexture('gui/crafting.png')
+        tex = self.mc.renderEngine.getTexture('gui/crafting.png')
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
         x = (self.width - self.xSize) // 2

@@ -2,6 +2,7 @@ from mc.JavaUtils import Random
 
 class Item:
     TOTAL_STACK_SIZE = 100
+    MAX_DAMAGE = 32
     _rand = Random()
 
     def __init__(self, items, itemId):
@@ -9,6 +10,7 @@ class Item:
         self.shiftedIndex = itemId + 256
         items.itemsList[itemId + 256] = self
         self._maxStackSize = Item.TOTAL_STACK_SIZE
+        self._maxDamage = Item.MAX_DAMAGE
 
     def setIconIndex(self, iconIndex):
         self._iconIndex = iconIndex
@@ -31,3 +33,15 @@ class Item:
 
     def onPlaced(self, world, x, y, z):
         return False
+
+    def getMaxDamage(self):
+        return self._maxDamage
+
+    def hitEntity(self, stack):
+        pass
+
+    def onBlockDestroyed(self, stack):
+        pass
+
+    def getItemDamage(self):
+        return 1

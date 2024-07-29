@@ -10,8 +10,8 @@ class GuiSaveLevel(GuiLoadLevel):
         super().__init__(screen)
         self._title = 'Save level'
 
-    def setWorldAndResolution(self, minecraft, width, height):
-        super().setWorldAndResolution(minecraft, width, height)
+    def initGui(self):
+        super().initGui()
         self._controlList[5].displayString = 'Save file...'
 
     def _setLevels(self, levels):
@@ -23,9 +23,9 @@ class GuiSaveLevel(GuiLoadLevel):
 
     def _openFile(self, file):
         try:
-            PlayerLoader(self._mc, self._mc.loadingScreen).save(self._mc.theWorld, file)
+            PlayerLoader(self.mc, self.mc.loadingScreen).save(self.mc.theWorld, file)
         except Exception as e:
             print(traceback.format_exc())
 
     def _openLevel(self, i):
-        self._mc.displayGuiScreen(GuiNameLevel(self, self._controlList[i].displayString, i))
+        self.mc.displayGuiScreen(GuiNameLevel(self, self._controlList[i].displayString, i))

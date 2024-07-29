@@ -61,59 +61,60 @@ class InventoryPlayer(Inventory):
         return True
 
     def addItemStackToInventory(self, stack):
-        stackSize = stack.stackSize
-        itemId = stack.itemID
-        maybeSlot = 0
-        slot = 0
-        while True:
-            if maybeSlot >= len(self.mainInventory):
-                slot = -1
-                break
-
-            if self.mainInventory[maybeSlot] and self.mainInventory[maybeSlot].itemID == itemId:
-                item = self.mainInventory[maybeSlot]
-                if self.mainInventory[maybeSlot].stackSize < item.getItem().getItemStackLimit() and \
-                   self.mainInventory[maybeSlot].stackSize < InventoryPlayer.PLAYER_STACK_LIMIT:
-                    slot = maybeSlot
+        if not stack.itemDamage:
+            stackSize = stack.stackSize
+            itemId = stack.itemID
+            maybeSlot = 0
+            slot = 0
+            while True:
+                if maybeSlot >= len(self.mainInventory):
+                    slot = -1
                     break
 
-            maybeSlot += 1
+                if self.mainInventory[maybeSlot] and self.mainInventory[maybeSlot].itemID == itemId:
+                    item = self.mainInventory[maybeSlot]
+                    if self.mainInventory[maybeSlot].stackSize < item.getItem().getItemStackLimit() and \
+                       self.mainInventory[maybeSlot].stackSize < InventoryPlayer.PLAYER_STACK_LIMIT:
+                        slot = maybeSlot
+                        break
 
-        if slot < 0:
-            slot = self.__storeItemStack()
+                maybeSlot += 1
 
-        if slot >= 0:
-            if not self.mainInventory[slot]:
-                self.mainInventory[slot] = ItemStack(itemId, 0)
+            if slot < 0:
+                slot = self.__storeItemStack()
 
-            stackExcess = stackSize
-            item = self.mainInventory[slot]
-            if stackSize > item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize:
+            if slot >= 0:
+                if not self.mainInventory[slot]:
+                    self.mainInventory[slot] = ItemStack(itemId, 0)
+
+                stackExcess = stackSize
                 item = self.mainInventory[slot]
-                stackExcess = item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize
+                if stackSize > item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize:
+                    item = self.mainInventory[slot]
+                    stackExcess = item.getItem().getItemStackLimit() - self.mainInventory[slot].stackSize
 
-            stackExcess = min(
-                stackExcess,
-                InventoryPlayer.PLAYER_STACK_LIMIT - self.mainInventory[slot].stackSize
-            )
-            if stackExcess == 0:
-                stackSize = stackSize
-            else:
-                stackSize -= stackExcess
-                self.mainInventory[slot].stackSize += stackExcess
-                self.mainInventory[slot].animationsToGo = 5
+                stackExcess = min(
+                    stackExcess,
+                    InventoryPlayer.PLAYER_STACK_LIMIT - self.mainInventory[slot].stackSize
+                )
+                if stackExcess == 0:
+                    stackSize = stackSize
+                else:
+                    stackSize -= stackExcess
+                    self.mainInventory[slot].stackSize += stackExcess
+                    self.mainInventory[slot].animationsToGo = 5
 
-        stack.stackSize = stackSize
-        if stack.stackSize == 0:
+            stack.stackSize = stackSize
+            if stack.stackSize == 0:
+                return True
+
+        slot = self.__storeItemStack()
+        if slot >= 0:
+            self.mainInventory[slot] = stack
+            self.mainInventory[slot].animationsToGo = 5
             return True
         else:
-            slot = self.__storeItemStack()
-            if slot >= 0:
-                self.mainInventory[slot] = stack
-                self.mainInventory[slot].animationsToGo = 5
-                return True
-            else:
-                return False
+            return False
 
     def decrStackSize(self, slot, size):
         if not self.mainInventory[slot]:
