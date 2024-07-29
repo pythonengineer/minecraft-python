@@ -17,7 +17,7 @@ class PlayerControllerSP(PlayerController):
         self.__blockHitWait = 0
         self.__mobSpawner = None
 
-    def onRespawn(self, player):
+    def flipPlayer(self, player):
         x = int(player.posX)
         y = int(player.posY)
         z = int(player.posZ)
@@ -51,7 +51,7 @@ class PlayerControllerSP(PlayerController):
 
     def clickBlock(self, x, y, z):
         block = self._mc.theWorld.getBlockId(x, y, z)
-        if block > 0 and blocks.blocksList[block].blockStrength(self._mc.thePlayer) <= 0:
+        if block > 0 and blocks.blocksList[block].blockStrength(self._mc.thePlayer) == 0:
             self.sendBlockRemoved(x, y, z)
 
     def resetBlockRemoving(self):
@@ -71,6 +71,10 @@ class PlayerControllerSP(PlayerController):
 
             block = blocks.blocksList[block]
             self.__prevBlockDamage = block.blockStrength(self._mc.thePlayer)
+            if self.__prevBlockDamage < 0:
+                self.__curBlockDamage %= 4
+                self.__prevBlockDamage = 99999999
+
             if self.__curBlockDamage % 4 == 0 and block:
                 speed = (block.stepSound.soundVolume + 1.0) / 8.0
                 self._mc.sndManager.playSound(

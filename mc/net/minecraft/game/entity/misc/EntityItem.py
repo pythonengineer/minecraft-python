@@ -1,5 +1,6 @@
 from mc.net.minecraft.game.entity.Entity import Entity
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.level.material.Material import Material
 from mc.JavaUtils import random
 
 from nbtlib.tag import Compound, Short, Byte
@@ -34,6 +35,14 @@ class EntityItem(Entity):
         self.prevPosY = self.posY
         self.prevPosZ = self.posZ
         self.motionY -= 0.04
+        if self._worldObj.getBlockMaterial(int(self.posX), int(self.posY),
+                                           int(self.posZ)) == Material.lava:
+            self.motionY = 0.2
+            self.motionX = (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2
+            self.motionZ = (self._rand.nextFloat() - self._rand.nextFloat()) * 0.2
+            self._worldObj.playSoundAtEntity(self, 'random.fizz', 0.4,
+                                             2.0 + self._rand.nextFloat() * 0.4)
+
         zShift = self.posZ
         yShift = self.posY
         xShift = self.posX

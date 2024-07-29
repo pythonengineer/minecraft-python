@@ -46,8 +46,6 @@ cdef class Tessellator:
                 gl.glDisableClientState(gl.GL_COLOR_ARRAY)
 
         self.__reset()
-        if self.__hasColor:
-            gl.glColor4f(1.0, 1.0, 1.0, 1.0)
 
     cdef void __reset(self):
         self.__vertexCount = 0

@@ -1,11 +1,10 @@
 from mc.net.minecraft.game.level.block.Block import Block
-from mc.JavaUtils import Random
+from mc.net.minecraft.game.level.material.Material import Material
 
 class BlockOre(Block):
 
     def __init__(self, blocks, blockId, tex):
-        super().__init__(blocks, blockId, tex)
-        self.__rand = Random()
+        super().__init__(blocks, blockId, tex, Material.wood)
 
     def idDropped(self):
         from mc.net.minecraft.game.item.Items import items
@@ -17,7 +16,7 @@ class BlockOre(Block):
             return self.blockID
 
     def quantityDropped(self, random):
-        return 1 if self.idDropped() == self.blockID else random.nextInt(3) + 1
+        return 1
 
     def onBlockPlaced(self, world, x, y, z):
         from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
@@ -33,8 +32,7 @@ class BlockOre(Block):
         elif self.blockID == self.blocks.oreGold.blockID:
             itemId = items.ingotGold.shiftedIndex
 
-        drops = self.__rand.nextInt(3) + 1
-        for i in range(drops):
+        for i in range(1):
             if world.rand.nextFloat() <= 1.0:
                 itemX = world.rand.nextFloat() * 0.7 + 0.15
                 itemY = world.rand.nextFloat() * 0.7 + 0.15

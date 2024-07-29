@@ -43,5 +43,8 @@ class Item:
     def onBlockDestroyed(self, stack):
         pass
 
-    def getItemDamage(self):
+    def getDamageVsEntity(self):
         return 1
+
+    def canHarvestBlock(self, block):
+        return False

@@ -2,8 +2,8 @@ from mc.net.minecraft.game.level.block.Block import Block
 
 class BlockGlass(Block):
 
-    def __init__(self, blocks, blockId, tex, _):
-        super().__init__(blocks, 20, 49)
+    def __init__(self, blocks, blockId, tex, material, _):
+        super().__init__(blocks, 20, 49, material)
         self.__renderThrough = False
 
     def isOpaqueCube(self):

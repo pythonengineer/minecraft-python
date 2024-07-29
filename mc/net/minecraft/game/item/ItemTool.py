@@ -22,5 +22,5 @@ class ItemTool(Item):
     def onBlockDestroyed(self, stack):
         stack.damageItem(1)
 
-    def getItemDamage(self):
+    def getDamageVsEntity(self):
         return 0

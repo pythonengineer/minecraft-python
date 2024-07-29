@@ -504,7 +504,7 @@ class Minecraft(window.Window):
         elif self.objectMouseOver.typeOfHit == 1:
             if editMode == 0:
                 stack = self.thePlayer.inventory.getStackInSlot(self.thePlayer.inventory.currentItem)
-                damage = items.itemsList[stack.itemID].getItemDamage() if stack else 1
+                damage = items.itemsList[stack.itemID].getDamageVsEntity() if stack else 1
                 if damage > 0:
                     self.objectMouseOver.entityHit.attackEntityFrom(self.thePlayer,
                                                                     damage)
@@ -659,8 +659,9 @@ class Minecraft(window.Window):
                 world.spawnEntityInWorld(self.thePlayer)
                 world.playerEntity = self.thePlayer
 
-        self.thePlayer.movementInput = MovementInputFromOptions(self.options)
-        self.playerController.onRespawn(self.thePlayer)
+        if self.thePlayer:
+            self.thePlayer.movementInput = MovementInputFromOptions(self.options)
+            self.playerController.onRespawn(self.thePlayer)
 
         if self.renderGlobal:
             self.renderGlobal.changeWorld(world)

@@ -8,10 +8,18 @@ from mc.JavaUtils cimport Random
 
 cdef class Block:
 
-    def __init__(self, blocks, int blockId, int tex=0):
+    def __init__(self, blocks, int blockId, x, y=None):
+        if isinstance(x, int):
+            tex = x
+            material = y
+        else:
+            material = x
+            tex = y
+
         if blocks.blocksList[blockId]:
             raise RuntimeError(f'Slot {blockId} is already occupied by {blocks.blocksList[blockId]} when adding {self}')
 
+        self.material = material
         blocks.blocksList[blockId] = self
         self.blocks = blocks
         self.blockID = blockId
@@ -97,9 +105,6 @@ cdef class Block:
     def onBlockDestroyedByPlayer(self, World world, int x, int y, int z):
         pass
 
-    cpdef int getBlockMaterial(self):
-        return Material.air
-
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
         pass
 
@@ -119,7 +124,12 @@ cdef class Block:
         return self.blockID
 
     def blockStrength(self, player):
-        return <int>(self._hardness / player.getStrVsBlock(self) * 30.0)
+        if self._hardness < 0.0:
+            return -1
+        elif not player.canHarvestBlock(self):
+            return -1
+        else:
+            return <int>(self._hardness / player.getStrVsBlock(self) * 30.0)
 
     def dropBlockAsItem(self, World world, int x, int y, int z):
         self.dropBlockAsItemWithChance(world, x, y, z, 1.0)

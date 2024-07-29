@@ -407,7 +407,7 @@ class EntityRenderer:
             self.__mc.renderGlobal.renderSky(alpha)
             self.__setupFog()
 
-            if self.__mc.objectMouseOver:
+            if self.__mc.objectMouseOver and self.__mc.thePlayer.isInsideOfMaterial():
                 gl.glDisable(gl.GL_ALPHA_TEST)
                 self.__mc.renderGlobal.drawBlockBreaking(
                     self.__mc.objectMouseOver, 0,
@@ -436,6 +436,15 @@ class EntityRenderer:
             gl.glDepthMask(True)
             gl.glEnable(gl.GL_CULL_FACE)
             gl.glDisable(gl.GL_BLEND)
+            if self.__mc.objectMouseOver and not self.__mc.thePlayer.isInsideOfMaterial():
+                gl.glDisable(gl.GL_ALPHA_TEST)
+                self.__mc.renderGlobal.drawBlockBreaking(
+                    self.__mc.objectMouseOver, 0,
+                    self.__mc.thePlayer.inventory.getCurrentItem()
+                )
+                self.__mc.renderGlobal.drawSelectionBox(self.__mc.objectMouseOver, 0)
+                gl.glEnable(gl.GL_ALPHA_TEST)
+
             gl.glDisable(gl.GL_FOG)
             if self.__mc.renderRain:
                 x = int(self.__mc.thePlayer.posX)
@@ -540,13 +549,12 @@ class EntityRenderer:
                 int(self.__mc.thePlayer.posX), int(self.__mc.thePlayer.posY + 0.12),
                 int(self.__mc.thePlayer.posZ)
             )]
-        if block and block.getBlockMaterial() != Material.air:
-            material = block.getBlockMaterial()
-            if material == Material.water:
+        if block and block.material != Material.air:
+            if block.material == Material.water:
                 self.__fogColorRed = 0.02
                 self.__fogColorGreen = 0.02
                 self.__fogColorBlue = 0.2
-            elif material == Material.lava:
+            elif block.material == Material.lava:
                 self.__fogColorRed = 0.6
                 self.__fogColorGreen = 0.1
                 self.__fogColorBlue = 0.0
@@ -577,12 +585,11 @@ class EntityRenderer:
                 int(self.__mc.thePlayer.posX),
                 int(self.__mc.thePlayer.posY + 0.12),
                 int(self.__mc.thePlayer.posZ))]
-        if currentBlock and currentBlock.getBlockMaterial() != Material.air:
-            material = currentBlock.getBlockMaterial()
+        if currentBlock and currentBlock.material != Material.air:
             gl.glFogi(gl.GL_FOG_MODE, gl.GL_EXP)
-            if material == Material.water:
+            if currentBlock.material == Material.water:
                 gl.glFogf(gl.GL_FOG_DENSITY, 0.1)
-            elif material == Material.lava:
+            elif currentBlock.material == Material.lava:
                 gl.glFogf(gl.GL_FOG_DENSITY, 2.0)
         else:
             gl.glFogi(gl.GL_FOG_MODE, gl.GL_LINEAR)

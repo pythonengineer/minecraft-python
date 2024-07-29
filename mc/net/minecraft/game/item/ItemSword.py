@@ -17,5 +17,5 @@ class ItemSword(Item):
     def onBlockDestroyed(self, stack):
         stack.damageItem(2)
 
-    def getItemDamage(self):
+    def getDamageVsEntity(self):
         return self.__weaponDamage

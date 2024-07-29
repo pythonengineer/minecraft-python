@@ -7,7 +7,6 @@ from mc.JavaUtils cimport Random
 cdef class BlockFlowing(BlockFluid):
 
     cdef:
-        int __material
         int __stillId
         int __movingId
         Random __random
@@ -22,7 +21,6 @@ cdef class BlockFlowing(BlockFluid):
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer)
     cpdef bint isCollidable(self)
     cpdef bint isOpaqueCube(self)
-    cpdef int getBlockMaterial(self)
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *
     cdef int tickRate(self)
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance)

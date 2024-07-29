@@ -1,5 +1,6 @@
 # cython: language_level=3
 
+from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.block.Block cimport Block
 from mc.net.minecraft.game.level.World cimport World
 from mc.JavaUtils cimport Random
@@ -11,7 +12,7 @@ cdef class BlockFire(Block):
         int[256] __abilityToCatchFire
 
     def __init__(self, blocks, int blockId, int tex):
-        Block.__init__(self, blocks, 51, 31)
+        Block.__init__(self, blocks, 51, 31, Material.fire)
         self.__setBurnRate(self.blocks.planks.blockID, 5, 20)
         self.__setBurnRate(self.blocks.wood.blockID, 5, 5)
         self.__setBurnRate(self.blocks.leaves.blockID, 30, 60)

@@ -7,9 +7,8 @@ from mc.JavaUtils cimport Random
 
 cdef class BlockFluid(Block):
 
-    def __init__(self, blocks, int blockId, int material):
-        Block.__init__(self, blocks, blockId)
-        self._material = material
+    def __init__(self, blocks, int blockId, material):
+        Block.__init__(self, blocks, blockId, material)
 
         self.blockIndexInTexture = 14
         if material == Material.lava:
@@ -25,7 +24,7 @@ cdef class BlockFluid(Block):
         self.setResistance(2.0)
 
     cpdef int getBlockTexture(self, int face):
-        if self._material == Material.lava or face == 1 or face == 0:
+        if self.material == Material.lava or face == 1 or face == 0:
             return self.blockIndexInTexture
         else:
             return self.blockIndexInTexture + 32
@@ -48,17 +47,17 @@ cdef class BlockFluid(Block):
             if change:
                 hasChanged = True
 
-            if not change or self._material == Material.lava:
+            if not change or self.material == Material.lava:
                 break
 
         y += 1
-        if self._material == Material.water or not hasChanged:
+        if self.material == Material.water or not hasChanged:
             hasChanged |= self.__flow(world, x - 1, y, z)
             hasChanged |= self.__flow(world, x + 1, y, z)
             hasChanged |= self.__flow(world, x, y, z - 1)
             hasChanged |= self.__flow(world, x, y, z + 1)
 
-        if self._material == Material.lava:
+        if self.material == Material.lava:
             hasChanged |= self.__extinguishFireLava(world, x - 1, y, z)
             hasChanged |= self.__extinguishFireLava(world, x + 1, y, z)
             hasChanged |= self.__extinguishFireLava(world, x, y, z - 1)
@@ -78,7 +77,7 @@ cdef class BlockFluid(Block):
         if blockId != 0 and blockId != self.blocks.fire.blockID:
             return False
 
-        if self._material == Material.water:
+        if self.material == Material.water:
             for xx in range(x - 2, x + 3):
                 for yy in range(y - 2, y + 3):
                     for zz in range(z - 2, z + 3):
@@ -107,7 +106,7 @@ cdef class BlockFluid(Block):
         return False
 
     cdef float getBlockBrightness(self, World world, int x, int y, int z):
-        return 100.0 if self._material == Material.lava else world.getBlockLightValue(x, y, z)
+        return 100.0 if self.material == Material.lava else world.getBlockLightValue(x, y, z)
 
     cpdef bint shouldSideBeRendered(self, World world, int x, int y, int z, int layer):
         cdef int block
@@ -131,22 +130,17 @@ cdef class BlockFluid(Block):
     cpdef bint isOpaqueCube(self):
         return False
 
-    cpdef int getBlockMaterial(self):
-        return self._material
-
     cpdef void onNeighborBlockChange(self, World world, int x, int y, int z, int blockType) except *:
-        cdef int material
-
         if blockType != 0:
-            material = (<Block>self.blocks.blocksList[blockType]).getBlockMaterial()
-            if self._material == Material.water and material == Material.lava or \
-               material == Material.water and self._material == Material.lava:
+            material = self.blocks.blocksList[blockType].material
+            if self.material == Material.water and material == Material.lava or \
+               material == Material.water and self.material == Material.lava:
                 world.setBlockWithNotify(x, y, z, self.blocks.stone.blockID)
 
         world.scheduleBlockUpdate(x, y, z, self.blockID)
 
     cdef int tickRate(self):
-        return 25 if self._material == Material.lava else 5
+        return 25 if self.material == Material.lava else 5
 
     cdef dropBlockAsItemWithChance(self, World world, int x, int y, int z, float chance):
         pass
@@ -158,11 +152,11 @@ cdef class BlockFluid(Block):
         return 0
 
     cdef int getRenderBlockPass(self):
-        return 1 if self._material == Material.water else 0
+        return 1 if self.material == Material.water else 0
 
     cpdef void randomDisplayTick(self, World world, int x, int y, int z, Random random) except *:
         cdef float posX, posY, posZ
-        if self._material == Material.lava and \
+        if self.material == Material.lava and \
            world.getBlockMaterial(x, y + 1, z) == Material.air and not \
            world.isBlockNormalCube(x, y + 1, z) and random.nextInt(100) == 0:
             posX = x + random.nextFloat()

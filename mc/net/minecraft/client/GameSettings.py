@@ -144,6 +144,7 @@ class GameSettings:
     anaglyph = False
     limitFramerate = False
     numberOfOptions = 8
+    openAlFail = False
 
     def __init__(self, mc, file):
         self.keyBindForward = KeyBinding('Forward', window.key.W)
@@ -238,6 +239,8 @@ class GameSettings:
                             self.anaglyph = split[1] == 'true'
                         elif split[0] == 'limitFramerate':
                             self.limitFramerate = split[1] == 'true'
+                        elif split[0] == 'openAlFail':
+                            self.openAlFail = split[1] == 'true'
 
                         for binding in self.keyBindings:
                             if split[0] == 'key_' + binding.keyDescription:
@@ -256,6 +259,8 @@ class GameSettings:
                 f.write('bobView:' + ('true' if self.viewBobbing else 'false') + '\n')
                 f.write('anaglyph3d:' + ('true' if self.anaglyph else 'false') + '\n')
                 f.write('limitFramerate:' + ('true' if self.limitFramerate else 'false') + '\n')
+                if self.openAlFail:
+                    f.write('openAlFail:' + ('true' if self.openAlFail else 'false') + '\n')
 
                 for binding in self.keyBindings:
                     f.write('key_' + binding.keyDescription + ':' + str(_GL_KEYS[binding.keyCode]) + '\n')

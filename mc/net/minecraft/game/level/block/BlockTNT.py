@@ -1,10 +1,11 @@
 from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.entity.misc.EntityTNTPrimed import EntityTNTPrimed
 
 class BlockTNT(Block):
 
     def __init__(self, blocks, blockId, tex):
-        super().__init__(blocks, 46, 8)
+        super().__init__(blocks, 46, 8, Material.tnt)
 
     def getBlockTexture(self, face):
         if face == 0:

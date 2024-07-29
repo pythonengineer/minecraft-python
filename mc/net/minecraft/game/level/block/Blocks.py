@@ -44,7 +44,7 @@ class Blocks:
         self.soundStoneFootstep = StepSound('stone', 1.0, 1.0)
         self.soundMetalFootstep = StepSound('stone', 1.0, 1.5)
 
-        self.stone = BlockStone(self, 1, 1).setHardness(1.0).setResistance(10.0)
+        self.stone = BlockStone(self, 1, 1).setHardness(1.5).setResistance(10.0)
         self.stone.stepSound = self.soundStoneFootstep
 
         self.grass = BlockGrass(self, 2).setHardness(0.6)
@@ -52,13 +52,13 @@ class Blocks:
 
         self.dirt = BlockDirt(self, 3, 2).setHardness(0.5)
         self.dirt.stepSound = self.soundGravelFootstep
-        self.cobblestone = Block(self, 4, 16).setHardness(1.5).setResistance(10.0)
+        self.cobblestone = Block(self, 4, 16, Material.rock).setHardness(2.0).setResistance(10.0)
         self.cobblestone.stepSound = self.soundStoneFootstep
-        self.planks = Block(self, 5, 4).setHardness(1.5).setResistance(5.0)
+        self.planks = Block(self, 5, 4, Material.wood).setHardness(1.5).setResistance(5.0)
         self.planks.stepSound = self.soundWoodFootstep
         self.sapling = BlockSapling(self, 6, 15).setHardness(0.0)
         self.sapling.stepSound = self.soundGrassFootstep
-        self.bedrock = Block(self, 7, 17).setHardness(999.0).setResistance(6000000.0)
+        self.bedrock = Block(self, 7, 17, Material.rock).setHardness(-1.0).setResistance(6000000.0)
         self.bedrock.stepSound = self.soundStoneFootstep
 
         self.waterMoving = BlockFlowing(self, 8, Material.water).setHardness(100.0).setLightOpacity(4)
@@ -79,47 +79,47 @@ class Blocks:
         self.oreCoal = BlockOre(self, 16, 34).setHardness(3.0).setResistance(5.0)
         self.oreCoal.stepSound = self.soundStoneFootstep
 
-        self.wood = BlockLog(self, 17).setHardness(2.5)
+        self.wood = BlockLog(self, 17).setHardness(1.0)
         self.wood.stepSound = self.soundWoodFootstep
         self.leaves = BlockLeaves(self, 18, 22).setHardness(0.2).setLightOpacity(1)
         self.leaves.stepSound = self.soundGrassFootstep
 
         self.sponge = BlockSponge(self, 19).setHardness(0.6)
         self.sponge.stepSound = self.soundGrassFootstep
-        self.glass = BlockGlass(self, 20, 49, False).setHardness(0.3)
+        self.glass = BlockGlass(self, 20, 49, Material.glass, False).setHardness(0.3)
         self.glass.stepSound = self.soundMetalFootstep
 
-        self.clothRed = Block(self, 21, 64).setHardness(0.8)
+        self.clothRed = Block(self, 21, 64, Material.cloth).setHardness(0.8)
         self.clothRed.stepSound = self.soundGrassFootstep
-        self.clothOrange = Block(self, 22, 65).setHardness(0.8)
+        self.clothOrange = Block(self, 22, 65, Material.cloth).setHardness(0.8)
         self.clothOrange.stepSound = self.soundGrassFootstep
-        self.clothYellow = Block(self, 23, 66).setHardness(0.8)
+        self.clothYellow = Block(self, 23, 66, Material.cloth).setHardness(0.8)
         self.clothYellow.stepSound = self.soundGrassFootstep
-        self.clothChartreuse = Block(self, 24, 67).setHardness(0.8)
+        self.clothChartreuse = Block(self, 24, 67, Material.cloth).setHardness(0.8)
         self.clothChartreuse.stepSound = self.soundGrassFootstep
-        self.clothGreen = Block(self, 25, 68).setHardness(0.8)
+        self.clothGreen = Block(self, 25, 68, Material.cloth).setHardness(0.8)
         self.clothGreen.stepSound = self.soundGrassFootstep
-        self.clothSpringGreen = Block(self, 26, 69).setHardness(0.8)
+        self.clothSpringGreen = Block(self, 26, 69, Material.cloth).setHardness(0.8)
         self.clothSpringGreen.stepSound = self.soundGrassFootstep
-        self.clothCyan = Block(self, 27, 70).setHardness(0.8)
+        self.clothCyan = Block(self, 27, 70, Material.cloth).setHardness(0.8)
         self.clothCyan.stepSound = self.soundGrassFootstep
-        self.clothCapri = Block(self, 28, 71).setHardness(0.8)
+        self.clothCapri = Block(self, 28, 71, Material.cloth).setHardness(0.8)
         self.clothCapri.stepSound = self.soundGrassFootstep
-        self.clothUltramarine = Block(self, 29, 72).setHardness(0.8)
+        self.clothUltramarine = Block(self, 29, 72, Material.cloth).setHardness(0.8)
         self.clothUltramarine.stepSound = self.soundGrassFootstep
-        self.clothViolet = Block(self, 30, 73).setHardness(0.8)
+        self.clothViolet = Block(self, 30, 73, Material.cloth).setHardness(0.8)
         self.clothViolet.stepSound = self.soundGrassFootstep
-        self.clothPurple = Block(self, 31, 74).setHardness(0.8)
+        self.clothPurple = Block(self, 31, 74, Material.cloth).setHardness(0.8)
         self.clothPurple.stepSound = self.soundGrassFootstep
-        self.clothMagenta = Block(self, 32, 75).setHardness(0.8)
+        self.clothMagenta = Block(self, 32, 75, Material.cloth).setHardness(0.8)
         self.clothMagenta.stepSound = self.soundGrassFootstep
-        self.clothRose = Block(self, 33, 76).setHardness(0.8)
+        self.clothRose = Block(self, 33, 76, Material.cloth).setHardness(0.8)
         self.clothRose.stepSound = self.soundGrassFootstep
-        self.clothDarkGray = Block(self, 34, 77).setHardness(0.8)
+        self.clothDarkGray = Block(self, 34, 77, Material.cloth).setHardness(0.8)
         self.clothDarkGray.stepSound = self.soundGrassFootstep
-        self.clothGray = Block(self, 35, 78).setHardness(0.8)
+        self.clothGray = Block(self, 35, 78, Material.cloth).setHardness(0.8)
         self.clothGray.stepSound = self.soundGrassFootstep
-        self.clothWhite = Block(self, 36, 79).setHardness(0.8)
+        self.clothWhite = Block(self, 36, 79, Material.cloth).setHardness(0.8)
         self.clothWhite.stepSound = self.soundGrassFootstep
 
         self.plantYellow = BlockFlower(self, 37, 13).setHardness(0.0)
@@ -141,7 +141,7 @@ class Blocks:
         self.stairSingle = BlockStep(self, 44, False).setHardness(2.0).setResistance(10.0)
         self.stairSingle.stepSound = self.soundStoneFootstep
 
-        self.brick = Block(self, 45, 7).setHardness(2.0).setResistance(10.0)
+        self.brick = Block(self, 45, 7, Material.rock).setHardness(2.0).setResistance(10.0)
         self.brick.stepSound = self.soundStoneFootstep
 
         self.tnt = BlockTNT(self, 46, 8).setHardness(0.0)
@@ -150,7 +150,7 @@ class Blocks:
         self.bookShelf = BlockBookshelf(self, 47, 35).setHardness(1.5)
         self.bookShelf.stepSound = self.soundWoodFootstep
 
-        self.cobblestoneMossy = Block(self, 48, 36).setHardness(1.0)
+        self.cobblestoneMossy = Block(self, 48, 36, Material.rock).setHardness(2.0).setResistance(1.0)
         self.cobblestoneMossy.stepSound = self.soundStoneFootstep
         self.obsidian = BlockStone(self, 49, 37).setHardness(10.0).setResistance(10.0)
         self.obsidian.stepSound = self.soundStoneFootstep

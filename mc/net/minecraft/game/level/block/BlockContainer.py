@@ -2,8 +2,8 @@ from mc.net.minecraft.game.level.block.Block import Block
 
 class BlockContainer(Block):
 
-    def __init__(self, blocks, blockId):
-        super().__init__(blocks, blockId)
+    def __init__(self, blocks, blockId, material):
+        super().__init__(blocks, blockId, material)
 
     def onBlockAdded(self, world, x, y, z):
         super().onBlockAdded(world, x, y, z)

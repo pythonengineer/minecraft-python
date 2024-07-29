@@ -79,6 +79,7 @@ class RenderItem(Render):
             gl.glEnable(gl.GL_LIGHTING)
             gl.glEnable(gl.GL_DEPTH_TEST)
             gl.glEnable(gl.GL_TEXTURE_2D)
+            gl.glColor4f(1.0, 1.0, 1.0, 1.0)
 
     @staticmethod
     def __drawToolDamage(t, width, height, x, y, z):

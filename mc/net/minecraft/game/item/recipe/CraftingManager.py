@@ -41,6 +41,8 @@ class CraftingManager:
                        ('###', '# #', '###', ord('#'), blocks.planks))
         self.addRecipe(ItemStack(blocks.workbench),
                        ('##', '##', ord('#'), blocks.planks))
+        self.addRecipe(ItemStack(blocks.clothGray, 1),
+                       ('###', '###', '###', ord('#'), items.silk))
         self.addRecipe(ItemStack(blocks.tnt, 1),
                        ('X#X', '#X#', 'X#X', ord('X'),
                        items.gunpowder, ord('#'), blocks.sand))

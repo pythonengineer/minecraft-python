@@ -1,9 +1,11 @@
 from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.level.material.Material import Material
 
 class BlockSource(Block):
 
     def __init__(self, blocks, blockId, fluid):
-        super().__init__(blocks, blockId, blocks.blocksList[fluid].blockIndexInTexture)
+        super().__init__(blocks, blockId,
+                         blocks.blocksList[fluid].blockIndexInTexture, Material.water)
         self.__fluid = fluid
         self._setTickOnLoad(True)
 

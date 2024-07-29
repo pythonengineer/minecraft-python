@@ -1,3 +1,4 @@
+from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.block.BlockContainer import BlockContainer
 from mc.net.minecraft.game.InventoryLargeChest import InventoryLargeChest
 from mc.JavaUtils import Random
@@ -5,7 +6,7 @@ from mc.JavaUtils import Random
 class BlockChest(BlockContainer):
 
     def __init__(self, blocks, blockId):
-        super().__init__(blocks, 54)
+        super().__init__(blocks, 54, Material.wood)
         self.blockIndexInTexture = 26
         self.__random = Random()
 

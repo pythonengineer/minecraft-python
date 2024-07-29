@@ -329,7 +329,7 @@ cdef class Entity:
                                           <int>(self.posY + 0.12),
                                           <int>self.posZ)
         if block != 0:
-            return blocks.blocksList[block].getBlockMaterial() == Material.water
+            return blocks.blocksList[block].material == Material.water
 
         return False
 

@@ -4,7 +4,7 @@ from mc.net.minecraft.game.level.material.Material import Material
 class BlockGrass(Block):
 
     def __init__(self, blocks, blockId):
-        super().__init__(blocks, 2)
+        super().__init__(blocks, 2, Material.ground)
         self.blockIndexInTexture = 3
         self._setTickOnLoad(True)
 

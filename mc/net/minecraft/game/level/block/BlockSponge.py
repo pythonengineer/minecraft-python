@@ -1,9 +1,10 @@
 from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.level.material.Material import Material
 
 class BlockSponge(Block):
 
     def __init__(self, blocks, blockId):
-        super().__init__(blocks, 19)
+        super().__init__(blocks, 19, Material.sponge)
         self.blockIndexInTexture = 48
 
     def onBlockAdded(self, world, x, y, z):

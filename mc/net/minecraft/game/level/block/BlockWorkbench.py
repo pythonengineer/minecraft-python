@@ -1,9 +1,10 @@
 from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.level.material.Material import Material
 
 class BlockWorkbench(Block):
 
     def __init__(self, blocks, blockId):
-        super().__init__(blocks, 58)
+        super().__init__(blocks, 58, Material.wood)
         self.blockIndexInTexture = 59
 
     def getBlockTexture(self, face):

@@ -1,10 +1,11 @@
 from mc.net.minecraft.game.level.block.Block import Block
+from mc.net.minecraft.game.level.material.Material import Material
 
 class BlockStep(Block):
 
     def __init__(self, blocks, blockId, half):
         self.__blockType = half
-        super().__init__(blocks, blockId, 6)
+        super().__init__(blocks, blockId, 6, Material.rock)
         if not self.__blockType:
             self._setBlockBounds(0.0, 0.0, 0.0, 1.0, 0.5, 1.0)
 

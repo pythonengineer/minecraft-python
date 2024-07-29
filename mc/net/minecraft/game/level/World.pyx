@@ -624,7 +624,7 @@ cdef class World:
             for y in range(minY, maxY):
                 for z in range(minZ, maxZ):
                     block = blocks.blocksList[self.getBlockId(x, y, z)]
-                    if block and block.getBlockMaterial() != Material.air:
+                    if block and block.material.getIsLiquid():
                         return True
 
         return False
@@ -648,7 +648,7 @@ cdef class World:
 
         return False
 
-    cdef bint handleMaterialAcceleration(self, AxisAlignedBB box, int material):
+    cdef bint handleMaterialAcceleration(self, AxisAlignedBB box, material):
         cdef int minX, maxX, minY, maxY, minZ, maxZ, x, y, z
         cdef Block block
 
@@ -662,7 +662,7 @@ cdef class World:
             for y in range(minY, maxY):
                 for z in range(minZ, maxZ):
                     block = blocks.blocksList[self.getBlockId(x, y, z)]
-                    if block and block.getBlockMaterial() == material:
+                    if block and block.material == material:
                         return True
 
         return False
@@ -715,13 +715,13 @@ cdef class World:
         return block > 0 and (<Block>blocks.blocksList[block]).isOpaqueCube()
 
     cpdef __getFirstUncoveredBlock(self, int x, int z):
-        cdef int blockId, y
-        y = self.height
-        blockId = self.getBlockId(x, y - 1, z)
-        while (blockId == 0 or \
-               (<Block>blocks.blocksList[blockId]).getBlockMaterial() != Material.air) and y > 0:
+        cdef int y = self.height
+        cdef int blockId = self.getBlockId(x, y - 1, z)
+        while self.getBlockId(x, y - 1, z) == 0 or \
+              blocks.blocksList[self.getBlockId(x, y - 1, z)].material == Material.air:
             y -= 1
-            blockId = self.getBlockId(x, y - 1, z)
+            if y == 0:
+                break
 
         return y
 
@@ -779,16 +779,16 @@ cdef class World:
 
         return <char>((self.__data[(y * self.length + z) * self.width + x] % 0x100000000) >> 4 & 15)
 
-    cpdef inline int getBlockMaterial(self, int x, int y, int z):
+    def getBlockMaterial(self, int x, int y, int z):
         cdef int block = self.getBlockId(x, y, z)
         if block == 0:
             return Material.air
 
-        return (<Block>blocks.blocksList[block]).getBlockMaterial()
+        return blocks.blocksList[block].material
 
     cpdef inline bint isWater(self, int x, int y, int z):
         cdef int block = self.getBlockId(x, y, z)
-        return block > 0 and (<Block>blocks.blocksList[block]).getBlockMaterial() == Material.water
+        return block > 0 and blocks.blocksList[block].material == Material.water
 
     @cython.cdivision(True)
     def rayTraceBlocks(self, vec1, vec2):
@@ -903,7 +903,7 @@ cdef class World:
             blockId = self.getBlockId(x1, y1, z1)
             if blockId > 0:
                 block = blocks.blocksList[blockId]
-                if block.getBlockMaterial() == Material.air and block.isCollidable():
+                if block.isCollidable():
                     hitResult = block.collisionRayTrace(self, x1, y1, z1, vec1, vec2)
                     if hitResult:
                         return hitResult
@@ -1240,13 +1240,13 @@ cdef class World:
         else:
             return pos
 
-    cdef bint floodFill(self, int x, int y, int z, int source, int tt):
+    cdef int floodFill(self, int x, int y, int z, int source, int tt):
         cdef int i, flooded, coord
         cdef bint lastNorth, lastSouth, north, south
         cdef char blockId
 
         if x < 0 or y < 0 or z < 0 or x >= self.width or y >= self.height or z >= self.length:
-            return False
+            return 0
 
         global floodFillCounter
         floodFillCounter += 1
@@ -1261,7 +1261,7 @@ cdef class World:
         while True:
             while True:
                 if flooded <= 0:
-                    return True
+                    return 1
 
                 flooded -= 1
                 coord = self.__coords[flooded]
@@ -1272,7 +1272,7 @@ cdef class World:
             z = coord // 1024
             if x == 0 or x == self.width - 1 or y == 0 or y == self.height - 1 or \
                z == 0 or z == self.length - 1:
-                return False
+                return 2
 
             while x > 0 and self.__floodFillCounters[coord - 1] != floodFillCounter and \
                   (self.blocks[(y * self.length + z) * self.width + x - 1] == source or \
@@ -1281,7 +1281,7 @@ cdef class World:
                 coord -= 1
 
             if x > 0 and self.blocks[(y * self.length + z) * self.width + x - 1] == 0:
-                return False
+                return 0
 
             lastNorth = False
             lastSouth = False
@@ -1289,12 +1289,12 @@ cdef class World:
                  (self.blocks[(y * self.length + z) * self.width + x] == source or \
                   self.blocks[(y * self.length + z) * self.width + x] == tt):
                 if x == 0 or x == self.width - 1:
-                    return False
+                    return 2
 
                 if z > 0:
                     blockId = self.blocks[(y * self.length + z - 1) * self.width + x]
                     if blockId == 0:
-                        return False
+                        return 0
 
                     north = self.__floodFillCounters[coord - 1024] != floodFillCounter and \
                             (blockId == source or blockId == tt)
@@ -1307,7 +1307,7 @@ cdef class World:
                 if z < self.length - 1:
                     blockId = self.blocks[(y * self.length + z + 1) * self.width + x]
                     if blockId == 0:
-                        return False
+                        return 0
 
                     south = self.__floodFillCounters[coord + 1024] != floodFillCounter and \
                             (blockId == source or blockId == tt)
@@ -1324,7 +1324,7 @@ cdef class World:
             if x < self.width and self.blocks[(y * self.length + z) * self.width + x] == 0:
                 break
 
-        return False
+        return 0
 
     def playSoundAtEntity(self, entity, str name, float volume, float pitch):
         cdef float d, xd, yd, zd

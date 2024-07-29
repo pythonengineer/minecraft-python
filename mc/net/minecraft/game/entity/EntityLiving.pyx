@@ -205,7 +205,7 @@ cdef class EntityLiving(Entity):
     def onDeath(self, Entity entity):
         cdef int i
         cdef int drops = self._rand.nextInt(3)
-        cdef int drop = self._rand.nextInt(3)
+        cdef int drop = self._rand.nextInt(4)
         if drop == 0:
             for i in range(drops):
                 self.entityDropItem(items.silk.shiftedIndex, 1)
@@ -215,6 +215,8 @@ cdef class EntityLiving(Entity):
         elif drop == 2:
             for i in range(drops):
                 self.entityDropItem(items.feather.shiftedIndex, 1)
+        elif drop == 3:
+            self.entityDropItem(items.flintSteel.shiftedIndex, 1)
 
     cdef _fall(self, float d):
         cdef int damage = <int>ceil(d - 3.0)

@@ -1,8 +1,10 @@
 from mc.net.minecraft.game.entity.player.InventoryPlayer import InventoryPlayer
 from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.game.entity.misc.EntityItem import EntityItem
+from mc.net.minecraft.game.item.Items import items
 from mc.net.minecraft.game.item.ItemStack import ItemStack
 from mc.net.minecraft.game.level.block.Blocks import blocks
+from mc.net.minecraft.game.level.material.Material import Material
 from pyglet import gl
 
 import math
@@ -99,6 +101,13 @@ class EntityPlayer(EntityLiving):
             strength = 1.0 * stack.getItem().getStrVsBlock(block)
 
         return strength
+
+    def canHarvestBlock(self, block):
+        if block.material != Material.rock:
+            return True
+        else:
+            stack = self.inventory.getStackInSlot(self.inventory.currentItem)
+            return items.itemsList[stack.itemID].canHarvestBlock(block) if stack else False
 
     def _writeEntityToNBT(self, compound):
         pass
