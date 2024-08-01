@@ -56,11 +56,13 @@ cdef class Entity:
         bint __inWater
         public int heartsLife
         public int air
+        bint __firstUpdate
 
     cdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za)
     cpdef moveEntity(self, float x, float y, float z)
     cdef _fall(self, float distance)
     cpdef bint handleWaterMovement(self)
+    cpdef float _getEyeHeight(self)
     cdef bint handleLavaMovement(self)
     cpdef moveFlying(self, float xa, float za, float speed)
     cpdef float getBrightness(self, float a)

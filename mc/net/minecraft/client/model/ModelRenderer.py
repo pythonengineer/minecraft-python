@@ -103,7 +103,7 @@ class ModelRenderer:
     def setRotationPoint(self, x, y, z):
         self.__rotationPointX = x
         self.__rotationPointY = y
-        self.__rotationPointZ = 0.0
+        self.__rotationPointZ = z
 
     def render(self, translation):
         if not self.__showModel:

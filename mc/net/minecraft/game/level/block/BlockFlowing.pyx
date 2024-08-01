@@ -43,7 +43,7 @@ cdef class BlockFlowing(BlockFluid):
                  self._canFlow(world, x, y, z - 1) or \
                  self._canFlow(world, x, y, z + 1)
         if change and world.getBlockMaterial(x, y - 1, z) == self.material:
-            res = world.floodFill(x, y - 1, z, self.__movingId, self.__stillId)
+            res = world.floodFill(x, y, z, self.__movingId, self.__stillId)
             if res <= 0:
                 return False
 
@@ -60,7 +60,6 @@ cdef class BlockFlowing(BlockFluid):
                     y1 %= 1024
 
                     world.setBlockWithNotify(x1, y1, z1, 0)
-                    world.scheduleBlockUpdate(x, y, z, self.__movingId)
                     return False
 
                 return False

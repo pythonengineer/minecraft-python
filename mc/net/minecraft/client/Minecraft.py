@@ -373,7 +373,7 @@ class Minecraft(window.Window):
         gl.glEnable(gl.GL_DEPTH_TEST)
         gl.glDepthFunc(gl.GL_LEQUAL)
         gl.glEnable(gl.GL_ALPHA_TEST)
-        gl.glAlphaFunc(gl.GL_GREATER, 0.0)
+        gl.glAlphaFunc(gl.GL_GREATER, 0.1)
         gl.glCullFace(gl.GL_BACK)
 
         gl.glMatrixMode(gl.GL_PROJECTION)

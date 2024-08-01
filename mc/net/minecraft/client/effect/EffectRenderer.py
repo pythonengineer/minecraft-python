@@ -14,14 +14,14 @@ class EffectRenderer:
             self.__worldObj = world
 
         self.__renderEngine = renderEngine
-        self.__fxLayers = [[], []]
+        self.__fxLayers = [[], [], []]
 
     def addEffect(self, fx):
         tex = fx.getFXLayer()
         self.__fxLayers[tex].append(fx)
 
     def updateEffects(self):
-        for i in range(2):
+        for i in range(3):
             for p in self.__fxLayers[i].copy():
                 p.onEntityUpdate()
                 if p.isDead:
@@ -35,10 +35,11 @@ class EffectRenderer:
         za2 = xa * math.sin(entity.rotationPitch * math.pi / 180.0)
         ya = math.cos(entity.rotationPitch * math.pi / 180.0)
 
-        for i in range(2):
+        for i in range(3):
             if not len(self.__fxLayers[i]):
                 continue
 
+            id_ = 0
             if i == 0:
                 id_ = self.__renderEngine.getTexture('particles.png')
             elif i == 1:
@@ -53,9 +54,21 @@ class EffectRenderer:
 
             t.draw()
 
+    def renderLitParticles(self, translation):
+        if not self.__fxLayers[2]:
+            return
+
+        t = tessellator
+        t.startDrawingQuads()
+
+        for p in self.__fxLayers[2]:
+            p.renderParticle(t, translation, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+        t.draw()
+
     def clearEffects(self, world):
         self.__worldObj = world
-        for i in range(2):
+        for i in range(3):
             self.__fxLayers[i].clear()
 
     def addBlockDestroyEffects(self, x, y, z):
@@ -101,3 +114,6 @@ class EffectRenderer:
                     0.0, 0.0, 0.0, block
                 ).multiplyVelocity(0.2).multipleParticleScaleBy(0.6)
             )
+
+    def getStatistics(self):
+        return str(len(self.__fxLayers[0]) + len(self.__fxLayers[1]) + len(self.__fxLayers[2]))

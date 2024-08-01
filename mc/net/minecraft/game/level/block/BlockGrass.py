@@ -14,7 +14,8 @@ class BlockGrass(Block):
         return 3
 
     def updateTick(self, world, x, y, z, random):
-        if not world.isHalfLit(x, y + 1, z) and world.getBlockMaterial(x, y + 1, z) == Material.air:
+        if not world.isHalfLit(x, y + 1, z) and \
+           world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
             if random.nextInt(4) == 0:
                 world.setBlockWithNotify(x, y, z, self.blocks.dirt.blockID)
         else:
@@ -22,8 +23,8 @@ class BlockGrass(Block):
             yt = y + random.nextInt(5) - 3
             zt = z + random.nextInt(3) - 1
             if world.getBlockId(xt, yt, zt) == self.blocks.dirt.blockID and \
-               world.isHalfLit(xt, yt + 1, zt) and \
-               world.getBlockMaterial(x, y + 1, z) == Material.air:
+               world.isHalfLit(xt, yt + 1, zt) and not \
+               world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
                 world.setBlockWithNotify(xt, yt, zt, self.blocks.grass.blockID)
 
     def idDropped(self):

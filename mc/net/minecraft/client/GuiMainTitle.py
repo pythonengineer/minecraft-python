@@ -4,7 +4,7 @@ from mc.net.minecraft.client.gui.GuiNewLevel import GuiNewLevel
 from mc.net.minecraft.client.gui.GuiLoadLevel import GuiLoadLevel
 from mc.net.minecraft.client.gui.GuiButton import GuiButton
 from mc.net.minecraft.client.render.Tessellator import tessellator
-from mc.JavaUtils import getMillis
+from mc.JavaUtils import getMillis, random
 from pyglet import gl
 
 import math
@@ -13,6 +13,19 @@ class GuiMainTitle(GuiScreen):
 
     def __init__(self):
         self.__updateCounter = 0.0
+        self.__splashes = (
+            'Pre-beta!', 'As seen on TV!', 'Awesome!', '100% pure!',
+            'May contain nuts!', 'Better than Prey!', 'More polygons!', 'Sexy!',
+            'Limited edition!', 'Flashing letters!', 'Made by Notch!', 'Coming soon!',
+            'Best in class!', 'When it\'s finished!', 'Absolutely dragon free!',
+            'Excitement!', 'More than 4000 sold!', 'One of a kind!',
+            '700+ hits on YouTube!', 'Indev!', 'Spiders everywhere!', 'Check it out!',
+            'Holy cow, man!', 'It\'s a game!', 'Made in Sweden!', 'Uses Pyglet!',
+            'Written in Python!', 'Reticulating splines!', 'Minecraft!', 'Yaaay!',
+            'Alpha version!', 'Singleplayer!', 'Keyboard compatible!', 'Undocumented!',
+            'Ingots!'
+        )
+        self.__splash = self.__splashes[int(random() * len(self.__splashes))]
 
     def updateScreen(self):
         self.__updateCounter += 0.01
@@ -67,7 +80,7 @@ class GuiMainTitle(GuiScreen):
         gl.glRotatef(-20.0, 0.0, 0.0, 1.0)
         size = 1.8 - abs(math.sin((getMillis() % 1000) / 1000.0 * math.pi * 2.0) * 0.1)
         gl.glScalef(size, size, size)
-        self.drawCenteredString(self._fontRenderer, 'Pre-beta!', 0, -8, 16776960)
+        self.drawCenteredString(self._fontRenderer, self.__splash, 0, -8, 16776960)
         gl.glPopMatrix()
         copyright = 'Copyright Mojang Specifications. Do not distribute.'
         self.drawString(

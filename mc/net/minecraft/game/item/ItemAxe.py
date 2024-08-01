@@ -5,5 +5,5 @@ class ItemAxe(ItemTool):
     __blocksEffectiveAgainst = (blocks.planks, blocks.bookShelf,
                                 blocks.wood, blocks.chest)
 
-    def __init__(self, items, itemId, damage):
-        super().__init__(items, itemId, damage, self.__blocksEffectiveAgainst)
+    def __init__(self, items, itemId, strength):
+        super().__init__(items, itemId, 3, strength, self.__blocksEffectiveAgainst)

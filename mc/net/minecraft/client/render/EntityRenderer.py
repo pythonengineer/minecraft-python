@@ -399,6 +399,7 @@ class EntityRenderer:
             RenderHelper.enableStandardItemLighting()
             self.__mc.renderGlobal.renderEntities(self.__orientCamera(alpha),
                                                   self.__frustum, alpha)
+            self.__mc.effectRenderer.renderLitParticles(alpha)
             RenderHelper.disableStandardItemLighting()
             self.__setupFog()
             self.__mc.effectRenderer.renderParticles(self.__mc.thePlayer, alpha)
@@ -585,7 +586,7 @@ class EntityRenderer:
                 int(self.__mc.thePlayer.posX),
                 int(self.__mc.thePlayer.posY + 0.12),
                 int(self.__mc.thePlayer.posZ))]
-        if currentBlock and currentBlock.material != Material.air:
+        if currentBlock and currentBlock.material.getIsLiquid():
             gl.glFogi(gl.GL_FOG_MODE, gl.GL_EXP)
             if currentBlock.material == Material.water:
                 gl.glFogf(gl.GL_FOG_DENSITY, 0.1)

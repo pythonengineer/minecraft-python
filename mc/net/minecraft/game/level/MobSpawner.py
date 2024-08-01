@@ -1,6 +1,13 @@
 from mc.net.minecraft.game.level.material.Material import Material
-from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
 from mc.net.minecraft.game.entity.AILiving import AILiving
+from mc.net.minecraft.game.entity.EntityLiving import EntityLiving
+from mc.net.minecraft.game.entity.animal.EntityPig import EntityPig
+from mc.net.minecraft.game.entity.animal.EntitySheep import EntitySheep
+from mc.net.minecraft.game.entity.monster.EntityCreeper import EntityCreeper
+from mc.net.minecraft.game.entity.monster.EntitySkeleton import EntitySkeleton
+from mc.net.minecraft.game.entity.monster.EntitySpider import EntitySpider
+from mc.net.minecraft.game.entity.monster.EntityZombie import EntityZombie
+from mc.JavaUtils import random
 
 class MobSpawner:
 
@@ -16,7 +23,7 @@ class MobSpawner:
     def spawnMob(self, count, entity, loader):
         mobs = 0
         for i in range(count):
-            self.__worldObj.rand.nextInt(5)
+            self.__worldObj.rand.nextInt(6)
             blockX = self.__worldObj.rand.nextInt(self.__worldObj.width)
             blockY = int(min(self.__worldObj.rand.nextFloat(),
                              self.__worldObj.rand.nextFloat()) * self.__worldObj.height)
@@ -53,7 +60,24 @@ class MobSpawner:
                             if xd * xd + yd * yd + zd * zd < 256.0:
                                 continue
 
-                            mob = EntityLiving(self.__worldObj)
+                            mob = None
+                            choice = int(random() * 7.0)
+                            if choice == 0:
+                                mob = EntitySkeleton(self.__worldObj)
+                            elif choice == 1:
+                                mob = EntityPig(self.__worldObj)
+                            elif choice == 2:
+                                mob = EntityCreeper(self.__worldObj)
+                            elif choice == 3:
+                                mob = EntitySpider(self.__worldObj)
+                            elif choice == 4:
+                                mob = EntitySheep(self.__worldObj)
+                            elif choice == 6:
+                                mob = EntityZombie(self.__worldObj)
+
+                            if not mob:
+                                continue
+
                             yaw = self.__worldObj.rand.nextFloat() * 360.0
                             mob.setPositionAndRotation(x, y, z, yaw, 0.0)
                             mob.setEntityAI(AILiving())

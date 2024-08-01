@@ -1,3 +1,4 @@
+from mc.net.minecraft.client.render.entity.RenderManager import RenderManager
 from mc.net.minecraft.client.render.entity.RenderItem import RenderItem
 from mc.net.minecraft.client.gui.GuiScreen import GuiScreen
 from mc.net.minecraft.client.RenderHelper import RenderHelper
@@ -31,7 +32,7 @@ class GuiContainer(GuiScreen):
         gl.glRotatef(10.0, 0.0, 1.0, 0.0)
         gl.glRotatef(10.0, 1.0, 0.0, 0.0)
         gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-        self.mc.renderGlobal.renderManager.renderEntityWithPosYaw(
+        RenderManager.instance.renderEntityWithPosYaw(
             self.mc.thePlayer, 0.0, 0.0, 0.0, 0.0, 0.0
         )
         gl.glPopMatrix()

@@ -11,6 +11,7 @@ class Render:
         RenderBlocks(tessellator)
         self._renderManager = None
         self._shadowSize = 0.0
+        self._shadowOpaque = 0.0
 
     def doRender(self, entity, xd, yd, zd, yaw, a):
         pass
@@ -64,43 +65,46 @@ class Render:
 
     def renderShadow(self, entity, xd, yd, zd, a):
         if self._shadowSize > 0.0:
-            gl.glEnable(gl.GL_BLEND)
-            self._renderManager.renderEngine.setClampTexture(True)
-            tex = self._renderManager.renderEngine.getTexture('shadow.png')
-            gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
-            self._renderManager.renderEngine.setClampTexture(False)
-            gl.glDepthMask(False)
+            d = self._renderManager.getDistanceToCamera(xd, yd, zd)
+            d = (1.0 - d / 256.0) * self._shadowOpaque
+            if d > 0.0:
+                gl.glEnable(gl.GL_BLEND)
+                self._renderManager.renderEngine.setClampTexture(True)
+                tex = self._renderManager.renderEngine.getTexture('shadow.png')
+                gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
+                self._renderManager.renderEngine.setClampTexture(False)
+                gl.glDepthMask(False)
 
-            for xx in range(int(xd - self._shadowSize), int(xd + self._shadowSize + 1)):
-                for yy in range(int(yd - 2.0), int(yd + 1)):
-                    for zz in range(int(zd - self._shadowSize), int(zd + self._shadowSize + 1)):
-                        blockId = self._renderManager.worldObj.getBlockId(xx, yy - 1, zz)
-                        if blockId > 0 and self._renderManager.worldObj.isHalfLit(xx, yy, zz):
-                            block = blocks.blocksList[blockId]
-                            t = tessellator
-                            br = self._renderManager.worldObj.getBlockLightValue(xx, yy, zz)
-                            r0 = (1.0 - (yd - yy) / 2.0) * 0.5 * br
-                            if r0 >= 0.0:
-                                gl.glColor4f(1.0, 1.0, 1.0, r0)
-                                t.startDrawingQuads()
-                                r0 = xx + block.minX
-                                r1 = xx + block.maxX
-                                g = yy + block.minY
-                                b0 = zz + block.minZ
-                                b1 = zz + block.maxZ
-                                u0 = (xd - r0) / 2.0 / 0.5 + 0.5
-                                u1 = (xd - r1) / 2.0 / 0.5 + 0.5
-                                v0 = (zd - b0) / 2.0 / 0.5 + 0.5
-                                v1 = (zd - b1) / 2.0 / 0.5 + 0.5
-                                t.addVertexWithUV(r0, g, b0, u0, v0)
-                                t.addVertexWithUV(r0, g, b1, u0, v1)
-                                t.addVertexWithUV(r1, g, b1, u1, v1)
-                                t.addVertexWithUV(r1, g, b0, u1, v0)
-                                t.draw()
+                for xx in range(int(xd - self._shadowSize), int(xd + self._shadowSize + 1)):
+                    for yy in range(int(yd - 2.0), int(yd + 1)):
+                        for zz in range(int(zd - self._shadowSize), int(zd + self._shadowSize + 1)):
+                            blockId = self._renderManager.worldObj.getBlockId(xx, yy - 1, zz)
+                            if blockId > 0 and self._renderManager.worldObj.isHalfLit(xx, yy, zz):
+                                block = blocks.blocksList[blockId]
+                                t = tessellator
+                                br = self._renderManager.worldObj.getBlockLightValue(xx, yy, zz)
+                                r0 = (1.0 - (yd - yy) / 2.0) * 0.5 * br
+                                if r0 >= 0.0:
+                                    gl.glColor4f(1.0, 1.0, 1.0, r0)
+                                    t.startDrawingQuads()
+                                    r0 = xx + block.minX
+                                    r1 = xx + block.maxX
+                                    g = yy + block.minY
+                                    b0 = zz + block.minZ
+                                    b1 = zz + block.maxZ
+                                    u0 = (xd - r0) / 2.0 / self._shadowSize + 0.5
+                                    u1 = (xd - r1) / 2.0 / self._shadowSize + 0.5
+                                    v0 = (zd - b0) / 2.0 / self._shadowSize + 0.5
+                                    v1 = (zd - b1) / 2.0 / self._shadowSize + 0.5
+                                    t.addVertexWithUV(r0, g, b0, u0, v0)
+                                    t.addVertexWithUV(r0, g, b1, u0, v1)
+                                    t.addVertexWithUV(r1, g, b1, u1, v1)
+                                    t.addVertexWithUV(r1, g, b0, u1, v0)
+                                    t.draw()
 
-            gl.glColor4f(1.0, 1.0, 1.0, 1.0)
-            gl.glDisable(gl.GL_BLEND)
-            gl.glDepthMask(True)
+                gl.glColor4f(1.0, 1.0, 1.0, 1.0)
+                gl.glDisable(gl.GL_BLEND)
+                gl.glDepthMask(True)
 
         if entity.fire > 0:
             gl.glDisable(gl.GL_LIGHTING)

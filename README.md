@@ -5,16 +5,17 @@
 _**Minecraft: Python Edition**_ is a project that strives to recreate each and every old Minecraft version in Python 3 using the **Pyglet** multimedia library and **Cython** for performance.
 
 The project is currently working on the Indev versions of Minecraft.
-The latest version is **Indev 0.31 20100201-2** as released on _**February 1, 2010**_.
+The latest version is **Indev 0.31 20100202** as released on _**February 2, 2010**_.
 
-This version adds glass smelting, cloth crafting, flint and steel mob drops, and pickaxe tiers to the game.
+This version re-adds pigs, sheep, skeletons, creepers, zombies and spiders to the game, however they are all passive.
+This is the last available version of 0.31.
 
 Features from previous Indev versions include the Indev mossy cobblestone spawn house, NBT level file saving,
-durable tools, torches, advanced liquid spread, TNT explosives, chests, passive human mobs, the main menu, workbench crafting, and soup.
+durable tools, torches, advanced liquid spread, TNT explosives, chests, the main menu, workbench crafting, and soup.
 
-To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20100201-2`.
+To easily install this version of *Minecraft: Python Edition*, just run `python -m pip install minecraft-python==0.31.20100202`.
 
-You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20100201-2)
+You can learn more about this version [on the Minecraft wiki.](https://minecraft.wiki/w/Java_Edition_Indev_0.31_20100202)
 
 ### Organization
 
@@ -51,7 +52,7 @@ You can specify the world theme as *Normal* or *Hell* (lava and dirt instead of 
 
 Levels can be saved to a single *.mclevel* NBT file in the pause menu. The level files are perfectly compatible with Java and vice versa.
 
-Humans may drop string on death, gunpowder, feathers, or flint and steel upon death.
+Any mob may drop string, gunpowder, feathers, or flint and steel upon death.
 
 Crafted mushroom bowl soup will restore health. Check the Wiki for crafting recipes added in this version.
 

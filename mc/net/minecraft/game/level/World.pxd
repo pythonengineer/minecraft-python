@@ -109,5 +109,6 @@ cdef class World:
     cdef inline char __getBlockMetadata(self, int x, int y, int z)
     cpdef inline bint isWater(self, int x, int y, int z)
     cpdef bint growTrees(self, int x, int y, int z)
+    cdef float __getBlockDensity(self, vec, AxisAlignedBB box)
     cdef int fluidFlowCheck(self, int x, int y, int z, int source, int tt)
     cdef int floodFill(self, int x, int y, int z, int source, int tt)

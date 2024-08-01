@@ -154,6 +154,7 @@ class ItemRenderer:
         RenderHelper.disableStandardItemLighting()
 
     def renderInMaterial(self, alpha):
+        gl.glDisable(gl.GL_ALPHA_TEST)
         if self.__mc.thePlayer.fire > 0:
             tex = self.__mc.renderEngine.getTexture('terrain.png')
             gl.glBindTexture(gl.GL_TEXTURE_2D, tex)
@@ -191,15 +192,19 @@ class ItemRenderer:
             gl.glEnable(gl.GL_BLEND)
             gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
             gl.glPushMatrix()
+            rotX = -self.__mc.thePlayer.rotationYaw / 64.0
+            rotY = self.__mc.thePlayer.rotationPitch / 64.0
             t.startDrawingQuads()
-            t.addVertexWithUV(-1.0, -1.0, -0.5, 4.0, 4.0)
-            t.addVertexWithUV(1.0, -1.0, -0.5, 0.0, 4.0)
-            t.addVertexWithUV(1.0, 1.0, -0.5, 0.0, 0.0)
-            t.addVertexWithUV(-1.0, 1.0, -0.5, 4.0, 0.0)
+            t.addVertexWithUV(-1.0, -1.0, -0.5, rotX + 4.0, rotY + 4.0)
+            t.addVertexWithUV(1.0, -1.0, -0.5, rotX + 0.0, rotY + 4.0)
+            t.addVertexWithUV(1.0, 1.0, -0.5, rotX + 0.0, rotY + 0.0)
+            t.addVertexWithUV(-1.0, 1.0, -0.5, rotX + 4.0, rotY + 0.0)
             t.draw()
             gl.glPopMatrix()
             gl.glColor4f(1.0, 1.0, 1.0, 1.0)
             gl.glDisable(gl.GL_BLEND)
+
+        gl.glEnable(gl.GL_ALPHA_TEST)
 
     def updateEquippedItem(self):
         self.__prevEquippedProgress = self.__equippedProgress

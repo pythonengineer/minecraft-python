@@ -127,7 +127,7 @@ cdef class Block:
         if self._hardness < 0.0:
             return -1
         elif not player.canHarvestBlock(self):
-            return -1
+            return <int>(self._hardness * 100.0)
         else:
             return <int>(self._hardness / player.getStrVsBlock(self) * 30.0)
 

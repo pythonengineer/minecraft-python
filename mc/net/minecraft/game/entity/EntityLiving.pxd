@@ -26,5 +26,6 @@ cdef class EntityLiving(Entity):
         public float moveForward
         public float randomYawVelocity
 
+    cpdef float _getEyeHeight(self)
     cdef _fall(self, float d)
     cdef travel(self, float x, float z)

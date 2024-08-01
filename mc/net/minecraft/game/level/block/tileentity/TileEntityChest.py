@@ -41,10 +41,11 @@ class TileEntityChest(TileEntity, Inventory):
 
     def readFromNBT(self, compound):
         tagList = compound['Items']
-        self.__chestContents = [None] * 64
+        self.__chestContents = [None] * 27
         for tag in tagList:
             slot = tag['Slot'].real & 255
-            self.__chestContents[slot] = ItemStack(tag)
+            if slot >= 0 and slot < len(self.__chestContents):
+                self.__chestContents[slot] = ItemStack(tag)
 
     def writeToNBT(self, compound):
         compound['id'] = String('Chest')

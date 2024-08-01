@@ -33,6 +33,7 @@ class EntityArrow(Entity):
         d = math.sqrt(self.motionX * self.motionX + self.motionZ * self.motionZ)
         self.prevRotationYaw = self.rotationYaw = math.atan2(self.motionX, self.motionZ) * 180.0 / math.pi
         self.prevRotationPitch = self.rotationPitch = math.atan2(self.motionY, d) * 180.0 / math.pi
+        self.__ticksInGround = 0
 
     def onEntityUpdate(self):
         super().onEntityUpdate()
@@ -42,12 +43,17 @@ class EntityArrow(Entity):
         if self.__inGround:
             blockId = self._worldObj.getBlockId(self.__xTile, self.__yTile, self.__zTile)
             if blockId == self.__inTile:
+                self.__ticksInGround += 1
+                if self.__ticksInGround == 1200:
+                    self.setEntityDead()
+
                 return
 
             self.__inGround = False
             self.motionX *= self._rand.nextFloat() * 0.2
             self.motionY *= self._rand.nextFloat() * 0.2
             self.motionZ *= self._rand.nextFloat() * 0.2
+            self.__ticksInGround = 0
 
         posVec = Vec3D(self.posX, self.posY, self.posZ)
         motionVec = Vec3D(self.posX + self.motionX, self.posY + self.motionY, self.posZ + self.motionZ)
@@ -102,7 +108,7 @@ class EntityArrow(Entity):
                     self.motionX, self.motionY, self.motionZ
                 )
 
-            motion = 0.85
+            motion = 0.8
 
         self.motionX *= motion
         self.motionY *= motion
@@ -134,6 +140,7 @@ class EntityArrow(Entity):
         from mc.net.minecraft.game.item.ItemStack import ItemStack
         if self.__inGround and self.__owner == player and self.arrowShake <= 0 and \
            player.inventory.addItemStackToInventory(ItemStack(items.arrow.shiftedIndex, 1)):
+            player.onItemPickup(self)
             self.setEntityDead()
 
     def getShadowSize(self):

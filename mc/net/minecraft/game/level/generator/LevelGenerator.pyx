@@ -10,7 +10,6 @@ from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos, pi
 
 from mc.net.minecraft.game.level.World cimport World
-from mc.net.minecraft.game.level.material.Material import Material
 from mc.net.minecraft.game.level.block.Blocks import blocks
 from mc.net.minecraft.game.level.generator.noise.NoiseGeneratorDistort cimport NoiseGeneratorDistort
 from mc.net.minecraft.game.level.generator.noise.NoiseGeneratorOctaves cimport NoiseGeneratorOctaves
@@ -44,7 +43,8 @@ cdef class LevelGenerator:
     def generate(self, str userName, int width, int depth, int height):
         cdef int *heightmap
         cdef int iterations, i, w, h, d, ix, iy, iz, dirtLevel, stoneLevel, floatingHeight, \
-                 blockId, stone, count, _, length, l, xx, yy, zz, target, toFlood
+                 blockId, stone, count, _, length, l, xx, yy, zz, coal, iron, gold, \
+                 diamonds, target, toFlood
         cdef long flooded
         cdef bint hasNoise
         cdef float x, y, z, dir1, dira1, dir2, dira2, dir3, size, xd, yd, zd, caveD
@@ -221,37 +221,18 @@ cdef class LevelGenerator:
                                             if self.__blocksByteArray[blockId] == stone:
                                                 self.__blocksByteArray[blockId] = 0
 
-                self.__populateOre(blocks.oreCoal.blockID, 90, 1, 5, (h << 2) // 4)
-                self.__populateOre(blocks.oreIron.blockID, 70, 2, 5, h * 3 // 4)
-                self.__populateOre(blocks.oreGold.blockID, 30, 3, 5, (h << 1) // 4)
-                self.__populateOre(blocks.oreDiamond.blockID, 20, 4, 5, h // 4)
+                coal = self.__populateOre(blocks.oreCoal.blockID,
+                                          1000, 10, 1, 5, (h << 2) // 5)
+                iron = self.__populateOre(blocks.oreIron.blockID,
+                                          800, 8, 2, 5, h * 3 // 5)
+                gold = self.__populateOre(blocks.oreGold.blockID,
+                                          500, 6, 3, 5, (h << 1) // 5)
+                diamonds = self.__populateOre(blocks.oreDiamond.blockID,
+                                              800, 2, 4, 5, h // 5)
+                print(f'Coal: {coal}, Iron: {iron}, Gold: {gold}, Diamond: {diamonds}')
 
             self.__guiLoading.displayLoadingString('Watering..')
-
-            target = blocks.waterStill.blockID
-            if self.levelType == 1:
-                target = blocks.lavaStill.blockID
-
-            if not self.floatingGen:
-                for ix in range(self.__width):
-                    self.__floodFill(ix, self.__waterLevel - 1, 0, 0, target)
-                    self.__floodFill(ix, self.__waterLevel - 1, self.__depth - 1, 0, target)
-
-                for iy in range(self.__depth):
-                    self.__floodFill(0, self.__waterLevel - 1, iy, 0, target)
-                    self.__floodFill(self.__width - 1, self.__waterLevel - 1, iy, 0, target)
-
-            toFlood = self.__width * self.__depth * self.__height // 1000
-            for i in range(toFlood):
-                ix = self.__rand.nextInt(self.__width)
-                iy = self.__rand.nextInt(self.__height)
-                iz = self.__rand.nextInt(self.__depth)
-                if self.__blocksByteArray[(iy * self.__depth + iz) * self.__width + ix] == 0:
-                    flooded = self.__floodFill(ix, iy, iz, 0, 255)
-                    if flooded > 0 and flooded < 512:
-                        self.__floodFill(ix, iy, iz, 255, target)
-                    else:
-                        self.__floodFill(ix, iy, iz, 255, 0)
+            self.__addWater()
 
             self.__guiLoading.displayLoadingString('Melting..')
             self.__addLava()
@@ -296,17 +277,9 @@ cdef class LevelGenerator:
         self.__guiLoading.displayLoadingString('Post-processing..')
 
         if self.levelType != 1:
-            for ix in range(self.__width):
-                for iy in range(self.__height):
-                    for iz in range(self.__depth):
-                        if world.getBlockId(ix, iy, iz) == blocks.dirt.blockID and \
-                           world.isHalfLit(ix, iy + 1, iz) and \
-                           world.getBlockMaterial(ix, iy + 1, iz) == Material.air:
-                            world.setBlock(ix, iy, iz, blocks.grass.blockID)
+            self.__addGrass(world)
 
-            self.__growTrees(world)
-        else:
-            self.__growTrees(world)
+        self.__growTrees(world)
 
         world.createTime = getMillis()
         world.authorName = userName
@@ -315,6 +288,16 @@ cdef class LevelGenerator:
         free(self.__blocksByteArray)
 
         return world
+
+    cdef __addGrass(self, world):
+        cdef int x, y, z
+        for x in range(self.__width):
+            for y in range(self.__height):
+                for z in range(self.__depth):
+                    if world.getBlockId(x, y, z) == blocks.dirt.blockID and \
+                       world.isHalfLit(x, y + 1, z) and not \
+                       world.getBlockMaterial(x, y + 1, z).getCanBlockGrass():
+                        world.setBlock(x, y, z, blocks.grass.blockID)
 
     cdef __addBeaches(self, int* heightmap):
         cdef int w, h, d, x, y, heightmap1, heightmap2, blockId
@@ -433,10 +416,12 @@ cdef class LevelGenerator:
                     elif kind == 1:
                         self.__blocksByteArray[block] = blocks.mushroomRed.blockID
 
-    cdef __populateOre(self, int face, int freq, int _, int __, int maxHeight):
-        cdef int w, d, h, size, i, steps, step, x, y, z, block
+    cdef int __populateOre(self, int face, int freq, int volume,
+                           int _, int __, int maxHeight):
+        cdef int ores, w, d, h, size, i, steps, step, x, y, z, block
         cdef float x0, y0, z0, xChange, xDecay, yChange, yDecay, pop, xd, yd, zd
 
+        ores = 0
         w = self.__width
         d = self.__depth
         h = self.__height
@@ -448,7 +433,7 @@ cdef class LevelGenerator:
             if y0 > maxHeight:
                 continue
 
-            steps = <int>((self.__rand.nextFloat() + self.__rand.nextFloat()) * 75.0 * freq / 100.0)
+            steps = <int>((self.__rand.nextFloat() + self.__rand.nextFloat()) * 75.0 * volume / 100.0)
             xChange = self.__rand.nextFloat() * pi * 2.0
             xDecay = 0.0
             yChange = self.__rand.nextFloat() * pi * 2.0
@@ -463,7 +448,7 @@ cdef class LevelGenerator:
                 xDecay = self.__rand.nextFloat() - self.__rand.nextFloat()
                 yChange = (yChange + yDecay * 0.5) * 0.5
                 yDecay = (yDecay * 0.9) + (self.__rand.nextFloat() - self.__rand.nextFloat())
-                pop = sin(step * pi / steps) * freq / 100.0 + 1.0
+                pop = sin(step * pi / steps) * volume / 100.0 + 1.0
 
                 for x in range(<int>(x0 - pop), <int>(x0 + pop + 1)):
                     for y in range(<int>(y0 - pop), <int>(y0 + pop + 1)):
@@ -477,6 +462,35 @@ cdef class LevelGenerator:
                                 block = (y * d + z) * w + x
                                 if self.__blocksByteArray[block] == blocks.stone.blockID:
                                     self.__blocksByteArray[block] = face
+                                    ores += 1
+
+        return ores
+
+    cdef __addWater(self):
+        target = blocks.waterStill.blockID
+        if self.levelType == 1:
+            target = blocks.lavaStill.blockID
+
+        if not self.floatingGen:
+            for ix in range(self.__width):
+                self.__floodFill(ix, self.__waterLevel - 1, 0, 0, target)
+                self.__floodFill(ix, self.__waterLevel - 1, self.__depth - 1, 0, target)
+
+            for iy in range(self.__depth):
+                self.__floodFill(0, self.__waterLevel - 1, iy, 0, target)
+                self.__floodFill(self.__width - 1, self.__waterLevel - 1, iy, 0, target)
+
+        toFlood = self.__width * self.__depth * self.__height // 1000
+        for i in range(toFlood):
+            ix = self.__rand.nextInt(self.__width)
+            iy = self.__rand.nextInt(self.__height)
+            iz = self.__rand.nextInt(self.__depth)
+            if self.__blocksByteArray[(iy * self.__depth + iz) * self.__width + ix] == 0:
+                flooded = self.__floodFill(ix, iy, iz, 0, 255)
+                if flooded > 0 and flooded < 640:
+                    self.__floodFill(ix, iy, iz, 255, target)
+                else:
+                    self.__floodFill(ix, iy, iz, 255, 0)
 
     cdef __addLava(self):
         cdef int size, i, x, y, z
@@ -485,14 +499,14 @@ cdef class LevelGenerator:
         size = self.__width * self.__depth * self.__height // 2000
         for i in range(size):
             x = self.__rand.nextInt(self.__width)
-            y = min(min(self.__rand.nextInt(self.__height),
-                        self.__rand.nextInt(self.__width)),
-                    min(self.__rand.nextInt(self.__height),
-                        self.__rand.nextInt(self.__width)))
+            y = min(min(self.__rand.nextInt(self.__groundLevel),
+                        self.__rand.nextInt(self.__groundLevel)),
+                    min(self.__rand.nextInt(self.__groundLevel),
+                        self.__rand.nextInt(self.__groundLevel)))
             z = self.__rand.nextInt(self.__depth)
             if self.__blocksByteArray[(y * self.__depth + z) * self.__width + x] == 0:
                 flooded = self.__floodFill(x, y, z, 0, 255)
-                if flooded > 0 and flooded < 512:
+                if flooded > 0 and flooded < 640:
                     self.__floodFill(x, y, z, 255, blocks.lavaStill.blockID)
                 else:
                     self.__floodFill(x, y, z, 255, 0)

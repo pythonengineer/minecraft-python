@@ -183,7 +183,7 @@ cdef class World:
         gc.collect()
 
     cdef findSpawn(self):
-        cdef int i, x, y, z
+        cdef int i, x, y, z, xx, yy, zz
         cdef Random random = Random()
 
         x = 0
@@ -191,21 +191,30 @@ cdef class World:
         z = 0
         i = 0
         while True:
-            while True:
-                i += 1
-                x = random.nextInt(self.width // 2) + self.width // 4
-                z = random.nextInt(self.length // 2) + self.length // 4
-                y = self.__getFirstUncoveredBlock(x, z) + 1
-                if y >= 4:
-                    break
-
+            i += 1
+            x = random.nextInt(self.width // 2) + self.width // 4
+            z = random.nextInt(self.length // 2) + self.length // 4
+            y = self.__getFirstUncoveredBlock(x, z) + 1
             if i == 10000:
                 self.xSpawn = x
-                self.ySpawn = -100
+                self.ySpawn = self.height + 100
                 self.zSpawn = z
                 break
 
-            if y > self.waterLevel:
+            if y >= 4 and y > self.waterLevel:
+
+                def checkSolid():
+                    for xx in range(x - 5, x + 6):
+                        for yy in range(y, y + 3):
+                            for zz in range(z - 5, z + 6):
+                                if self.getBlockMaterial(xx, yy, zz).isSolid():
+                                    return True
+
+                    return False
+
+                if checkSolid():
+                    continue
+
                 self.xSpawn = x
                 self.ySpawn = y
                 self.zSpawn = z
@@ -982,9 +991,8 @@ cdef class World:
         cdef int minX, maxX, minY, maxY, minZ, maxZ, xx, yy, zz, posX, posY, posZ, \
                  blockId, pos, i
         cdef float xd, yd, zd, d, radX, radY, radZ, fallout, nextX, nextY, nextZ, \
-                   pX, pY, pZ, xr, yr, zr
+                   density, pX, pY, pZ, xr, yr, zr
         cdef list entities, positions
-        cdef bint hurt
         cdef Block block
 
         explodePositions = set()
@@ -1022,46 +1030,35 @@ cdef class World:
                             nextZ += radZ * 0.3
                             fallout -= 0.3
 
-        minX = <int>(x - 6.0 - 1.0)
-        maxX = <int>(x + 6.0 + 1.0)
-        minY = <int>(y - 6.0 - 1.0)
-        maxY = <int>(y + 6.0 + 1.0)
-        minZ = <int>(z - 6.0 - 1.0)
-        maxZ = <int>(z + 6.0 + 1.0)
+        minX = <int>(x - 8.0 - 1.0)
+        maxX = <int>(x + 8.0 + 1.0)
+        minY = <int>(y - 8.0 - 1.0)
+        maxY = <int>(y + 8.0 + 1.0)
+        minZ = <int>(z - 8.0 - 1.0)
+        maxZ = <int>(z + 8.0 + 1.0)
         entities = self.entityMap.getEntities(None, minX, minY, minZ, maxX, maxY, maxZ)
+        vec = Vec3D(x, y, z)
         for e in entities:
             xd = e.posX - x
             yd = e.posY - y
             zd = e.posZ - z
-            d = sqrt(xd * xd + yd * yd + zd * zd) / 6.0
+            d = sqrt(xd * xd + yd * yd + zd * zd) / 8.0
             if d > 1.0:
                 continue
 
-            d = 1.0 - d
-            minX = <int>(e.boundingBox.minX)
-            maxX = <int>(e.boundingBox.maxX)
-            minY = <int>(e.boundingBox.minY)
-            maxY = <int>(e.boundingBox.maxY)
-            minZ = <int>(e.boundingBox.minZ)
-            maxZ = <int>(e.boundingBox.maxZ)
-            hurt = False
+            d = sqrt(xd * xd + yd * yd + zd * zd)
+            if not d:
+                continue
 
-            for xx in range(minX, maxX + 1):
-                for yy in range(minY, maxY + 1):
-                    for zz in range(minZ, maxZ + 1):
-                        pos = xx + (yy << 10) + (zz << 10 << 10)
-                        if pos in explodePositions:
-                            hurt = True
-                            break
-
-                    if hurt:
-                        break
-
-                if hurt:
-                    break
-
-            if hurt:
-                e.attackEntityFrom(None, <int>((d * d + d) / 2.0 * 64.0 + 1.0))
+            xd /= d
+            yd /= d
+            zd /= d
+            density = self.__getBlockDensity(vec, e.boundingBox)
+            d = (1.0 - (d / 8.0)) * density
+            e.attackEntityFrom(None, <int>((d * d + d) / 2.0 * 64.0 + 1.0))
+            e.motionX += xd * d
+            e.motionY += yd * d
+            e.motionZ += zd * d
 
         positions = list(explodePositions)
         for i in range(len(positions) - 1, -1, -1):
@@ -1098,6 +1095,36 @@ cdef class World:
                     block.dropBlockAsItemWithChance(self, posX, posY, posZ, 0.3)
                     self.setBlockWithNotify(posX, posY, posZ, 0)
                     block.onBlockDestroyedByExplosion(self, posX, posY, posZ)
+
+    cdef float __getBlockDensity(self, vec, AxisAlignedBB box):
+        cdef float xd, yd, zd, minX, minY, minZ, x, y, z
+        cdef int noHits, total
+
+        xd = 1.0 / ((box.maxX - box.minX) * 2.0 + 1.0)
+        yd = 1.0 / ((box.maxY - box.minY) * 2.0 + 1.0)
+        zd = 1.0 / ((box.maxZ - box.minZ) * 2.0 + 1.0)
+        noHits = 0
+        total = 0
+        minX = 0.0
+        while minX <= 1.0:
+            minY = 0.0
+            while minY <= 1.0:
+                minZ = 0.0
+                while minZ <= 1.0:
+                    x = box.minX + (box.maxX - box.minX) * minX
+                    y = box.minY + (box.maxY - box.minY) * minY
+                    z = box.minZ + (box.maxZ - box.minZ) * minZ
+                    if not self.rayTraceBlocks(Vec3D(x, y, z), vec):
+                        noHits += 1
+
+                    total += 1
+                    minZ += zd
+
+                minY += yd
+
+            minX += xd
+
+        return noHits / total
 
     def findSubclassOf(self, cls):
         for entity in self.entityMap.all:
@@ -1417,3 +1444,9 @@ cdef class World:
             data[i] = self.__data[i]
 
         return data
+
+    def getDebugLoadedEntities(self):
+        return str(len(self.entityMap.all))
+
+    def getDebugMapInfo(self):
+        return str(len(self.__tickList)) + ' / ' + str(len(self.map))

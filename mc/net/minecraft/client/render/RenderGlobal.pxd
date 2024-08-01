@@ -22,7 +22,6 @@ cdef class RenderGlobal:
         list __worldRenderers
 
         RenderBlocks __globalRenderBlocks
-        public object renderManager
 
         int[50000] __chunkBuffer
         int __cloudOffsetX

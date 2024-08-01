@@ -1,4 +1,5 @@
 from mc.net.minecraft.client.player.EntityPlayerInput import EntityPlayerInput
+from mc.net.minecraft.client.effect.EntityPickupFX import EntityPickupFX
 from mc.net.minecraft.client.gui.container.GuiCrafting import GuiCrafting
 from mc.net.minecraft.client.gui.container.GuiChest import GuiChest
 from mc.net.minecraft.game.entity.player.EntityPlayer import EntityPlayer
@@ -31,9 +32,11 @@ class EntityPlayerSP(EntityPlayer):
     def _readEntityFromNBT(self, compound):
         self._getScore = compound['Score'].real
         invList = compound['Inventory']
-        self.inventory.mainInventory = [None] * 64
+        self.inventory.mainInventory = [None] * self.inventory.getSizeInventory()
         for comp in invList:
-            self.inventory.mainInventory[comp['Slot'].real & 255] = ItemStack(comp)
+            slot = comp['Slot'].real & 255
+            if slot >= 0 and slot < len(self.inventory.mainInventory):
+                self.inventory.mainInventory[slot] = ItemStack(comp)
 
     def _getEntityString(self):
         return 'LocalPlayer'
@@ -46,3 +49,7 @@ class EntityPlayerSP(EntityPlayer):
 
     def displayGUIInventory(self):
         self.inventory.setInventorySlotContents(self.inventory.currentItem, None)
+
+    def onItemPickup(self, item):
+        self.__mc.effectRenderer.addEffect(EntityPickupFX(self.__mc.theWorld, item,
+                                                          self, -0.5))

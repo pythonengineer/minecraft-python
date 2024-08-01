@@ -57,6 +57,7 @@ cdef class Entity:
         self.__inWater = False
         self.heartsLife = 0
         self.air = Entity.TOTAL_AIR_SUPPLY
+        self.__firstUpdate = True
 
     def __init__(self, world):
         self._worldObj = world
@@ -118,7 +119,7 @@ cdef class Entity:
 
     def onEntityUpdate(self):
         cdef int i
-        cdef float volume, x, z
+        cdef float volume, x, y, z
 
         self.prevDistanceWalkedModified = self.distanceWalkedModified
         self.prevPosX = self.posX
@@ -127,7 +128,7 @@ cdef class Entity:
         self.prevRotationPitch = self.rotationPitch
         self.prevRotationYaw = self.rotationYaw
         if self.handleWaterMovement():
-            if not self.__inWater:
+            if not self.__inWater and not self.__firstUpdate:
                 volume = sqrt(self.motionX * self.motionX * 0.2 + self.motionY * \
                               self.motionY + self.motionZ * self.motionZ * 0.2) * 0.2
                 if volume > 1.0:
@@ -137,13 +138,21 @@ cdef class Entity:
                     self, 'random.splash', volume,
                     1.0 + (self._rand.nextFloat() - self._rand.nextFloat()) * 0.4
                 )
+
+                y = self.boundingBox.minY
                 for i in range(<int>(1.0 + self.width * 20.0)):
                     x = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
                     z = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
                     self._worldObj.spawnParticle(
-                        'bubble', self.posX + x,
-                        self.boundingBox.minY - self._rand.nextFloat() * 0.2,
-                        self.posZ + z, self.motionX, self.motionY, self.motionZ
+                        'bubble', self.posX + x, y + 1.0, self.posZ + z, self.motionX,
+                        self.motionY - self._rand.nextFloat() * 0.2, self.motionZ
+                    )
+                for i in range(<int>(1.0 + self.width * 20.0)):
+                    x = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
+                    z = (self._rand.nextFloat() * 2.0 - 1.0) * self.width * 2.0
+                    self._worldObj.spawnParticle(
+                        'splash', self.posX + x, y + 1.0, self.posZ + z,
+                        self.motionX, self.motionY, self.motionZ
                     )
 
             self.__fallDistance = 0.0
@@ -161,6 +170,8 @@ cdef class Entity:
         if self.handleLavaMovement():
             self.attackEntityFrom(None, 10)
             self.fire = 600
+
+        self.__firstUpdate = False
 
     cdef bint isOffsetPositionInLiquid(self, float xa, float ya, float za):
         cdef AxisAlignedBB axisAlignedBB = self.boundingBox.cloneMove(xa, ya, za)
@@ -326,12 +337,15 @@ cdef class Entity:
 
     def isInsideOfMaterial(self):
         block = self._worldObj.getBlockId(<int>self.posX,
-                                          <int>(self.posY + 0.12),
+                                          <int>(self.posY + self._getEyeHeight()),
                                           <int>self.posZ)
         if block != 0:
             return blocks.blocksList[block].material == Material.water
 
         return False
+
+    cpdef float _getEyeHeight(self):
+        return 0.0
 
     cdef bint handleLavaMovement(self):
         return self._worldObj.handleMaterialAcceleration(self.boundingBox.expand(0.0, -0.4, 0.0),

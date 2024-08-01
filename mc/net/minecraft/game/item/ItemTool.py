@@ -2,12 +2,13 @@ from mc.net.minecraft.game.item.Item import Item
 
 class ItemTool(Item):
 
-    def __init__(self, items, itemId, damage, affectedBlocks):
+    def __init__(self, items, itemId, attackDmg, strength, affectedBlocks):
         super().__init__(items, itemId)
         self.__blocksEffectiveAgainst = affectedBlocks
         self._maxStackSize = 1
-        self._maxDamage = 32 << damage
-        self.__efficiencyOnProperMaterial = damage + 1 << 1
+        self._maxDamage = 32 << strength
+        self.__efficiencyOnProperMaterial = strength + 1 << 1
+        self.__damageVsEntity = attackDmg + strength
 
     def getStrVsBlock(self, block):
         for b in self.__blocksEffectiveAgainst:
@@ -23,4 +24,4 @@ class ItemTool(Item):
         stack.damageItem(1)
 
     def getDamageVsEntity(self):
-        return 0
+        return self.__damageVsEntity

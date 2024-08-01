@@ -11,6 +11,7 @@ from mc.net.minecraft.game.entity.Entity cimport Entity
 from mc.net.minecraft.game.entity.player.EntityPlayer import EntityPlayer
 from mc.net.minecraft.client.effect.EntityBubbleFX import EntityBubbleFX
 from mc.net.minecraft.client.effect.EntityExplodeFX import EntityExplodeFX
+from mc.net.minecraft.client.effect.EntitySplashFX import EntitySplashFX
 from mc.net.minecraft.client.effect.EntitySmokeFX import EntitySmokeFX
 from mc.net.minecraft.client.effect.EntityFlameFX import EntityFlameFX
 from mc.net.minecraft.client.effect.EntityLavaFX import EntityLavaFX
@@ -40,7 +41,7 @@ cdef class RenderGlobal:
         self.__sortedWorldRenderers = []
         self.__worldRenderers = []
         self.__globalRenderBlocks = None
-        self.renderManager = RenderManager()
+        RenderManager.instance = RenderManager()
         self.__cloudOffsetX = 0
         self.__prevSortX = -9999.0
         self.__prevSortY = -9999.0
@@ -53,7 +54,7 @@ cdef class RenderGlobal:
         if self.__worldObj:
             self.__worldObj.removeWorldAccess(self)
 
-        self.renderManager.changeWorld(world)
+        RenderManager.instance.setWorld(world)
         self.__worldObj = world
         self.__globalRenderBlocks = RenderBlocks(self.__t, world)
         if world:
@@ -157,8 +158,8 @@ cdef class RenderGlobal:
         cdef list entities
         cdef Entity entity
 
-        self.renderManager.setPlayerViewY(a)
-        self.renderManager.renderEngine = self.__renderEngine
+        RenderManager.instance.cacheActiveRenderInfo(self.__worldObj, self.__renderEngine,
+                                                     self.__mc.thePlayer, a)
         eMap = self.__worldObj.entityMap
         for x in range(eMap.width):
             x0 = (x << 4) - 2
@@ -179,8 +180,8 @@ cdef class RenderGlobal:
                         for entity in entities:
                             if entity.shouldRender(vec) and \
                                (exists or frustum.isVisible(entity.boundingBox)):
-                                if not isinstance(entity, EntityPlayer):
-                                    self.renderManager.renderEntity(entity, a)
+                                if entity != self.__worldObj.playerEntity:
+                                    RenderManager.instance.renderEntity(entity, a)
 
     def sortAndRender(self, player, int layer):
         cdef int startingIndex
@@ -235,7 +236,6 @@ cdef class RenderGlobal:
             r = nr
 
         scale = 0.5 / 1024
-        gl.glAlphaFunc(gl.GL_GREATER, 0.5)
         y = self.__worldObj.cloudHeight
         u = (self.__cloudOffsetX + partialTicks) * scale * 0.03
         self.__t.startDrawingQuads()
@@ -260,7 +260,6 @@ cdef class RenderGlobal:
 
         self.__t.draw()
         gl.glDisable(gl.GL_TEXTURE_2D)
-        gl.glAlphaFunc(gl.GL_GREATER, 0.0)
         self.__t.startDrawingQuads()
         r = (self.__worldObj.skyColor >> 16 & 0xFF) / 255.0
         g = (self.__worldObj.skyColor >> 8 & 0xFF) / 255.0
@@ -339,6 +338,7 @@ cdef class RenderGlobal:
             gl.glPushMatrix()
             blockId = self.__worldObj.getBlockId(h.blockX, h.blockY, h.blockZ)
             block = blocks.blocksList[blockId] if blockId > 0 else None
+            gl.glDisable(gl.GL_ALPHA_TEST)
             self.__t.startDrawingQuads()
             self.__t.disableColor()
             if not block:
@@ -349,6 +349,7 @@ cdef class RenderGlobal:
                 240 + <int>(self.damagePartialTime * 10.0)
             )
             self.__t.draw()
+            gl.glEnable(gl.GL_ALPHA_TEST)
             gl.glDepthMask(True)
             gl.glPopMatrix()
 
@@ -420,6 +421,12 @@ cdef class RenderGlobal:
 
     def spawnParticle(self, str particle, float x, float y, float z,
                       float xr, float yr, float zr):
+        cdef float xd = self.__worldObj.playerEntity.posX - x
+        cdef float yd = self.__worldObj.playerEntity.posY - y
+        cdef float zd = self.__worldObj.playerEntity.posZ - z
+        if xd * xd + yd * yd + zd * zd > 256.0:
+            return
+
         if particle == 'bubble':
             self.__mc.effectRenderer.addEffect(
                 EntityBubbleFX(self.__worldObj, x, y, z, xr, yr, zr)
@@ -439,4 +446,8 @@ cdef class RenderGlobal:
         elif particle == 'lava':
             self.__mc.effectRenderer.addEffect(
                 EntityLavaFX(self.__worldObj, x, y, z)
+            )
+        elif particle == 'splash':
+            self.__mc.effectRenderer.addEffect(
+                EntitySplashFX(self.__worldObj, x, y, z)
             )

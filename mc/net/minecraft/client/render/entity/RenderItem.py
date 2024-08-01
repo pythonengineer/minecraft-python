@@ -13,6 +13,8 @@ class RenderItem(Render):
         super().__init__()
         self.__renderBlocks = RenderBlocks(tessellator)
         self.__random = Random()
+        self._shadowSize = 0.15
+        self._shadowOpaque = 12.0 / 16.0
 
     def renderItemIntoGUI(self, renderEngine, stack, width, height):
         if not stack:

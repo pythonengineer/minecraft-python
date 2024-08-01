@@ -116,9 +116,7 @@ class EntityItem(Entity):
             self.setEntityDead()
 
     def attackEntityFrom(self, entity, damage):
-        self.__health -= damage
-        if self.__health <= 0:
-            self.setEntityDead()
+        pass
 
     def _writeEntityToNBT(self, compound):
         compound['Health'] = Byte(self.__health)
@@ -139,4 +137,5 @@ class EntityItem(Entity):
                 self, 'random.pop', 0.2,
                 ((self._rand.nextFloat() - self._rand.nextFloat()) * 0.7 + 1.0) * 2.0
             )
+            player.onItemPickup(self)
             self.setEntityDead()

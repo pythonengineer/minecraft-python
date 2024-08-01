@@ -99,11 +99,15 @@ class EntityPlayer(EntityLiving):
         stack = self.inventory.mainInventory[self.inventory.currentItem]
         if stack:
             strength = 1.0 * stack.getItem().getStrVsBlock(block)
+        if self.isInsideOfMaterial():
+            strength /= 5.0
+        if not self.onGround:
+            strength /= 5.0
 
         return strength
 
     def canHarvestBlock(self, block):
-        if block.material != Material.rock:
+        if block.material != Material.rock and block.material != Material.iron:
             return True
         else:
             stack = self.inventory.getStackInSlot(self.inventory.currentItem)
@@ -120,3 +124,9 @@ class EntityPlayer(EntityLiving):
 
     def displayWorkbenchGUI(self):
         pass
+
+    def onItemPickup(self, item):
+        pass
+
+    def _getEyeHeight(self):
+        return 0.12

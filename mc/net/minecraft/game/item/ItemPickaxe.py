@@ -8,9 +8,9 @@ class ItemPickaxe(ItemTool):
                                 blocks.blockSteel, blocks.oreCoal, blocks.blockGold,
                                 blocks.oreGold, blocks.oreDiamond, blocks.blockDiamond)
 
-    def __init__(self, items, itemId, damage):
-        super().__init__(items, itemId, damage, self.__blocksEffectiveAgainst)
-        self.__damage = damage
+    def __init__(self, items, itemId, strength):
+        super().__init__(items, itemId, 2, strength, self.__blocksEffectiveAgainst)
+        self.__damage = strength
 
     def canHarvestBlock(self, block):
         if block == blocks.obsidian:
@@ -18,7 +18,10 @@ class ItemPickaxe(ItemTool):
         elif block != blocks.blockDiamond and block != blocks.oreDiamond:
             if block != blocks.blockGold and block != blocks.oreGold:
                 if block != blocks.blockSteel and block != blocks.oreIron:
-                    return block.material == Material.rock
+                    if block.material == Material.rock:
+                        return True
+                    else:
+                        return block.material == Material.iron
                 else:
                     return self.__damage > 0
             else:

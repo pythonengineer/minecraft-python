@@ -103,6 +103,11 @@ class GuiIngame(Gui):
         self.__mc.fontRenderer.drawStringWithShadow(self.__mc.VERSION_STRING, 2, 2, 0xFFFFFF)
         if self.__mc.options.showFPS:
             self.__mc.fontRenderer.drawStringWithShadow(self.__mc.debug, 2, 12, 0xFFFFFF)
+            self.__mc.fontRenderer.drawStringWithShadow(
+                'E: ' + self.__mc.theWorld.getDebugLoadedEntities() + '. P: ' + \
+                self.__mc.effectRenderer.getStatistics() + '. LT: ' + \
+                self.__mc.theWorld.getDebugMapInfo(), 2, 22, 0xFFFFFF
+            )
 
         for i, message in enumerate(self.__chatMessageList):
             if i >= 10:

@@ -7,6 +7,10 @@ from pyglet import gl
 class RenderTNTPrimed(Render):
     __blockRenderer = RenderBlocks(tessellator)
 
+    def __init__(self):
+        super().__init__()
+        self._shadowSize = 0.5
+
     def doRender(self, entity, xd, yd, zd, yaw, a):
         gl.glPushMatrix()
         gl.glTranslatef(xd, yd, zd)

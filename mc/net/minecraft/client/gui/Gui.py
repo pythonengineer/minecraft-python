@@ -36,6 +36,7 @@ class Gui:
         f13 = (col2 & 255) / 255.0
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_BLEND)
+        gl.glDisable(gl.GL_ALPHA_TEST)
         gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
         gl.glBegin(gl.GL_QUADS)
         gl.glColor4f(f11, f6, f12, f10)
@@ -46,6 +47,7 @@ class Gui:
         gl.glVertex2f(x1, y1)
         gl.glEnd()
         gl.glDisable(gl.GL_BLEND)
+        gl.glEnable(gl.GL_ALPHA_TEST)
         gl.glEnable(gl.GL_TEXTURE_2D)
 
     @staticmethod

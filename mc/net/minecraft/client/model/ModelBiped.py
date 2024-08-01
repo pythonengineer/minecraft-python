@@ -28,24 +28,24 @@ class ModelBiped(ModelBase):
         self.bipedLeftLeg.setRotationPoint(2.0, 12.0, 0.0)
 
     def render(self, x, y, z, xRot, yRot, zRot):
-        zRot = yRot
-        yRot = xRot
-        xRot = 0.0
-        self.bipedHead.rotateAngleY = yRot / (180.0 / math.pi)
-        self.bipedHead.rotateAngleX = zRot / (180.0 / math.pi)
-        self.bipedRightArm.rotateAngleX = math.cos(x * 0.6662 + math.pi) * 2.0 * y
-        self.bipedRightArm.rotateAngleZ = (math.cos(x * 0.2312) + 1.0) * y
-        self.bipedLeftArm.rotateAngleX = math.cos(x * 0.6662) * 2.0 * y
-        self.bipedLeftArm.rotateAngleZ = (math.cos(x * 0.2812) - 1.0) * y
-        self.bipedRightLeg.rotateAngleX = math.cos(x * 0.6662) * 1.4 * y
-        self.bipedLeftLeg.rotateAngleX = math.cos(x * 0.6662 + math.pi) * 1.4 * y
-        self.bipedRightArm.rotateAngleZ += math.cos(xRot * 0.09) * 0.05 + 0.05
-        self.bipedLeftArm.rotateAngleZ -= math.cos(xRot * 0.09) * 0.05 + 0.05
-        self.bipedRightArm.rotateAngleX += math.sin(xRot * 0.067) * 0.05
-        self.bipedLeftArm.rotateAngleX -= math.sin(xRot * 0.067) * 0.05
+        self.setRotationAngles(x, y, 0.0, xRot, yRot, 1.0)
         self.bipedHead.render(1.0)
         self.bipedBody.render(1.0)
         self.bipedRightArm.render(1.0)
         self.bipedLeftArm.render(1.0)
         self.bipedRightLeg.render(1.0)
         self.bipedLeftLeg.render(1.0)
+
+    def setRotationAngles(self, x, y, z, xRot, yRot, zRot):
+        self.bipedHead.rotateAngleY = xRot / (180.0 / math.pi)
+        self.bipedHead.rotateAngleX = yRot / (180.0 / math.pi)
+        self.bipedRightArm.rotateAngleX = math.cos(x * 0.6662 + math.pi) * 2.0 * y
+        self.bipedRightArm.rotateAngleZ = (math.cos(x * 0.2312) + 1.0) * y
+        self.bipedLeftArm.rotateAngleX = math.cos(x * 0.6662) * 2.0 * y
+        self.bipedLeftArm.rotateAngleZ = (math.cos(x * 0.2812) - 1.0) * y
+        self.bipedRightLeg.rotateAngleX = math.cos(x * 0.6662) * 1.4 * y
+        self.bipedLeftLeg.rotateAngleX = math.cos(x * 0.6662 + math.pi) * 1.4 * y
+        self.bipedRightArm.rotateAngleZ += math.cos(z * 0.09) * 0.05 + 0.05
+        self.bipedLeftArm.rotateAngleZ -= math.cos(z * 0.09) * 0.05 + 0.05
+        self.bipedRightArm.rotateAngleX += math.sin(z * 0.067) * 0.05
+        self.bipedLeftArm.rotateAngleX -= math.sin(z * 0.067) * 0.05

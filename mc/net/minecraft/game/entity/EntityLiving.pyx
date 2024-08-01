@@ -15,7 +15,7 @@ from nbtlib.tag import Short
 
 cdef class EntityLiving(Entity):
     ATTACK_DURATION = 5
-    HEALTH = 20
+    HEALTH = 10
 
     def __init__(self, world):
         super().__init__(world)
@@ -48,6 +48,9 @@ cdef class EntityLiving(Entity):
 
     def canBePushed(self):
         return not self.isDead
+
+    cpdef float _getEyeHeight(self):
+        return self.height * 0.85
 
     @cython.cdivision(True)
     def onEntityUpdate(self):
@@ -156,6 +159,9 @@ cdef class EntityLiving(Entity):
             self.health = EntityLiving.HEALTH
 
         self.heartsLife = self.heartsHalvesLife // 2
+
+    def setSize(self, w, h):
+        super().setSize(w, h)
 
     def attackEntityFrom(self, Entity entity, int damage):
         cdef float xd, zd, d
